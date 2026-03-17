@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ST Admin CRM | Distelsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root { 
+            --primary: #002244; --accent: #0077A3; --bg: #f0f4f8; --surface: #ffffff; 
+            --text-main: #000000; --text-muted: #1e293b; --border: #cbd5e1; --sidebar-w: 260px;
+            --danger: #dc2626; --success: #059669; --warning: #d97706; --draft: #475569;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background-color: var(--bg); color: var(--text-main); font-size: 14px; font-weight: 500; overflow-x: hidden; }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 15px 25px; border-radius: 8px; font-weight: 700; font-size: 14px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateX(100%); transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); }
+        .toast-info { background: var(--accent); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(4px); transition: 0.3s; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 95%; max-width: 750px; max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; border-top: 2px solid #cbd5e1; padding-top: 15px; }
+
+        #login-view { position: fixed; inset: 0; background: var(--primary); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 15px; }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 20px; width: 100%; max-width: 380px; text-align: center; border-top: 8px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        #app-view { display: none; }
+        header { background: var(--surface); height: 65px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 2px solid var(--border); position: fixed; width: 100%; top: 0; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .sidebar { width: var(--sidebar-w); background: var(--primary); position: fixed; top: 65px; bottom: 0; left: 0; padding-top: 20px; overflow-y: auto; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 900; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; top: 65px; background: rgba(0,0,0,0.5); z-index: 800; backdrop-filter: blur(2px); }
+        .nav-item { padding: 15px 25px; color: #cbd5e1; cursor: pointer; display: none; align-items: center; gap: 12px; font-size: 15px; font-weight: 500; transition: 0.2s; }
+        .nav-item:hover { color: white; background: rgba(255,255,255,0.1); }
+        .nav-item.active { color: white; background: rgba(255,255,255,0.15); border-left: 5px solid var(--accent); font-weight: 700; }
+        .content { margin-left: var(--sidebar-w); margin-top: 65px; padding: 30px; transition: margin 0.3s ease; }
+        .card { background: var(--surface); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid var(--border); transition: 0.3s; }
+        .module-header { color: var(--primary); margin-top: 0; font-size: 22px; font-weight: 900; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 25px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end; margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; width: 100%; }
+        .input-group label { font-size: 12px; font-weight: 900; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; }
+        input, select, textarea { padding: 12px 14px; border: 2px solid var(--border); border-radius: 6px; font-size: 14px; font-weight: 700; background: #f8fafc; color: #000; outline: none; width: 100%; transition: 0.3s; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); background: #ffffff; box-shadow: 0 0 0 3px rgba(0,119,163,0.2); }
+        input:disabled, select:disabled, textarea:disabled { background: #e2e8f0; cursor: not-allowed; color: #64748b; border-color: #cbd5e1; }
+        .edit-mode { background-color: #fffbeb !important; border: 2px solid #f59e0b !important; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2) !important; }
+
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; text-transform: uppercase; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-icon { padding: 10px; width: 38px; height: 38px; border-radius: 8px; }
+
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; min-width: 600px; }
+        th { text-align: left; padding: 14px; background: #e2e8f0; color: var(--primary); font-size: 12px; font-weight: 900; text-transform: uppercase; border-bottom: 3px solid var(--border); white-space: nowrap; }
+        td { padding: 14px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 500; color: #000; }
+        tr:hover td { background: #f8fafc; }
+        
+        .badge { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        .status-enviado { background: var(--accent); color: white; }
+        .status-recibido { background: var(--warning); color: white; }
+        .status-completado { background: var(--success); color: white; }
+        .status-anulado { background: var(--danger); color: white; }
+        .status-borrador { background: var(--draft); color: white; }
+
+        .ticket-nuevo { background-color: #f0fdf4 !important; border-left: 4px solid var(--success); animation: resplandor 2s infinite alternate; }
+        @keyframes resplandor { from { box-shadow: inset 5px 0 0 var(--success); } to { box-shadow: inset 5px 0 15px rgba(5,150,105,0.4); } }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 2px solid var(--border); display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .kpi-card i { font-size: 28px; color: var(--accent); background: rgba(0,119,163,0.1); padding: 15px; border-radius: 12px; }
+        .kpi-card .value { font-size: 24px; font-weight: 900; color: var(--primary); }
+        
+        .checkbox-wrapper { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--primary); cursor: pointer; padding: 8px 12px; border-radius: 6px; transition: 0.2s; }
+        .checkbox-wrapper:hover { background: rgba(0, 119, 163, 0.1); }
+        .checkbox-wrapper input { width: 18px; height: 18px; cursor: pointer; }
+
+        .temp-Normal { border-color: var(--success) !important; color: var(--success); }
+        .temp-Acelerado { border-color: var(--warning) !important; color: #d97706; background: #fffbeb;}
+        .temp-Molesto { border-color: var(--danger) !important; color: var(--danger); background: #fef2f2;}
+        .temp-Escalado { border-color: #1e293b !important; color: white; background: #1e293b;}
+
+        .dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+        .dot-online { background-color: var(--success); box-shadow: 0 0 10px rgba(5, 150, 105, 0.6); animation: pulse 2s infinite; }
+        .dot-offline { background-color: #94a3b8; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(5, 150, 105, 0); } 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); } }
+
+        .bell-container { position: relative; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center; background: #f1f5f9; border: 1px solid var(--border); }
+        .bell-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; font-weight: 900; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(220,38,38,0.5); }
+        .ring-anim i { animation: bell-ring 2s infinite; display: inline-block; transform-origin: top center; color: var(--danger) !important; }
+        @keyframes bell-ring { 0% { rotate: 0; } 10% { rotate: 15deg; } 20% { rotate: -15deg; } 30% { rotate: 10deg; } 40% { rotate: -10deg; } 50% { rotate: 5deg; } 60% { rotate: -5deg; } 70% { rotate: 0; } 100% { rotate: 0; } }
+        
+        .notif-panel { display: none; position: absolute; top: 60px; right: 20px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); width: 350px; max-width: 90vw; z-index: 2000; border: 1px solid var(--border); }
+        .notif-panel.show { display: block; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .notif-header { background: var(--primary); color: white; padding: 12px 15px; font-weight: 900; font-size: 14px; display: flex; justify-content: space-between; align-items: center;}
+        .notif-body { max-height: 350px; overflow-y: auto; background: #f8fafc;}
+        .notif-item { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; transition: 0.2s; cursor: pointer; background: white; }
+        .notif-item:hover { background: #f1f5f9; padding-left: 20px; }
+        .notif-item.n-danger { border-left: 4px solid var(--danger); }
+        .notif-item.n-warning { border-left: 4px solid var(--warning); }
+        .notif-item.n-accent { border-left: 4px solid var(--accent); }
+        .notif-item.n-msg { border-left: 4px solid #8b5cf6; }
+        
+        .filter-pills { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;}
+        .f-pill { padding: 8px 14px; border-radius: 30px; font-size: 11px; font-weight: 900; cursor: pointer; border: 2px solid transparent; transition: 0.2s; display: flex; align-items: center; gap: 6px; text-transform: uppercase;}
+        .p-all { background: #e2e8f0; color: var(--text-muted); border-color: #cbd5e1; }
+        .p-alert { background: #fef2f2; color: var(--danger); border-color: var(--danger); }
+        .p-comp { background: #fffbeb; color: var(--warning); border-color: var(--warning); }
+        .f-pill.active { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); filter: brightness(0.95); }
+
+        .chat-area { display: flex; flex-direction: column; gap: 12px; max-height: 250px; overflow-y: auto; padding: 12px; background: #f1f5f9; border-radius: 8px; border: 1px solid var(--border); }
+        .bubble { padding: 10px 14px; border-radius: 12px; max-width: 90%; position: relative; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .bubble-agent { background: white; border-left: 5px solid var(--accent); align-self: flex-start; }
+        .bubble-client { background: var(--primary); color: white; border-right: 5px solid var(--warning); align-self: flex-end; }
+        .bubble-header { font-size: 10px; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; display:flex; justify-content: space-between; gap: 10px; }
+
+        #btn-menu-mobile { display: none; background: transparent; border: none; font-size: 22px; color: var(--primary); cursor: pointer; }
+        @media (max-width: 768px) {
+            #btn-menu-mobile { display: block; }
+            .header-title-text { display: none; } 
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .sidebar-overlay.show { display: block; }
+            .content { margin-left: 0; padding: 15px; }
+            .card { padding: 15px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .btn { width: 100%; justify-content: center; }
+            .modal-content { width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="modal-visor" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3 class="module-header" id="v-titulo" style="margin-bottom: 10px; font-size: 18px;">Resumen Completo</h3>
+            <div id="v-cuerpo" style="flex: 1; overflow-y: auto; font-size: 14px; padding-right:10px;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="cerrarVisor()"><i class="fas fa-times"></i> Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notif-panel" class="notif-panel">
+        <div class="notif-header"><span><i class="fas fa-satellite-dish"></i> Centro SLA</span><span class="badge" style="background: white; color: var(--primary);" id="notif-count-header">0</span></div>
+        <div class="notif-body" id="notif-list"></div>
+    </div>
+
+    <div id="login-view">
+        <div class="login-card">
+            <h2 style="color:var(--primary); margin-top:0; font-weight: 900;">DISTELSA ST</h2>
+            <div class="input-group" style="margin-bottom:15px;"><label>Usuario ID</label><input type="text" id="user" placeholder="Ej: admin"></div>
+            <div class="input-group" style="margin-bottom:25px;"><label>Contraseña</label><input type="password" id="pass" placeholder="••••"></div>
+            <button class="btn btn-primary" style="width:100%;" onclick="login()">INGRESAR</button>
+        </div>
+    </div>
+
+    <div id="app-view">
+        <header>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <button id="btn-menu-mobile" onclick="toggleMenuMobile()"><i class="fas fa-bars"></i></button>
+                <div style="font-weight:900; color:var(--primary); font-size: 18px;"><i class="fas fa-tools"></i> <span class="header-title-text">ST PORTAL CRM</span></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div class="bell-container" id="bell-icon-container" onclick="toggleNotifications()"><i class="fas fa-bell" style="font-size: 18px; color: var(--primary);"></i><div class="bell-badge" id="bell-badge" style="display:none;">0</div></div>
+                <div style="text-align:right;"><div id="uName" style="font-weight:800; font-size:13px; color:#000;"></div><div id="uRole" style="font-size:11px; font-weight:700; color:var(--accent);"></div></div>
+                <button onclick="cerrarSesion()" class="btn btn-danger btn-icon" style="width:34px; height:34px;" title="Cerrar Sesión"><i class="fas fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMenuMobile()"></div>
+        <div class="sidebar" id="sidebar-menu">
+            <div class="nav-item" id="nav-2" onclick="showSec('sec-2', this)"><i class="fas fa-file-invoice-dollar"></i> Gestión de Cobro</div>
+            <div class="nav-item" id="nav-3" onclick="showSec('sec-3', this)"><i class="fas fa-headset"></i> Seguimientos</div>
+            <div class="nav-item" id="nav-4" onclick="showSec('sec-4', this)"><i class="fas fa-chart-pie"></i> Dashboard</div>
+            <div class="nav-item" id="nav-5" onclick="showSec('sec-5', this)"><i class="fas fa-desktop"></i> Monitor Agentes</div>
+            <div class="nav-item" id="nav-6" onclick="showSec('sec-6', this)"><i class="fas fa-paper-plane"></i> Avisos Internos</div>
+            <div class="nav-item" id="nav-7" onclick="showSec('sec-7', this)"><i class="fas fa-cogs"></i> Ajustes Sistema</div>
+            <hr style="opacity:0.1; margin:15px 25px;">
+            <div class="nav-item" id="nav-0" onclick="showSec('sec-0', this)"><i class="fas fa-user-shield"></i> Roles</div>
+            <div class="nav-item" id="nav-0-1" onclick="showSec('sec-0-1', this)"><i class="fas fa-broadcast-tower"></i> Campañas</div>
+            <div class="nav-item" id="nav-1" onclick="showSec('sec-1', this)"><i class="fas fa-users-cog"></i> Usuarios</div>
+        </div>
+
+        <div class="content">
+            <section id="sec-2" style="display:none">
+                <div class="card" id="card-prioridad" style="border-left: 5px solid var(--success);">
+                    <h3 class="module-header" style="font-size:18px;">Prioridad Interna</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Temperamento *</label><select id="cli-temperamento" class="temp-Normal" onchange="cambiarColorTemperamento(this)"><option value="Normal">🟢 NORMAL</option><option value="Acelerado">🟡 ACELERADO</option><option value="Molesto">🔴 MOLESTO</option><option value="Escalado">⚫ ESCALADO</option></select></div>
+                    </div>
+                    <div class="input-group"><label>Observaciones Internas</label><textarea id="cli-obs-internas" rows="2"></textarea></div>
+                </div>
+
+                <div class="card">
+                    <h3 class="module-header" style="font-size:18px;">1. Servicios</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Tipo *</label><select id="gc-tipo" onchange="cambioTipoServicio()"><option value="Diagnóstico">Diagnóstico</option><option value="Mantenimiento">Mantenimiento</option><option value="Instalación">Instalación</option><option value="Presupuesto">Presupuesto</option><option value="Otro">Otro</option></select></div>
+                        <div class="input-group"><label id="lbl-falla">Falla Reportada *</label><input type="text" id="gc-detalle"></div>
+                        <div class="input-group"><label>Precio (Q) *</label><input type="number" id="gc-precio"></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Producto</label><input type="text" id="gc-producto"></div>
+                        <div class="input-group"><label>Marca</label><input type="text" id="gc-marca"></div>
+                        <div class="input-group"><label>Modelo</label><input type="text" id="gc-modelo"></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="agregarServicio()"><i class="fas fa-plus"></i> Añadir</button>
+                    <div class="table-responsive"><table><thead><tr><th>Tipo</th><th>Equipo</th><th>Detalle</th><th>Precio</th><th>Acción</th></tr></thead><tbody id="lista-servicios"></tbody></table></div>
+                    <div style="text-align: right; margin-top: 15px; font-weight: 900; font-size: 22px; color:var(--primary);">Total: Q <span id="total-cobro">0.00</span></div>
+                </div>
+
+                <div class="card" id="card-cliente">
+                    <h3 class="module-header" style="font-size:18px;">2. Cliente</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>NIT</label><input type="text" id="cli-nit" class="campo-cliente"></div>
+                        <div class="input-group"><label>Nombre *</label><input type="text" id="cli-contacto" class="campo-cliente"></div>
+                        <div class="input-group"><label>Teléfono *</label><input type="text" id="cli-tel" class="campo-cliente"></div>
+                    </div>
+                    <div class="input-group" style="margin-bottom:15px;"><label>Dirección</label><input type="text" id="cli-dir" class="campo-cliente"></div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Correo</label><input type="email" id="cli-correo" class="campo-cliente"></div>
+                        <div class="input-group"><label>Obs. Técnico</label><input type="text" id="cli-obs-tec" class="campo-cliente"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="module-header" style="font-size:18px;">3. Facturación</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>NIT Fact.</label><input type="text" id="fac-nit"></div>
+                        <div class="input-group"><label>Razón Social</label><input type="text" id="fac-nombre"></div>
+                        <div class="input-group"><label>Link NeoNet</label><input type="text" id="pago-link"></div>
+                    </div>
+                </div>
+
+                <div class="card" style="background: #f8fafc; border: 2px solid var(--primary); text-align:right;">
+                    <label class="checkbox-wrapper" style="justify-content:flex-end;"><input type="checkbox" id="check-confirmar"> CONFIRMO DATOS</label>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; margin-top:15px;">
+                        <button class="btn btn-outline" onclick="limpiarGestorCobro()"><i class="fas fa-eraser"></i> Limpiar</button>
+                        <button class="btn btn-primary" onclick="procesarCobro('Guardar')"><i class="fas fa-save"></i> Borrador</button> 
+                        <button class="btn btn-success" onclick="procesarCobro('WhatsApp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                        <button class="btn btn-accent" onclick="procesarCobro('Correo')"><i class="fas fa-envelope"></i> Correo</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-3" style="display:none">
+                <div class="card" style="padding:0;">
+                    <div style="padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <h2 style="font-weight:900; font-size: 20px; margin: 0;"><i class="fas fa-list-ul"></i> Seguimiento</h2>
+                            <div style="flex: 1; min-width: 250px; max-width: 400px; position: relative;">
+                                <i class="fas fa-search" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
+                                <input type="text" id="buscador-tickets" placeholder="Buscar ticket, NIT, nombre, teléfono o agente..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px 10px 38px; border: 2px solid var(--border); border-radius: 30px; font-size: 13px; width: 100%; font-weight: 700;">
+                            </div>
+                        </div>
+
+                        <div class="filter-pills" style="margin-top: 15px;">
+                            <div class="f-pill p-all active" onclick="aplicarFiltroSeguimientos('TODOS', this)">Todos</div>
+                            <div class="f-pill p-alert" onclick="aplicarFiltroSeguimientos('ATRASO', this)">Atrasos <span class="badge" id="pill-count-atraso" style="background:var(--danger); color:white;">0</span></div>
+                            <div class="f-pill p-comp" onclick="aplicarFiltroSeguimientos('COMPROBANTE', this)">Pagos <span class="badge" id="pill-count-comp" style="background:var(--warning); color:white;">0</span></div>
+                            <div class="f-pill" style="background:#e0f2fe; color:var(--accent); border-color:var(--accent);" onclick="aplicarFiltroSeguimientos('NUEVA_RESPUESTA', this)">Resps. <span class="badge" id="pill-count-resp" style="background:var(--accent); color:white;">0</span></div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table style="min-width: 1000px;">
+                            <thead>
+                                <tr>
+                                    <th>Ticket</th>
+                                    <th>Fecha / Agente</th>
+                                    <th>Cliente</th>
+                                    <th>Estatus / SLA</th>
+                                    <th style="width:25%;">Último Mensaje</th>
+                                    <th style="text-align:center;">Comprobante</th>
+                                    <th style="text-align:right;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-seguimientos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-4" style="display:none">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="color:var(--primary); margin:0; font-weight:900; font-size: 20px;"><i class="fas fa-chart-pie"></i> Dashboard</h2>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="exportarExcelDashboard()"><i class="fas fa-file-excel"></i> Datos</button>
+                        <button class="btn" style="background: var(--primary); color: white;" onclick="generarReporteEjecutivo()"><i class="fas fa-briefcase"></i> Ejecutivo</button>
+                    </div>
+                </div>
+
+                <div class="card" style="background: #f8fafc; padding: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-weight: 900;"><i class="fas fa-filter"></i> Filtros</h4>
+                    <div class="form-grid" style="margin-bottom: 0;">
+                        <div class="input-group"><label>Desde</label><input type="date" id="filtro-inicio"></div>
+                        <div class="input-group"><label>Hasta</label><input type="date" id="filtro-fin"></div>
+                        <div class="input-group"><label>Estatus</label><select id="filtro-estatus"><option value="TODOS">Todos</option><option value="BORRADOR">Borradores</option><option value="ENVIADO">Enviados</option><option value="COMPROBANTE RECIBIDO">Comp. Recibido</option><option value="COMPLETADO">Completados</option><option value="ANULADO">Anulados</option></select></div>
+                        <div class="input-group"><label>Agente</label><select id="filtro-agente"><option value="TODOS">Todos</option></select></div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <button class="btn btn-primary" onclick="aplicarFiltrosDashboard()" style="flex: 1;"><i class="fas fa-search"></i> Filtrar</button>
+                        <button class="btn btn-outline" onclick="limpiarFiltrosDashboard()"><i class="fas fa-eraser"></i></button>
+                    </div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card"><i class="fas fa-ticket-alt"></i><div><div class="value" id="kpi-tickets">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">TICKETS</div></div></div>
+                    <div class="kpi-card"><i class="fas fa-coins" style="color:var(--success); background:rgba(5,150,105,0.1);"></i><div><div class="value" id="kpi-monto">Q 0.00</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">MONTO (Q)</div></div></div>
+                    <div class="kpi-card"><i class="fas fa-clock" style="color:var(--warning); background:rgba(217,119,6,0.1);"></i><div><div class="value" id="kpi-espera">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">EN ESPERA</div></div></div>
+                    <div class="kpi-card"><i class="fas fa-check-circle" style="color:var(--accent); background:rgba(0,163,224,0.1);"></i><div><div class="value" id="kpi-completados">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">COMPLETADOS</div></div></div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="card" style="margin-bottom: 0;"><h4 style="margin-top:0; color:var(--primary);"><i class="fas fa-chart-line"></i> Estatus</h4><div style="height: 250px;"><canvas id="chartEstatus"></canvas></div></div>
+                    <div class="card" style="margin-bottom: 0;"><h4 style="margin-top:0; color:var(--primary);"><i class="fas fa-money-bill-wave"></i> Agentes (Q)</h4><div style="height: 250px;"><canvas id="chartAgentes"></canvas></div></div>
+                </div>
+            </section>
+
+            <section id="sec-0" style="display:none">
+                <div class="card" id="card-roles">
+                    <h3 class="module-header" style="font-size:18px;">Configuración de Roles</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>ID de Rol</label><input type="text" id="rol-id"></div>
+                        <div class="input-group">
+                            <label>Módulos Permitidos</label>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="0"> Roles</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="0-1"> Campañas</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="1"> Usuarios</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="2"> G. Cobro</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="3"> Segumientos</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="4"> Dashboard</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="5"> Monitor</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="6"> Avisos</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="7"> Ajustes</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-outline" id="btn-cancel-rol" style="display:none;" onclick="cancelarEdicion('Roles')"><i class="fas fa-times"></i></button>
+                        <button class="btn btn-primary" id="btn-save-rol" onclick="saveData('Roles')"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                    <div class="table-responsive"><table><thead><tr><th>Rol</th><th>Módulos</th><th style="text-align:right;">Acción</th></tr></thead><tbody id="l-roles"></tbody></table></div>
+                </div>
+            </section>
+
+            <section id="sec-0-1" style="display:none">
+                <div class="card" id="card-campanas">
+                    <h3 class="module-header" style="font-size:18px;">Campañas</h3>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Nombre Campaña</label><input type="text" id="camp-id"></div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-outline" id="btn-cancel-camp" style="display:none;" onclick="cancelarEdicion('Campañas')"><i class="fas fa-times"></i></button>
+                        <button class="btn btn-primary" id="btn-save-camp" onclick="saveData('Campañas')"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                    <div class="table-responsive"><table><thead><tr><th>Campaña</th><th style="text-align:right;">Acción</th></tr></thead><tbody id="l-camps"></tbody></table></div>
+                </div>
+            </section>
+
+            <section id="sec-1" style="display:none">
+                <div class="card" id="card-usuarios">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
+                        <h3 style="color: var(--primary); font-size: 18px; font-weight: 900; margin: 0;">Usuarios</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="file" id="file-import-users" accept=".xlsx, .xls" style="display:none;" onchange="importarUsuariosExcel(event)">
+                            <button class="btn btn-warning" onclick="document.getElementById('file-import-users').click()"><i class="fas fa-upload"></i> Importar</button>
+                            <button class="btn btn-success" onclick="exportarUsuariosExcel()"><i class="fas fa-file-excel"></i> Exportar</button>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>ID Login *</label><input type="text" id="u-id"></div>
+                        <div class="input-group"><label>Nombre</label><input type="text" id="u-nom"></div>
+                        <div class="input-group"><label>Contraseña</label><input type="text" id="u-pass"></div>
+                        <div class="input-group"><label>Rol</label><select id="u-rol"></select></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Cargo / Texto Firma</label><textarea id="u-firma" rows="2" placeholder="Ej: Especialista de Cobros"></textarea></div>
+                        <div class="input-group"><label>URL de la Firma (JPG/PNG)</label><input type="text" id="u-firma-img" placeholder="https://tuservidor.com/firma.png"></div>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 15px;"><label>Campaña (Múltiple)</label><select id="u-camp" multiple style="min-height: 50px;"></select></div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-outline" id="btn-cancel-user" style="display:none;" onclick="cancelarEdicion('Usuarios')">Cancelar</button>
+                        <button class="btn btn-primary" id="btn-save-user" onclick="saveData('Usuarios')"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                    <div class="table-responsive"><table><thead><tr><th>ID</th><th>Nombre</th><th>Rol</th><th>Campaña(s)</th><th style="text-align:right;">Acción</th></tr></thead><tbody id="l-users"></tbody></table></div>
+                </div>
+            </section>
+            
+            <section id="sec-5" style="display:none"><h2 class="module-header">Monitor Agentes</h2><div class="card" style="padding:0;"><div class="table-responsive"><table><thead><tr><th>Estado</th><th>Agente</th><th>Rol</th><th>Campaña</th><th>Última Actividad</th></tr></thead><tbody id="lista-monitor"></tbody></table></div></div></section>
+            
+            <section id="sec-6" style="display:none">
+                <h2 class="module-header">Avisos Internos</h2>
+                <div id="sec-6-grid" style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+                    <div class="card" id="panel-enviar-aviso" style="background: #f8fafc; margin-bottom:0;">
+                        <h3 class="module-header" style="font-size: 16px;"><i class="fas fa-pen-square"></i> Enviar Aviso</h3>
+                        <div class="input-group" style="margin-bottom: 10px;"><label>Agente Destino</label><select id="aviso-destinatario"><option value="">-- Seleccione --</option></select></div>
+                        <div class="input-group" style="margin-bottom: 10px;"><label>Mensaje</label><textarea id="aviso-mensaje" rows="3"></textarea></div>
+                        <button class="btn" style="background:#8b5cf6; color:white;" onclick="enviarAvisoInterno()"><i class="fas fa-paper-plane"></i> ENVIAR</button>
+                    </div>
+                    <div class="card" style="padding:0; margin-bottom:0;">
+                        <h3 class="module-header" id="titulo-historial-aviso" style="font-size: 16px; padding: 15px 15px 0 15px; margin-bottom:5px;"><i class="fas fa-history"></i> Historial de Mensajes</h3>
+                        <div class="table-responsive" style="max-height: 350px; padding:0 15px 15px 15px;"><table style="margin-top:0;"><thead><tr><th>Fecha</th><th>De/Para</th><th>Mensaje</th><th>Edo</th></tr></thead><tbody id="lista-avisos"></tbody></table></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-7" style="display:none">
+                <h2 class="module-header">Ajustes Generales del Sistema</h2>
+                <div class="card" style="border-top: 5px solid var(--primary);">
+                    <h3 style="font-size:16px; color:var(--primary); margin-top:0;"><i class="fas fa-envelope-open-text"></i> Configuración de Power Automate</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define qué cuenta de correo se utilizará para enviar las notificaciones y respuestas a los clientes.</p>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Correo Remitente (Responder A) *</label>
+                            <input type="email" id="conf-correo-salida" placeholder="Ej: krobles@distelsa.com.gt">
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="guardarConfiguracion()"><i class="fas fa-save"></i> Guardar Ajustes</button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, query, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDehDeskqPXyZ5Clat2otLHKdB_nrIAWzk",
+            authDomain: "gestiondecobrosst.firebaseapp.com",
+            projectId: "gestiondecobrosst",
+            storageBucket: "gestiondecobrosst.firebasestorage.app",
+            messagingSenderId: "754092362751",
+            appId: "1:754092362751:web:e658400641ffc6d8dab5ca"
+        };
+
+        const WEBHOOK_OUTLOOK = "https://defaultec84f729d5854b54ae7e866feb7909.2f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c1847592a6514af4967be7cbfc1cf945/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vCMDnkoxp0HENCL9vMjF8WJZaCCa7GZjAVLdvLfbcIQ"; 
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let serviciosTemporales = []; window.currentTicketEditing = null; window.adminData = { roles: {}, campañas: {}, usuarios: {} };
+        window.allDashboardData = []; window.datosDashboardActual = []; window.chartInstEstatus = null; window.chartInstAgentes = null; window.datosSeguimientos = []; window.totalAlertas = 0;
+        
+        window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; window.configSistema = {};
+
+        window.toggleMenuMobile = () => { document.getElementById('sidebar-menu').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); };
+        document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', () => { if (window.innerWidth <= 768) window.toggleMenuMobile(); }); });
+
+        window.mostrarToast = (mensaje, tipo = 'success') => {
+            const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast toast-${tipo}`;
+            let icon = 'fa-check-circle'; if(tipo === 'error') icon = 'fa-exclamation-circle'; if(tipo === 'warning') icon = 'fa-exclamation-triangle'; if(tipo === 'info') icon = 'fa-info-circle';
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${mensaje}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        };
+
+        window.showSec = (id, el) => { document.querySelectorAll('section').forEach(s => s.style.display = 'none'); document.getElementById(id).style.display = 'block'; document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); };
+        window.cerrarVisor = () => document.getElementById('modal-visor').style.display = "none";
+        window.cambiarColorTemperamento = (selectObj) => { selectObj.className = `temp-${selectObj.value}`; const cardPrioridad = document.getElementById('card-prioridad'); if(selectObj.value === 'Normal') cardPrioridad.style.borderLeftColor = 'var(--success)'; else if(selectObj.value === 'Acelerado') cardPrioridad.style.borderLeftColor = 'var(--warning)'; else if(selectObj.value === 'Molesto') cardPrioridad.style.borderLeftColor = 'var(--danger)'; else if(selectObj.value === 'Escalado') cardPrioridad.style.borderLeftColor = '#1e293b'; };
+
+        window.toggleNotifications = () => { document.getElementById('notif-panel').classList.toggle('show'); };
+        document.addEventListener('click', function(event) { const panel = document.getElementById('notif-panel'); const campana = document.getElementById('bell-icon-container'); if (!panel.contains(event.target) && !campana.contains(event.target)) { panel.classList.remove('show'); } });
+
+        window.renderizarCampana = () => {
+            let todasLasAlertas = window.notifSistema.concat(window.notifTickets);
+            window.totalAlertas = todasLasAlertas.length;
+            const badge = document.getElementById('bell-badge'); const campana = document.getElementById('bell-icon-container'); 
+            document.getElementById('notif-count-header').innerText = window.totalAlertas; 
+            if (window.totalAlertas > 0) { badge.innerText = window.totalAlertas; badge.style.display = 'flex'; campana.classList.add('ring-anim'); document.getElementById('notif-list').innerHTML = todasLasAlertas.join(''); 
+            } else { badge.style.display = 'none'; campana.classList.remove('ring-anim'); document.getElementById('notif-list').innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted); font-weight: 700;"><i class="fas fa-check-circle" style="font-size: 30px; color: var(--success); margin-bottom: 10px;"></i><br>Bandeja y tickets al día.</div>`; }
+        };
+
+        window.crearNotificacionSistema = async (ticket, campaña, agente, subtipo, mensaje) => { try { await addDoc(collection(db, "Notificaciones"), { tipo: 'SISTEMA', subtipo: subtipo, remitente: 'SISTEMA CRM', destinatario: agente, campaña: campaña, ticket: ticket, mensaje: mensaje, fecha: new Date().toISOString(), leido: false }); } catch(e) {} };
+        window.marcarLeidoYAbrir = async (notifId, ticketId) => { document.getElementById('notif-panel').classList.remove('show'); try { await updateDoc(doc(db, "Notificaciones", notifId), { leido: true }); } catch(e) {} if (ticketId) { showSec('sec-3', document.getElementById('nav-3')); window.abrirVisor(ticketId); } else { showSec('sec-6', document.getElementById('nav-6')); } };
+
+        window.marcarRevisado = async (idTicket) => {
+            const d = window.allDashboardData.find(x => x.id === idTicket);
+            try { 
+                let updates = { nueva_respuesta_cliente: false };
+                if (d && d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente' && d.ultimo_mensaje_cliente !== '[Respuesta vacía o sin texto detectado]') {
+                    const mensajePermanente = { tipo: 'cliente', fecha: new Date().toISOString(), mensaje: d.ultimo_mensaje_cliente };
+                    updates.historial_respuestas = [...(d.historial_respuestas || []), mensajePermanente];
+                    updates.ultimo_mensaje_cliente = 'Sin mensaje reciente';
+                }
+                await updateDoc(doc(db, "Cobros", idTicket), updates); 
+                mostrarToast("Ticket revisado e historial guardado.", "success"); 
+                window.abrirVisor(idTicket);
+            } catch (e) { mostrarToast("Error al actualizar.", "error"); }
+        };
+
+        async function completarLoginUI() {
+            document.getElementById('uName').innerText = window.userName; document.getElementById('uRole').innerText = window.userRol;
+            let perms = "ALL"; if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') { const rolSnap = await getDoc(doc(db, "Roles", window.userRol)); if (rolSnap.exists()) perms = rolSnap.data().permisos || ""; else perms = ""; }
+            document.getElementById('login-view').style.display = 'none'; document.getElementById('app-view').style.display = 'block';
+            if (window.userRol === 'AGENTE' || (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER')) { document.getElementById('panel-enviar-aviso').style.display = 'none'; document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr'; document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Mis Avisos Recibidos'; } else { document.getElementById('panel-enviar-aviso').style.display = 'block'; if(window.innerWidth > 768) { document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr 2fr'; } document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Historial de Mensajes'; }
+            const permisosArray = perms.split(','); document.querySelectorAll('.nav-item').forEach(item => { const id = item.id.replace('nav-', ''); if(perms === "ALL" || permisosArray.includes(id)) item.style.display = 'flex'; else item.style.display = 'none'; });
+            const primerMenuPermitido = document.querySelector('.nav-item[style*="display: flex"]'); if (primerMenuPermitido) primerMenuPermitido.click();
+            iniciarEscuchas(); 
+        }
+
+        window.login = async () => {
+            const uInput = document.getElementById('user').value.trim(); const p = document.getElementById('pass').value;
+            try {
+                let snap = await getDoc(doc(db, "Usuarios", uInput));
+                if (!snap.exists()) snap = await getDoc(doc(db, "Usuarios", uInput.toLowerCase()));
+                if (!snap.exists()) snap = await getDoc(doc(db, "Usuarios", uInput.toUpperCase()));
+
+                if(snap.exists() && snap.data().password === p) {
+                    const data = snap.data(); window.userId = snap.id; window.userRol = data.rol.toUpperCase(); window.userCamp = Array.isArray(data.campaña) ? data.campaña : [data.campaña || ""]; window.userName = data.nombre; window.userFirma = data.firma || ""; window.userFirmaImg = data.firma_img || "";
+                    localStorage.setItem('st_session_crm', JSON.stringify({ userId: window.userId, userName: window.userName, userRol: window.userRol, userCamp: window.userCamp, userFirma: window.userFirma, userFirmaImg: window.userFirmaImg }));
+                    await setDoc(doc(db, "Usuarios", window.userId), { is_online: true, last_login: new Date().toISOString() }, { merge: true });
+                    await completarLoginUI(); mostrarToast(`¡Bienvenido, ${data.nombre}!`, 'success'); 
+                } else { mostrarToast("Usuario o contraseña incorrectos.", 'error'); }
+            } catch (e) { mostrarToast("Error de conexión.", 'error'); }
+        };
+
+        window.cerrarSesion = async () => { if (window.userId) await setDoc(doc(db, "Usuarios", window.userId), { is_online: false }, { merge: true }); localStorage.removeItem('st_session_crm'); location.reload(); };
+
+        window.addEventListener('DOMContentLoaded', async () => { const guardado = localStorage.getItem('st_session_crm'); if (guardado) { const sesion = JSON.parse(guardado); window.userId = sesion.userId; window.userName = sesion.userName; window.userRol = sesion.userRol; window.userCamp = sesion.userCamp; window.userFirma = sesion.userFirma; window.userFirmaImg = sesion.userFirmaImg; await completarLoginUI(); } });
+
+        window.cambioTipoServicio = () => { const t = document.getElementById('gc-tipo').value; document.getElementById('lbl-falla').innerText = (t === "Diagnóstico") ? "Falla Reportada *" : "Servicio a Realizar *"; const esPresupuesto = (t === "Presupuesto"); document.querySelectorAll('.campo-cliente').forEach(input => { input.disabled = esPresupuesto; if(esPresupuesto) input.value = ""; }); };
+        window.agregarServicio = () => { const serv = { tipo: document.getElementById('gc-tipo').value, detalle: document.getElementById('gc-detalle').value, precio: parseFloat(document.getElementById('gc-precio').value) || 0, producto: document.getElementById('gc-producto').value, marca: document.getElementById('gc-marca').value, modelo: document.getElementById('gc-modelo').value }; if(!serv.detalle || serv.precio <= 0) return mostrarToast("Completa detalle y precio.", 'warning'); serviciosTemporales.push(serv); renderServicios(); document.getElementById('gc-detalle').value = ""; document.getElementById('gc-precio').value = ""; };
+        function renderServicios() { const tb = document.getElementById('lista-servicios'); tb.innerHTML = ""; let total = 0; serviciosTemporales.forEach((s, i) => { total += s.precio; const equipo = `${s.producto||''} ${s.marca||''} ${s.modelo||''}`.trim() || 'N/A'; tb.innerHTML += `<tr><td style="font-weight:900;">${s.tipo}</td><td style="font-weight:700;">${equipo}</td><td>${s.detalle}</td><td style="font-weight:900; color:var(--primary);">Q${s.precio.toFixed(2)}</td><td><button class="btn btn-danger btn-icon" style="padding:5px; width:28px; height:28px;" onclick="serviciosTemporales.splice(${i},1);renderServicios()"><i class="fas fa-trash"></i></button></td></tr>`; }); document.getElementById('total-cobro').innerText = total.toFixed(2); }
+        
+        window.limpiarGestorCobro = () => { 
+            serviciosTemporales = []; window.currentTicketEditing = null; renderServicios(); 
+            document.querySelectorAll('#sec-2 input, #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; }); 
+            document.getElementById('check-confirmar').checked = false; 
+            const selectTemp = document.getElementById('cli-temperamento'); selectTemp.value = "Normal"; cambiarColorTemperamento(selectTemp); 
+            document.getElementById('gc-tipo').value = "Diagnóstico"; 
+            window.cambioTipoServicio(); 
+        };
+
+        window.mostrarPopupTicket = (ticket) => {
+            const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.style.zIndex = '4000'; 
+            overlay.innerHTML = `<div class="modal-content" style="max-width: 400px; text-align: center; padding: 35px 25px; animation: slideDown 0.3s ease;"><div style="font-size: 60px; color: var(--success); margin-bottom: 15px;"><i class="fas fa-check-circle"></i></div><h2 style="color: var(--primary); margin: 0 0 10px 0; font-weight: 900;">¡Gestión Exitosa!</h2><p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">El cobro se ha registrado correctamente en el sistema. El número de ticket asignado es:</p><div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 2px dashed var(--success); margin-bottom: 25px;"><span style="font-size: 28px; font-weight: 900; color: var(--primary); letter-spacing: 2px;">${ticket}</span></div><button class="btn btn-primary" style="width: 100%; font-size: 15px; padding: 14px;" onclick="this.closest('.modal-overlay').remove()">Aceptar y Continuar</button></div>`;
+            document.body.appendChild(overlay);
+        };
+
+        window.procesarCobro = async (metodo) => {
+            const total = parseFloat(document.getElementById('total-cobro').innerText);
+            if (metodo !== 'Guardar' && !document.getElementById('check-confirmar').checked) return mostrarToast("Debes confirmar los datos.", 'warning');
+            if(serviciosTemporales.length === 0) return mostrarToast("Agrega un servicio.", 'warning');
+
+            let motivoWa = "";
+            if (metodo === 'WhatsApp') {
+                motivoWa = prompt("🚨 MOTIVO DE WHATSAPP OBLIGATORIO:\nPor favor, ingresa la razón por la cual estás solicitando este cobro por el grupo de WhatsApp (Ej: Cliente sin correo, Urgencia, etc.):");
+                if (!motivoWa || motivoWa.trim() === "") {
+                    return mostrarToast("Operación cancelada. El motivo es obligatorio.", "warning");
+                }
+            }
+
+            const esNuevoTicket = !window.currentTicketEditing;
+            const ticketId = window.currentTicketEditing || "ST-" + Date.now().toString().slice(-6); 
+            const nombreAgente = document.getElementById('uName').innerText; 
+            const clienteNombre = document.getElementById('cli-contacto').value;
+            const correoCliente = document.getElementById('cli-correo').value;
+            const linkNeoNet = document.getElementById('pago-link').value;
+            
+            const datos = { 
+                ticket: ticketId, fecha: new Date(), agente: nombreAgente, campaña: (window.userCamp && window.userCamp.length > 0) ? window.userCamp[0] : "", servicios: serviciosTemporales, total: total, 
+                prioridad: { temperamento: document.getElementById('cli-temperamento').value, observaciones_internas: document.getElementById('cli-obs-internas').value }, 
+                cliente: { nit: document.getElementById('cli-nit').value, contacto: clienteNombre, tel: document.getElementById('cli-tel').value, dir: document.getElementById('cli-dir').value, correo: correoCliente, obs_tec: document.getElementById('cli-obs-tec').value }, 
+                facturacion: { nit: document.getElementById('fac-nit').value, nombre: document.getElementById('fac-nombre').value }, pago_link: linkNeoNet, estatus: (metodo === 'Guardar') ? "BORRADOR" : "ENVIADO", metodoEnvio: metodo, alerta_sla_creada: false,
+                motivo_whatsapp: motivoWa.trim() 
+            };
+
+            try {
+                await setDoc(doc(db, "Cobros", ticketId), datos);
+                if (esNuevoTicket && metodo !== 'Guardar') { window.mostrarPopupTicket(ticketId); }
+                
+                if (metodo === 'Correo') { 
+                    const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
+                    const payloadPA = { "tipo_accion": "NUEVO_COBRO", "ticket": ticketId, "correo": correoCliente || "sin-correo@distelsa.com.gt", "cliente": clienteNombre, "total": total.toString(), "agente": nombreAgente, "link": linkNeoNet || "Pendiente de generar", "detalle_servicios": `<ul>${resumenServicios}</ul>`, "mensaje": "Envío de cobro inicial", "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "correo_remitente": window.configSistema?.correo_salida || "tu-correo-por-defecto@distelsa.com.gt" };
+                    await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
+                    mostrarToast(`Ticket enviado a Outlook con éxito.`, 'success'); 
+                } 
+                else if (metodo === 'WhatsApp') { 
+                    const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('%0A'); 
+                    const msg = `*NUEVA GESTIÓN DE COBRO* 🛠️%0A%0A*Ticket:* ${ticketId} %0A-------------------------- %0A*CLIENTE:* ${clienteNombre} %0A*TEL:* ${datos.cliente.tel || 'N/A'} %0A-------------------------- %0A*FACTURACIÓN:* %0A*Razón Social:* ${datos.facturacion.nombre || 'C/F'} %0A*NIT:* ${datos.facturacion.nit || 'C/F'} %0A-------------------------- %0A*DETALLE DE SERVICIOS:* %0A${rServ} %0A%0A*TOTAL: Q ${total.toFixed(2)}* %0A-------------------------- %0A*LINK DE PAGO:* ${datos.pago_link || 'Pendiente'}%0A%0A*🚨 MOTIVO DE SOLICITUD:*%0A_${motivoWa.trim()}_`; 
+                    window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank'); 
+                    mostrarToast("Selecciona el grupo en WhatsApp para enviar.", 'success'); 
+                } else { 
+                    mostrarToast("Borrador guardado exitosamente.", 'success'); 
+                }
+                
+                limpiarGestorCobro(); showSec('sec-3', document.getElementById('nav-3'));
+            } catch (e) { mostrarToast("Error al guardar.", 'error'); }
+        };
+
+        window.retomarGestion = (id) => { const d = window.allDashboardData.find(x => x.id === id); if (!d) return; window.currentTicketEditing = d.ticket; document.getElementById('gc-tipo').value = d.servicios[0]?.tipo || "Diagnóstico"; cambioTipoServicio(); const sTemp = document.getElementById('cli-temperamento'); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp); document.getElementById('cli-obs-internas').value = d.prioridad?.observaciones_internas || ""; document.getElementById('cli-nit').value = d.cliente.nit || ""; document.getElementById('cli-contacto').value = d.cliente.contacto || ""; document.getElementById('cli-tel').value = d.cliente.tel || ""; document.getElementById('cli-dir').value = d.cliente.dir || ""; document.getElementById('cli-correo').value = d.cliente.correo || ""; document.getElementById('cli-obs-tec').value = d.cliente.obs_tec || ""; document.getElementById('fac-nit').value = d.facturacion?.nit || ""; document.getElementById('fac-nombre').value = d.facturacion?.nombre || ""; document.getElementById('pago-link').value = d.pago_link || ""; serviciosTemporales = d.servicios || []; renderServicios(); showSec('sec-2', document.getElementById('nav-2')); };
+
+        // --- VISOR DE CHAT INTELIGENTE ---
+        window.abrirVisor = async (id) => {
+            const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
+            document.getElementById('v-titulo').innerText = "Gestión Ticket: " + d.ticket;
+            
+            const detectarArchivos = (text) => {
+                if(!text) return '';
+                let t = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                return t.replace(urlRegex, function(url) {
+                    return `<br><a href="${url}" target="_blank" style="display:inline-flex; align-items:center; gap:5px; margin-top:8px; padding:6px 10px; background:rgba(255,255,255,0.15); border:1px solid currentColor; border-radius:6px; font-size:11px; text-decoration:none; font-weight:900; color:inherit; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-paperclip"></i> Ver Evidencia Adjunta</a>`;
+                });
+            };
+
+            let chatHTML = ``;
+            if (d.historial_respuestas && d.historial_respuestas.length > 0) {
+                chatHTML += d.historial_respuestas.map(h => { 
+                    const fStr = new Date(h.fecha).toLocaleString(); 
+                    if (h.tipo === 'cliente') { return `<div class="bubble bubble-client"><div class="bubble-header"><span><i class="fas fa-user"></i> ${d.cliente?.contacto || 'Cliente'}</span> <span class="time">${fStr}</span></div><div style="font-weight:600; white-space: pre-wrap;">${detectarArchivos(h.mensaje)}</div></div>`; } 
+                    else { let iconoModo = h.enviado_por_correo ? '<i class="fas fa-envelope" title="Enviado por correo"></i>' : '<i class="fas fa-lock" title="Nota interna"></i>'; return `<div class="bubble bubble-agent"><div class="bubble-header"><span style="color:var(--primary);"><i class="fas fa-headset"></i> ${h.agente} ${iconoModo}</span> <span class="time" style="color:#64748b;">${fStr}</span></div><div style="font-weight:600; white-space: pre-wrap;">${detectarArchivos(h.mensaje)}</div></div>`; } 
+                }).join('');
+            }
+
+            if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente' && d.ultimo_mensaje_cliente !== '[Respuesta vacía o sin texto detectado]') {
+                chatHTML += `
+                <div class="bubble bubble-client" style="background:var(--success); border-right-color:#047857; margin-top:10px;">
+                    <div class="bubble-header" style="color:#d1fae5;">
+                        <span><i class="fas fa-envelope"></i> Respuesta Cliente (Automática)</span> 
+                        <span class="time">Reciente</span>
+                    </div>
+                    <div style="font-weight:700; white-space: pre-wrap; font-family: inherit;">${detectarArchivos(d.ultimo_mensaje_cliente)}</div>
+                </div>`;
+            }
+
+            if (chatHTML === ``) { chatHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; font-weight:600; padding:15px;">No hay interacción aún.</div>`; }
+
+            let servList = "";
+            if(d.servicios && d.servicios.length > 0) { servList = d.servicios.map(s => `<li style="margin-bottom:4px;"><b>${s.tipo}</b>: ${s.producto||''} ${s.marca||''} (${s.detalle}) - <b>Q${parseFloat(s.precio||0).toFixed(2)}</b></li>`).join(''); } else { servList = "<li>No hay servicios adjuntos</li>"; }
+
+            const linkBuscado = d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || d.link_pago || '';
+            let compLinkHTML = `<span style="color:var(--text-muted); font-size:11px; font-style:italic;"><i class="fas fa-times"></i> Sin comprobante adjunto</span>`;
+            if(linkBuscado && linkBuscado !== '#' && linkBuscado.trim() !== '') { compLinkHTML = `<a href="${linkBuscado}" target="_blank" class="btn btn-outline" style="font-size:11px; padding:6px 12px; text-decoration:none; border-color:var(--success); color:var(--success); font-weight:900; background:#f0fdf4; box-shadow: 0 4px 6px rgba(5,150,105,0.2);"><i class="fas fa-image"></i> VER COMPROBANTE</a>`; }
+
+            let selectorAgenteHTML = `<span style="font-weight:900; color:var(--primary); font-size:12px;">${d.agente || 'Sin asignar'}</span>`;
+            const rU = window.userRol || '';
+            if (rU === 'ADMIN' || rU === 'ADMINISTRADOR' || rU === 'LIDER' || rU === 'LÍDER') { let listaAgentes = Object.values(window.adminData.usuarios).filter(u => u.nombre).map(u => u.nombre); if (d.agente && !listaAgentes.includes(d.agente)) listaAgentes.push(d.agente); let opcionesAgentes = [...new Set(listaAgentes)].sort().map(ag => `<option value="${ag}" ${ag === d.agente ? 'selected' : ''}>${ag}</option>`).join(''); selectorAgenteHTML = `<select id="v-nuevo-agente" style="padding:4px; font-size:11px; font-weight:700; border:1px solid var(--border); border-radius:4px; max-width: 120px;">${opcionesAgentes}</select>`; }
+
+            document.getElementById('v-cuerpo').innerHTML = `
+                <div class="card" style="background:#f8fafc; font-size:12px; margin-bottom:15px; padding:15px; border-radius:8px;">
+                    <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:14px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;"><i class="fas fa-user"></i> Datos del Cliente y Prioridad</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                        <div><p style="margin:2px 0;"><b>Nombre:</b> ${d.cliente?.contacto || 'N/A'}</p><p style="margin:2px 0;"><b>NIT:</b> ${d.cliente?.nit || 'C/F'}</p><p style="margin:2px 0;"><b>Teléfono:</b> ${d.cliente?.tel || 'N/A'}</p><p style="margin:2px 0;"><b>Correo:</b> ${d.cliente?.correo || 'N/A'}</p></div>
+                        <div><p style="margin:2px 0;"><b>Dirección:</b> ${d.cliente?.dir || 'N/A'}</p><p style="margin:2px 0;"><b>Temperamento:</b> ${d.prioridad?.temperamento || 'Normal'}</p><p style="margin:2px 0; color:var(--warning);"><b>Obs. Técnico:</b> ${d.cliente?.obs_tec || 'Ninguna'}</p><p style="margin:2px 0; color:var(--danger);"><b>Obs. Internas:</b> ${d.prioridad?.observaciones_internas || 'Ninguna'}</p></div>
+                    </div>
+                    <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:14px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;"><i class="fas fa-file-invoice"></i> Facturación y Servicios</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                        <div><p style="margin:2px 0;"><b>Razón Social:</b> ${d.facturacion?.nombre || 'N/A'}</p><p style="margin:2px 0;"><b>NIT Facturación:</b> ${d.facturacion?.nit || 'N/A'}</p><p style="margin:2px 0; margin-top:10px;"><b>Total a Cobrar:</b> <span style="font-weight:900; color:var(--primary); font-size:16px;">Q${parseFloat(d.total).toFixed(2)}</span></p></div>
+                        <div><p style="margin:2px 0; font-weight:700;">Detalle Enviado al Cliente:</p><ul style="margin:2px 0; padding-left:15px;">${servList}</ul></div>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; padding-top:10px; border-top:1px dashed #cbd5e1; align-items:center;">
+                        <b style="color:var(--primary);">Adjuntos y Enlaces:</b>
+                        <a href="${d.pago_link || '#'}" target="_blank" class="btn btn-accent" style="font-size:10px; padding:5px; text-decoration:none; ${!d.pago_link ? 'opacity:0.5; pointer-events:none;' : ''}"><i class="fas fa-external-link-alt"></i> Link NeoNet</a>
+                        ${compLinkHTML}
+                    </div>
+                </div>
+                
+                <h4 style="margin:0 0 5px 0; color:var(--primary); font-size:13px;"><i class="fas fa-history"></i> Historial de Comunicación</h4>
+                <div class="chat-area" style="height: 250px; border: 2px solid var(--border); background: #e2e8f0; margin-bottom: 10px;">${chatHTML}</div>
+                
+                <div style="display:flex; gap:10px; background:white; padding:10px; border-radius:8px; border:2px solid var(--border); align-items: center;">
+                    <textarea id="chat-input-${id}" placeholder="Escribe tu respuesta al cliente o nota técnica..." style="flex:1; border:none; resize:none; outline:none; font-weight:600;" rows="2"></textarea>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <button class="btn btn-accent" onclick="enviarMensajeChat('${id}', 'correo')" style="padding: 8px 12px; font-size:11px;"><i class="fas fa-paper-plane"></i> Enviar a Correo</button>
+                        <button class="btn btn-outline" onclick="enviarMensajeChat('${id}', 'interna')" style="padding: 8px 12px; font-size:11px; color: var(--text-muted); border-color: var(--text-muted);"><i class="fas fa-lock"></i> Nota Interna</button>
+                    </div>
+                </div>
+
+                <div style="background:#f1f5f9; padding:10px; border-radius:8px; border:1px solid var(--border); margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:5px;"><label style="font-size:11px; font-weight:900; white-space:nowrap;"><i class="fas fa-user-tie"></i> Agente:</label>${selectorAgenteHTML}</div>
+                    <div style="display:flex; align-items:center; gap:5px; flex:1;"><label style="font-size:11px; font-weight:900; white-space:nowrap; margin-left:10px;">Estatus:</label><select id="v-nuevo-estatus" style="padding:6px; font-size:12px; flex:1;"><option value="ENVIADO" ${d.estatus === 'ENVIADO' ? 'selected' : ''}>ENVIADO</option><option value="COMPROBANTE RECIBIDO" ${d.estatus === 'COMPROBANTE RECIBIDO' ? 'selected' : ''}>COMPROBANTE RECIBIDO</option><option value="COMPLETADO" ${d.estatus === 'COMPLETADO' ? 'selected' : ''}>COMPLETADO</option><option value="ANULADO" ${d.estatus === 'ANULADO' ? 'selected' : ''}>ANULADO</option></select></div>
+                    <button class="btn btn-success" style="padding:6px 15px;" onclick="guardarEstatus('${id}')">Aplicar Cambios</button>
+                </div>
+            `;
+            document.getElementById('modal-visor').style.display = "flex";
+            const chatBox = document.querySelector('.chat-area'); if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        window.enviarMensajeChat = async (id, modo) => {
+            const d = window.allDashboardData.find(x => x.id === id); const inputField = document.getElementById(`chat-input-${id}`); const msg = inputField.value.trim();
+            if (!msg) return mostrarToast("Escribe un mensaje primero.", "warning");
+            if (modo === 'correo' && (!d.cliente?.correo || d.cliente.correo === '')) return mostrarToast("El cliente no tiene un correo registrado.", "error");
+
+            const nombreAgenteActual = document.getElementById('uName').innerText;
+            const nuevoMensaje = { tipo: 'agente', fecha: new Date().toISOString(), agente: nombreAgenteActual, mensaje: msg, enviado_por_correo: (modo === 'correo') };
+
+            try {
+                let hiloZendesk = "";
+                if (modo === 'correo') {
+                    hiloZendesk = `<div style="font-family: Arial, sans-serif; color: #333; font-size: 14px;"><div style="margin-bottom: 25px;"><p style="font-weight: bold; margin-bottom: 5px; color: #0077A3;">${nombreAgenteActual} (Soporte)</p><div style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; border-left: 4px solid #0077A3;">${msg.replace(/\n/g, '<br>')}</div></div><hr style="border: 0; border-bottom: 1px solid #e2e8f0; margin: 20px 0;"><h4 style="color: #64748b; font-size: 12px; text-transform: uppercase;">Historial del Ticket</h4>`;
+                    if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== '[Respuesta vacía o sin texto detectado]' && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente') {
+                        hiloZendesk += `<div style="margin-bottom: 15px;"><p style="font-weight: bold; margin-bottom: 3px; font-size: 13px;">${d.cliente?.contacto || 'Cliente'}</p><div style="color: #475569; font-size: 13px;">${d.ultimo_mensaje_cliente.replace(/\n/g, '<br>')}</div></div>`;
+                    }
+                    if (d.historial_respuestas && d.historial_respuestas.length > 0) {
+                        let rev = [...d.historial_respuestas].reverse();
+                        rev.forEach(h => {
+                            let sender = h.tipo === 'cliente' ? (d.cliente?.contacto || 'Cliente') : (h.agente + ' (Soporte)'); let color = h.tipo === 'cliente' ? '#475569' : '#0077A3';
+                            hiloZendesk += `<div style="margin-bottom: 15px; border-left: 2px solid #e2e8f0; padding-left: 10px;"><p style="font-weight: bold; margin-bottom: 3px; font-size: 13px; color: ${color};">${sender} <span style="font-weight: normal; color: #94a3b8; font-size: 11px;">${new Date(h.fecha).toLocaleString()}</span></p><div style="color: #475569; font-size: 13px;">${h.mensaje.replace(/\n/g, '<br>')}</div></div>`;
+                        });
+                    }
+                    hiloZendesk += `</div>`;
+                }
+
+                let historialActualizado = [...(d.historial_respuestas || [])];
+                if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente' && d.ultimo_mensaje_cliente !== '[Respuesta vacía o sin texto detectado]') {
+                    historialActualizado.push({ tipo: 'cliente', fecha: new Date().toISOString(), mensaje: d.ultimo_mensaje_cliente });
+                }
+                historialActualizado.push(nuevoMensaje);
+
+                await updateDoc(doc(db, "Cobros", id), { 
+                    historial_respuestas: historialActualizado,
+                    ultimo_mensaje_cliente: 'Sin mensaje reciente',
+                    nueva_respuesta_cliente: false 
+                });
+
+                if (modo === 'correo') {
+                    const payloadPA = { "tipo_accion": "NUEVA_RESPUESTA_AGENTE", "ticket": d.ticket, "correo": d.cliente.correo, "cliente": d.cliente.contacto, "total": d.total.toString(), "agente": nombreAgenteActual, "link": d.pago_link || "", "detalle_servicios": "Ver histórico del ticket", "mensaje": msg, "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "historial_html": hiloZendesk, "correo_remitente": window.configSistema?.correo_salida || "tu-correo-por-defecto@distelsa.com.gt" };
+                    await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } });
+                    mostrarToast("Mensaje enviado al cliente.", "success");
+                } else { mostrarToast("Nota interna registrada.", "info"); }
+                
+                inputField.value = ""; abrirVisor(id); 
+            } catch (e) { mostrarToast("Error al procesar el mensaje.", "error"); }
+        };
+
+        window.guardarEstatus = async (id) => {
+            const d = window.allDashboardData.find(x => x.id === id); 
+            const nuevo = document.getElementById('v-nuevo-estatus').value;
+            const usuarioActual = document.getElementById('uName').innerText;
+            
+            let actualizaciones = { estatus: nuevo, actualizado_por: usuarioActual, fecha_actualizacion: new Date() };
+            let historialExtra = [];
+
+            const selectAgente = document.getElementById('v-nuevo-agente');
+            if (selectAgente && selectAgente.value !== d.agente) {
+                const nuevoAgente = selectAgente.value; actualizaciones.agente = nuevoAgente;
+                historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `🔄 Ticket reasignado de ${d.agente || 'N/A'} a ${nuevoAgente} por ${usuarioActual}.`, enviado_por_correo: false });
+            }
+
+            if (nuevo === 'ANULADO' && d.estatus !== 'ANULADO') {
+                const motivo = prompt("🚨 ATENCIÓN: El estatus ANULADO requiere un motivo de forma obligatoria.\n\nPor favor ingrese el motivo por el cual anula este ticket:");
+                if (!motivo || motivo.trim() === "") { return mostrarToast("Operación cancelada. Debe ingresar un motivo para anular.", "warning"); }
+                historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: usuarioActual, mensaje: `🚫 TICKET ANULADO. \nMotivo: ${motivo.trim()}`, enviado_por_correo: false });
+            }
+
+            try { 
+                if (historialExtra.length > 0) { actualizaciones.historial_respuestas = [...(d.historial_respuestas || []), ...historialExtra]; }
+                await updateDoc(doc(db, "Cobros", id), actualizaciones); 
+                if (nuevo === 'COMPROBANTE RECIBIDO' && d.estatus !== 'COMPROBANTE RECIBIDO') { window.crearNotificacionSistema(d.ticket, d.campaña, (actualizaciones.agente || d.agente), 'COMPROBANTE', `Comprobante recibido para el ticket ${d.ticket}`); }
+                mostrarToast(`Cambios aplicados correctamente.`, 'success'); abrirVisor(id);
+            } catch (error) { mostrarToast("Error al aplicar cambios.", 'error'); }
+        };
+
+        window.guardarConfiguracion = async () => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            const correo = document.getElementById('conf-correo-salida').value.trim();
+            if (!correo) return mostrarToast("El correo no puede estar vacío.", "warning");
+            try { await setDoc(doc(db, "Configuracion", "General"), { correo_salida: correo }, { merge: true }); mostrarToast("Configuración del sistema actualizada.", "success"); } catch(e) { mostrarToast("Error al guardar configuración.", "error"); }
+        };
+
+        window.cargarEdicion = (tipo, id) => {
+            const data = window.adminData[tipo.toLowerCase()][id]; if(!data) return;
+            if (tipo === 'Roles') {
+                if (id.toUpperCase() === 'ADMIN' || id.toUpperCase() === 'ADMINISTRADOR') return mostrarToast("No se debe limitar el Administrador.", "warning");
+                document.getElementById('card-roles').classList.add('edit-mode'); document.getElementById('rol-id').value = id; document.getElementById('rol-id').disabled = true;
+                const p = data.permisos || ""; document.querySelectorAll('.chk-perm').forEach(chk => chk.checked = (p === "ALL" || p.split(',').includes(chk.value)));
+                document.getElementById('btn-save-rol').innerHTML = '<i class="fas fa-sync"></i> Actualizar'; document.getElementById('btn-save-rol').className = 'btn btn-warning'; document.getElementById('btn-cancel-rol').style.display = 'inline-flex'; document.getElementById('card-roles').scrollIntoView({behavior: "smooth"});
+            } else if (tipo === 'Usuarios') {
+                document.getElementById('card-usuarios').classList.add('edit-mode'); document.getElementById('u-id').value = id; document.getElementById('u-id').disabled = true; document.getElementById('u-nom').value = data.nombre; document.getElementById('u-pass').value = data.password; document.getElementById('u-rol').value = data.rol;
+                document.getElementById('u-firma').value = data.firma || ''; document.getElementById('u-firma-img').value = data.firma_img || '';
+                const selC = document.getElementById('u-camp'); Array.from(selC.options).forEach(opt => opt.selected = Array.isArray(data.campaña) ? data.campaña.includes(opt.value) : (data.campaña === opt.value));
+                document.getElementById('btn-save-user').innerHTML = '<i class="fas fa-sync"></i> Actualizar'; document.getElementById('btn-save-user').className = 'btn btn-warning'; document.getElementById('btn-cancel-user').style.display = 'inline-flex'; document.getElementById('card-usuarios').scrollIntoView({behavior: "smooth"});
+            }
+        };
+
+        window.cancelarEdicion = (tipo) => {
+            if (tipo === 'Roles') { document.getElementById('card-roles').classList.remove('edit-mode'); document.getElementById('rol-id').value = ''; document.getElementById('rol-id').disabled = false; document.querySelectorAll('.chk-perm').forEach(chk => chk.checked = false); document.getElementById('btn-save-rol').innerHTML = '<i class="fas fa-save"></i> Guardar'; document.getElementById('btn-save-rol').className = 'btn btn-primary'; document.getElementById('btn-cancel-rol').style.display = 'none'; } 
+            else if (tipo === 'Campañas') { document.getElementById('camp-id').value = ''; document.getElementById('camp-id').disabled = false; } 
+            else if (tipo === 'Usuarios') { document.getElementById('card-usuarios').classList.remove('edit-mode'); document.getElementById('u-id').value = ''; document.getElementById('u-id').disabled = false; document.getElementById('u-nom').value = ''; document.getElementById('u-pass').value = ''; document.getElementById('u-rol').value = ''; document.getElementById('u-firma').value = ''; document.getElementById('u-firma-img').value = ''; document.getElementById('u-camp').selectedIndex = -1; document.getElementById('btn-save-user').innerHTML = '<i class="fas fa-save"></i> Guardar'; document.getElementById('btn-save-user').className = 'btn btn-primary'; document.getElementById('btn-cancel-user').style.display = 'none'; }
+        };
+
+        window.saveData = async (tipo) => {
+            try {
+                if(tipo === 'Roles') { const id = document.getElementById('rol-id').value.toUpperCase(); if(!id) return mostrarToast("Obligatorio.", 'error'); if ((id === 'ADMIN' || id === 'ADMINISTRADOR') && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("Sin autorización.", "error"); let cVals = []; document.querySelectorAll('.chk-perm').forEach(chk => { if(chk.checked) cVals.push(chk.value); }); if(cVals.length === 0) return mostrarToast("Selecciona un módulo.", 'warning'); let pFin = cVals.length === 8 ? "ALL" : cVals.join(','); await setDoc(doc(db, "Roles", id), { permisos: pFin }); }
+                if(tipo === 'Campañas') { const id = document.getElementById('camp-id').value.toUpperCase(); if(!id) return mostrarToast("Obligatorio.", 'error'); await setDoc(doc(db, "Campañas", id), { activa: true }); }
+                if(tipo === 'Usuarios') { 
+                    const id = document.getElementById('u-id').value; const rSel = document.getElementById('u-rol').value.toUpperCase(); if(!id) return mostrarToast("Obligatorio.", 'error'); if ((rSel === 'ADMIN' || rSel === 'ADMINISTRADOR') && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("Sin privilegios.", "error"); let cArr = []; const cSel = document.getElementById('u-camp'); if(cSel && cSel.selectedOptions) cArr = Array.from(cSel.selectedOptions).map(opt => opt.value); 
+                    await setDoc(doc(db, "Usuarios", id), { nombre: document.getElementById('u-nom').value, password: document.getElementById('u-pass').value, rol: document.getElementById('u-rol').value, firma: document.getElementById('u-firma').value, firma_img: document.getElementById('u-firma-img').value, campaña: cArr }); 
+                }
+                mostrarToast(`Guardado exitosamente.`, 'success'); cancelarEdicion(tipo); 
+            } catch (error) { mostrarToast("Error al guardar.", 'error'); }
+        };
+
+        window.eliminarDato = async (tipo, id) => { if (tipo === 'Usuarios' && window.adminData.usuarios[id]?.rol.toUpperCase().includes('ADMIN')) return mostrarToast("No puedes eliminar al Admin.", "error"); if (tipo === 'Roles' && id.toUpperCase().includes('ADMIN')) return mostrarToast("No puedes eliminar rol Admin.", "error"); if(confirm(`¿Eliminar ${id}?`)) { try { await deleteDoc(doc(db, tipo, id)); mostrarToast(`Eliminado.`, 'success'); } catch(e) { mostrarToast("Error.", 'error'); } } };
+
+        window.enviarAvisoInterno = async () => { 
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER') { 
+                return mostrarToast("No tienes permisos.", "error"); 
+            } 
+            const dest = document.getElementById('aviso-destinatario').value; 
+            const msj = document.getElementById('aviso-mensaje').value.trim(); 
+            if(!dest || !msj) return mostrarToast("Selecciona destino y mensaje.", "warning"); 
+            try { 
+                console.log("Guardando aviso...", { remitente: window.userName, destinatario: dest, mensaje: msj });
+                await addDoc(collection(db, "Notificaciones"), { tipo: 'MENSAJE', subtipo: 'MENSAJE', remitente: window.userName || "Desconocido", destinatario: dest, mensaje: msj, fecha: new Date().toISOString(), leido: false }); 
+                mostrarToast("Enviado.", "success"); 
+                document.getElementById('aviso-mensaje').value = ""; 
+            } catch(e) { 
+                console.error("Error al guardar aviso: ", e);
+                mostrarToast("Error.", "error"); 
+            } 
+        };
+
+        window.aplicarFiltroSeguimientos = (tipo, btnElement) => { 
+            window.filtroActualSeguimiento = tipo;
+            if (btnElement) { document.querySelectorAll('.f-pill').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); }
+            renderSeguimientosTable(tipo); 
+        };
+
+        function renderSeguimientosTable(filtroTipo) {
+            const tb = document.getElementById('lista-seguimientos'); tb.innerHTML = ""; let data = window.datosSeguimientos; let cAtraso = 0; let cComp = 0; let cResp = 0; const now = new Date();
+            
+            data.forEach(d => {
+                const hPasadas = Math.abs(now - (d.fechaFormateada || now)) / 36e5; let t_alert = 'NADA';
+                if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24) { t_alert = 'ATRASO'; cAtraso++; } d.temp_alerta = t_alert; 
+            });
+            document.getElementById('pill-count-atraso').innerText = cAtraso; document.getElementById('pill-count-comp').innerText = cComp; document.getElementById('pill-count-resp').innerText = cResp;
+            
+            if (filtroTipo !== 'TODOS') data = data.filter(d => d.temp_alerta === filtroTipo);
+
+            const txtBusqueda = document.getElementById('buscador-tickets') ? document.getElementById('buscador-tickets').value.toLowerCase().trim() : '';
+            if (txtBusqueda !== '') {
+                data = data.filter(d => {
+                    const ticketMatch = (d.ticket || '').toLowerCase().includes(txtBusqueda);
+                    const nitMatch = (d.cliente?.nit || '').toLowerCase().includes(txtBusqueda);
+                    const nombreMatch = (d.cliente?.contacto || '').toLowerCase().includes(txtBusqueda);
+                    const telMatch = (d.cliente?.tel || '').toLowerCase().includes(txtBusqueda);
+                    const agenteMatch = (d.agente || '').toLowerCase().includes(txtBusqueda);
+                    return ticketMatch || nitMatch || nombreMatch || telMatch || agenteMatch;
+                });
+            }
+            
+            data.forEach(d => {
+                const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : "status-recibido";
+                let icT = ''; if (d.prioridad?.temperamento === 'Molesto') icT = '<i class="fas fa-fire" style="color:var(--danger); margin-left:4px;" title="Molesto"></i>'; else if (d.prioridad?.temperamento === 'Escalado') icT = '<i class="fas fa-bomb" style="color:#1e293b; margin-left:4px;" title="Escalado"></i>'; else if (d.prioridad?.temperamento === 'Acelerado') icT = '<i class="fas fa-bolt" style="color:var(--warning); margin-left:4px;" title="Acelerado"></i>';
+                let icA = ""; let rC = ""; 
+                if (d.temp_alerta === "ATRASO") { icA = '<i class="fas fa-exclamation-triangle" style="color:var(--danger); font-size: 16px;"></i>'; rC = "row-alert"; } else if (d.temp_alerta === "COMPROBANTE") { icA = '<i class="fas fa-file-invoice-dollar" style="color:var(--warning); font-size: 16px;"></i>'; rC = "row-comp"; } else if (d.temp_alerta === "NUEVA_RESPUESTA") { icA = '<i class="fas fa-bell" style="color:var(--success); font-size: 14px;"></i>'; rC = "ticket-nuevo"; }
+
+                let fechaFmt = '---';
+                if (d.fechaFormateada) {
+                    const fechaTxt = d.fechaFormateada.toLocaleDateString(); const horaTxt = d.fechaFormateada.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    fechaFmt = `${fechaTxt} <br><span style="color:var(--text-muted); font-size:10px;"><i class="fas fa-clock"></i> ${horaTxt}</span>`;
+                }
+
+                const msjCorto = d.ultimo_mensaje_cliente ? `<div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${d.ultimo_mensaje_cliente.replace(/"/g, '&quot;')}">${d.ultimo_mensaje_cliente.replace(/(https?:\/\/[^\s]+)/g, '📎 [Archivo Adjunto]')}</div>` : '<span style="color:#94a3b8; font-style:italic;">---</span>';
+
+                let adjuntoHTML = '<span style="color:#cbd5e1; font-size:11px;">---</span>';
+                const linkTabla = d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || d.link_pago || '';
+                if(linkTabla && linkTabla !== '#' && linkTabla.trim() !== '') { adjuntoHTML = `<a href="${linkTabla}" target="_blank" class="btn btn-outline" style="padding:4px 8px; font-size:10px; color:var(--accent); border-color:var(--accent);"><i class="fas fa-image"></i> Ver</a>`; }
+
+                let btnHTML = d.estatus === "BORRADOR" ? `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : `<button class="btn btn-outline" style="padding:5px; width:28px; height:28px;" onclick="window.abrirVisor('${d.id}')" title="Ver Gestión"><i class="fas fa-eye"></i></button>`;
+                if (d.nueva_respuesta_cliente) { btnHTML += ` <button class="btn btn-success" style="padding:5px 8px; font-size:10px; margin-left:5px;" onclick="window.marcarRevisado('${d.id}')" title="Marcar como Revisado"><i class="fas fa-check-double"></i></button>`; }
+
+                const estatusFinal = `<span class="badge ${bc}">${d.estatus}</span> <span style="margin-left:5px;">${icA}</span>`;
+                const nombreCli = d.cliente?.contacto || 'N/A'; const nitCli = d.cliente?.nit || 'C/F';
+
+                tb.innerHTML += `<tr class="${rC}">
+                    <td style="color:var(--primary); font-weight:900; font-size:11px;">${d.ticket}</td>
+                    <td style="font-size:11px;"><span style="font-weight:700;">${fechaFmt}</span><br><span style="font-weight:800; color:var(--text-muted);">${d.agente || 'N/A'}</span></td>
+                    <td style="font-size:11px;"><span style="font-weight:800; color:#000;">${nombreCli}</span> ${icT}<br><span style="font-size:10px; color:var(--accent); font-weight:900;">NIT: ${nitCli}</span></td>
+                    <td>${estatusFinal}</td>
+                    <td style="font-size:11px;">${msjCorto}</td>
+                    <td style="text-align:center;">${adjuntoHTML}</td>
+                    <td style="white-space:nowrap; text-align:right;">${btnHTML}</td>
+                </tr>`;
+            });
+            if (data.length === 0) tb.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted); font-weight:700;"><i class="fas fa-search" style="font-size: 24px; color: var(--border); margin-bottom:10px; display:block;"></i>No se encontraron tickets.</td></tr>`;
+        }
+
+        function iniciarEscuchas() {
+            onSnapshot(doc(db, "Configuracion", "General"), docSnap => {
+                if (docSnap.exists()) {
+                    window.configSistema = docSnap.data();
+                    const inputCorreo = document.getElementById('conf-correo-salida');
+                    if (inputCorreo) inputCorreo.value = window.configSistema.correo_salida || '';
+                }
+            });
+
+            onSnapshot(collection(db, "Roles"), s => { const sel = document.getElementById('u-rol'); sel.innerHTML = ""; const tb = document.getElementById('l-roles'); tb.innerHTML = ""; s.forEach(d => { const data = d.data(); const isAdmin = d.id.toUpperCase() === 'ADMIN' || d.id.toUpperCase() === 'ADMINISTRADOR'; if (isAdmin && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return; window.adminData.roles[d.id] = data; let bg = data.permisos==="ALL" ? '<span class="badge" style="background:var(--success); color:white;">ACCESO TOTAL</span>' : (data.permisos ? '<span class="badge" style="background:var(--primary); color:white;">PERSONALIZADO</span>' : '<span class="badge" style="background:var(--danger); color:white;">SIN ACCESO</span>'); tb.innerHTML += `<tr><td><b>${d.id}</b></td><td>${bg} <span style="font-size:10px; color:var(--text-muted); display:block; margin-top:4px;">(${data.permisos || 'Ninguno'})</span></td><td style="text-align:right;"><button class="btn btn-outline btn-icon" style="padding:5px;" onclick="cargarEdicion('Roles', '${d.id}')"><i class="fas fa-pen"></i></button> <button class="btn btn-danger btn-icon" style="padding:5px;" onclick="eliminarDato('Roles', '${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`; sel.innerHTML += `<option value="${d.id}">${d.id}</option>`; }); });
+            onSnapshot(collection(db, "Campañas"), s => { const selC = document.getElementById('u-camp'); selC.innerHTML = ""; const tb = document.getElementById('l-camps'); tb.innerHTML = ""; s.forEach(d => { window.adminData.campañas[d.id] = d.data(); tb.innerHTML += `<tr><td><b>${d.id}</b></td><td style="text-align:right;"><button class="btn btn-danger btn-icon" style="padding:5px;" onclick="eliminarDato('Campañas', '${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`; selC.innerHTML += `<option value="${d.id}">${d.id}</option>`; }); });
+            onSnapshot(collection(db, "Usuarios"), s => {
+                const tb = document.getElementById('l-users'); tb.innerHTML = ""; const tbMonitor = document.getElementById('lista-monitor'); tbMonitor.innerHTML = ""; const cboAviso = document.getElementById('aviso-destinatario'); cboAviso.innerHTML = '<option value="">-- Seleccione --</option>';
+                s.forEach(d => { 
+                    const data = d.data(); const isAdmin = data.rol && (data.rol.toUpperCase() === 'ADMIN' || data.rol.toUpperCase() === 'ADMINISTRADOR'); if (isAdmin && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return; window.adminData.usuarios[d.id] = data; const camps = Array.isArray(data.campaña) ? data.campaña.join(', ') : (data.campaña || 'N/A');
+                    tb.innerHTML += `<tr><td><b>${d.id}</b><br><span style="font-size:11px; font-weight:700;">${data.nombre}</span></td><td><span class="badge" style="background:var(--primary); color:white;">${data.rol}</span><br><span style="font-size:10px;">${camps}</span></td><td style="text-align:right;"><button class="btn btn-outline btn-icon" style="padding:5px;" onclick="cargarEdicion('Usuarios', '${d.id}')"><i class="fas fa-pen"></i></button> <button class="btn btn-danger btn-icon" style="padding:5px;" onclick="eliminarDato('Usuarios', '${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`; 
+                    let dot = data.is_online ? 'dot dot-online' : 'dot dot-offline'; let txt = data.is_online ? '<span style="color:var(--success); font-weight:800;">EN LÍNEA</span>' : '<span style="color:var(--text-muted); font-weight:600;">OFFLINE</span>'; let ult = data.last_login ? new Date(data.last_login).toLocaleString() : 'N/A';
+                    tbMonitor.innerHTML += `<tr><td><div class="${dot}"></div> ${txt}</td><td style="font-weight:800;">${data.nombre}</td><td><span class="badge" style="background:var(--primary); color:white;">${data.rol}</span></td><td style="font-size:11px;">${camps}</td><td style="font-size:11px;">${ult}</td></tr>`;
+                    let puedeAvisar = false; const misCamps = window.userCamp || []; const susCamps = Array.isArray(data.campaña) ? data.campaña : [data.campaña || ""]; if(window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR') puedeAvisar = true; else if (misCamps.some(miCamp => susCamps.includes(miCamp))) puedeAvisar = true; if(puedeAvisar && data.nombre) cboAviso.innerHTML += `<option value="${data.nombre}">${data.nombre}</option>`;
+                });
+            });
+
+            onSnapshot(collection(db, "Notificaciones"), s => {
+                window.notifSistema = []; let arrayAvisos = [];
+                s.forEach(docSnap => {
+                    const d = {id: docSnap.id, ...docSnap.data()}; 
+                    let soyDestinatario = false; if (d.destinatario === window.userName) soyDestinatario = true; if ((window.userRol === 'LIDER' || window.userRol === 'LÍDER' || window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR') && window.userCamp.includes(d.campaña)) soyDestinatario = true;
+                    if(soyDestinatario && !d.leido) { 
+                        let icono = ''; let color = ''; let tickStr = d.ticket ? d.ticket : 'Aviso General'; 
+                        if (d.tipo === 'MENSAJE') { icono = '<i class="fas fa-comment-dots"></i>'; color = 'n-msg'; } else if (d.subtipo === 'ATRASO') { icono = '<i class="fas fa-exclamation-triangle"></i>'; color = 'n-danger'; } else if (d.subtipo === 'COMPROBANTE') { icono = '<i class="fas fa-file-invoice-dollar"></i>'; color = 'n-warning'; } else if (d.subtipo === 'NUEVA_RESPUESTA') { icono = '<i class="fas fa-user-check"></i>'; color = 'n-accent'; } 
+                        let idTicket = d.ticket ? d.ticket : ''; 
+                        window.notifSistema.push(`<div class="notif-item ${color}" onclick="marcarLeidoYAbrir('${d.id}', '${idTicket}')"><div class="notif-icon" style="font-size:20px;">${icono}</div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">${tickStr}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">"${d.mensaje}"</div></div></div>`); 
+                    }
+                    let mostrarEnTabla = false; const esAdmin = (window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR');
+                    if (d.tipo === 'MENSAJE') { if (esAdmin || d.destinatario === window.userName || d.remitente === window.userName) mostrarEnTabla = true; } else if (d.tipo === 'SISTEMA') { if (esAdmin || soyDestinatario) mostrarEnTabla = true; }
+                    if (mostrarEnTabla) arrayAvisos.push(d);
+                });
+                arrayAvisos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                let tbAvisos = "";
+                arrayAvisos.forEach(d => {
+                    const fechaFmt = new Date(d.fecha).toLocaleString(); let iconA = ""; let nomA = "";
+                    if (d.tipo === 'MENSAJE') { const esMio = d.remitente === window.userName; iconA = esMio ? '<i class="fas fa-arrow-right" style="color:var(--success);"></i> Para:' : '<i class="fas fa-arrow-left" style="color:var(--accent);"></i> De:'; nomA = esMio ? d.destinatario : d.remitente; } else { iconA = '<i class="fas fa-robot" style="color:#64748b;"></i> Sistema'; nomA = d.ticket ? `(Ticket: ${d.ticket})` : 'Aviso General'; }
+                    const txtLeido = d.leido ? '<span class="badge status-completado">Leído</span>' : '<span class="badge status-recibido">No</span>'; 
+                    tbAvisos += `<tr><td style="font-size:11px;">${fechaFmt}</td><td style="font-weight:700; font-size:12px; white-space:nowrap;">${iconA} <span style="color:var(--primary);">${nomA}</span></td><td style="font-size:12px;">${d.mensaje}</td><td>${txtLeido}</td></tr>`;
+                });
+                document.getElementById('lista-avisos').innerHTML = tbAvisos; 
+                window.renderizarCampana();
+            });
+
+            onSnapshot(collection(db, "Cobros"), s => {
+                let docs = []; const now = new Date(); window.notifTickets = []; 
+                s.forEach(docSnap => {
+                    try {
+                        let d = { id: docSnap.id, ...docSnap.data() }; 
+                        if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente') {
+                            let txt = d.ultimo_mensaje_cliente; const separadores_correo = [ /El\s[\s\S]*?escribió:/i, /On\s[\s\S]*?wrote:/i, /\r?\nDe:\s/i, /\r?\nFrom:\s/i, /_{10,}/, /<div class="gmail_quote"/i, /--- Original Message ---/i ];
+                            for (let sep of separadores_correo) { txt = txt.split(sep)[0]; }
+                            d.ultimo_mensaje_cliente = txt.trim() || '[Respuesta vacía o sin texto detectado]';
+                        }
+                        let puedeVer = false; const rolUser = window.userRol || "";
+                        if (rolUser === "ADMINISTRADOR" || rolUser === "ADMIN") { puedeVer = true; } else if (rolUser === "LIDER" || rolUser === "LÍDER") { const tickCamps = Array.isArray(d.campaña) ? d.campaña : [d.campaña || ""]; if (window.userCamp && window.userCamp.some(c => tickCamps.includes(c))) puedeVer = true; } else { if (d.agente === window.userName) puedeVer = true; }
+                        if (puedeVer) {
+                            let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
+                            const hPasadas = Math.abs(now - fechaTick) / 36e5; if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24 && !d.alerta_sla_creada) { updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de 24 horas.`); } docs.push(d);
+                            if (d.nueva_respuesta_cliente) { window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">El ticket ${d.ticket} tiene una respuesta</div></div></div>`); }
+                        }
+                    } catch(err) {}
+                });
+                docs.sort((a,b) => (b.fechaFormateada || 0) - (a.fechaFormateada || 0)); window.datosSeguimientos = docs; window.allDashboardData = docs; renderSeguimientosTable(window.filtroActualSeguimiento);
+                const comboAgentes = document.getElementById('filtro-agente'); const agenteActual = comboAgentes.value; const agentesUnicos = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort(); comboAgentes.innerHTML = '<option value="TODOS">Todos</option>'; agentesUnicos.forEach(ag => comboAgentes.innerHTML += `<option value="${ag}">${ag}</option>`); if(agentesUnicos.includes(agenteActual)) comboAgentes.value = agenteActual; window.aplicarFiltrosDashboard();
+                window.renderizarCampana();
+            });
+        }
+
+        window.aplicarFiltrosDashboard = () => { const fInicio = document.getElementById('filtro-inicio').value; const fFin = document.getElementById('filtro-fin').value; const fEstatus = document.getElementById('filtro-estatus').value; const fAgente = document.getElementById('filtro-agente').value; let dFilt = window.allDashboardData.filter(d => { let pasa = true; if (fEstatus !== "TODOS" && d.estatus !== fEstatus) pasa = false; if (fAgente !== "TODOS" && d.agente !== fAgente) pasa = false; if (fInicio || fFin) { const fT = d.fechaFormateada || new Date(0); fT.setHours(0,0,0,0); if (fInicio) { const dI = new Date(fInicio + 'T00:00:00'); dI.setHours(0,0,0,0); if (fT < dI) pasa = false; } if (fFin) { const dF = new Date(fFin + 'T23:59:59'); dF.setHours(23,59,59,999); if (fT > dF) pasa = false; } } return pasa; }); window.datosDashboardActual = dFilt; actualizarVistaDashboard(dFilt); };
+        window.limpiarFiltrosDashboard = () => { document.getElementById('filtro-inicio').value = ''; document.getElementById('filtro-fin').value = ''; document.getElementById('filtro-estatus').value = 'TODOS'; document.getElementById('filtro-agente').value = 'TODOS'; window.aplicarFiltrosDashboard(); mostrarToast("Limpiados.", "success"); };
+
+        function actualizarVistaDashboard(docs) {
+            let tM = 0; let b = 0; let e = 0; let c = 0; let validTickets = 0;
+            const cE = { 'BORRADOR': 0, 'ENVIADO': 0, 'COMPROBANTE RECIBIDO': 0, 'COMPLETADO': 0, 'ANULADO': 0 }; 
+            const rA = {};
+            
+            docs.forEach(d => { 
+                if(cE[d.estatus] !== undefined) cE[d.estatus]++; 
+                
+                if(d.estatus === "BORRADOR") {
+                    b++; 
+                } else {
+                    validTickets++; 
+                    if(d.estatus === "ENVIADO" || d.estatus === "COMPROBANTE RECIBIDO") e++; 
+                    if(d.estatus === "COMPLETADO") c++; 
+                    if(d.estatus !== 'ANULADO') { 
+                        tM += d.total || 0; 
+                        const nA = d.agente || 'Desconocido'; 
+                        if(!rA[nA]) rA[nA] = 0; 
+                        rA[nA] += (d.total || 0); 
+                    }
+                }
+            });
+            
+            document.getElementById('kpi-tickets').innerText = validTickets; 
+            document.getElementById('kpi-monto').innerText = "Q " + tM.toFixed(2); 
+            document.getElementById('kpi-espera').innerText = e; 
+            document.getElementById('kpi-completados').innerText = c;
+            
+            const ctxE = document.getElementById('chartEstatus').getContext('2d'); if(window.chartInstEstatus) window.chartInstEstatus.destroy(); window.chartInstEstatus = new Chart(ctxE, { type: 'doughnut', data: { labels: ['Borrador', 'Enviado', 'Comprob.', 'Completado', 'Anulado'], datasets: [{ data: [cE['BORRADOR'], cE['ENVIADO'], cE['COMPROBANTE RECIBIDO'], cE['COMPLETADO'], cE['ANULADO']], backgroundColor: ['#475569', '#0077A3', '#d97706', '#059669', '#dc2626'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } } });
+            const ctxA = document.getElementById('chartAgentes').getContext('2d'); if(window.chartInstAgentes) window.chartInstAgentes.destroy(); const aOrd = Object.keys(rA).sort((a,b) => rA[b] - rA[a]); window.chartInstAgentes = new Chart(ctxA, { type: 'bar', data: { labels: aOrd, datasets: [{ data: aOrd.map(ag => rA[ag]), backgroundColor: '#002244', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
+        }
+
+        window.exportarExcelDashboard = () => { if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) return mostrarToast("No hay datos.", "warning"); const dl = window.datosDashboardActual.map(d => ({ "TICKET": d.ticket, "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', "AGENTE": d.agente, "CAMPAÑA": d.campaña, "CLIENTE": d.cliente?.contacto, "TEL": d.cliente?.tel, "TOTAL": d.total, "ESTATUS": d.estatus, "MÉTODO": d.metodoEnvio })); const h = XLSX.utils.json_to_sheet(dl); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Reporte"); XLSX.writeFile(l, `ST_${new Date().getTime()}.xlsx`); };
+        window.generarReporteEjecutivo = () => { if(!window.allDashboardData || window.allDashboardData.length === 0) return mostrarToast("No hay datos.", "warning"); let rC = {}; window.allDashboardData.forEach(d => { let c = d.campaña || "Sin Asignar"; if(!rC[c]) rC[c] = { "Campaña": c, "Atendidos": 0, "Éxito": 0, "Monto (Q)": 0, "Críticos": 0 }; rC[c]["Atendidos"]++; if(d.estatus === "COMPLETADO") rC[c]["Éxito"]++; if(d.estatus !== "ANULADO" && d.estatus !== "BORRADOR") rC[c]["Monto (Q)"] += (d.total || 0); if(d.prioridad?.temperamento === "Molesto" || d.prioridad?.temperamento === "Escalado") rC[c]["Críticos"]++; }); const h = XLSX.utils.json_to_sheet(Object.values(rC)); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Resumen"); XLSX.writeFile(l, `Gerencial_ST_${new Date().getTime()}.xlsx`); };
+
+        // --- EXPORTAR USUARIOS A EXCEL ---
+        window.exportarUsuariosExcel = () => {
+            const usuarios = window.adminData.usuarios;
+            if (!usuarios || Object.keys(usuarios).length === 0) return mostrarToast("No hay usuarios para exportar.", "warning");
+            
+            const data = Object.keys(usuarios).map(id => {
+                const u = usuarios[id];
+                return {
+                    "ID_LOGIN": id,
+                    "NOMBRE": u.nombre || "",
+                    "PASSWORD": u.password || "",
+                    "ROL": u.rol || "",
+                    "FIRMA": u.firma || "",
+                    "URL_FIRMA": u.firma_img || "",
+                    "CAMPANAS": Array.isArray(u.campaña) ? u.campaña.join(", ") : (u.campaña || "")
+                };
+            });
+            
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Usuarios_Plantilla");
+            XLSX.writeFile(wb, `Usuarios_ST_${new Date().getTime()}.xlsx`);
+        };
+
+        // --- IMPORTAR USUARIOS DESDE EXCEL ---
+        window.importarUsuariosExcel = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!confirm("⚠️ ATENCIÓN: Esta acción creará nuevos usuarios y actualizará los existentes si el ID_LOGIN coincide. ¿Deseas continuar?")) {
+                event.target.value = ""; return; 
+            }
+
+            mostrarToast("Leyendo archivo...", "info");
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if (json.length === 0) return mostrarToast("El archivo Excel está vacío.", "warning");
+                    
+                    let importados = 0;
+                    for (const row of json) {
+                        const id = row["ID_LOGIN"] ? row["ID_LOGIN"].toString().trim() : "";
+                        if (!id) continue; 
+                        
+                        let campArr = [];
+                        if (row["CAMPANAS"]) {
+                            campArr = row["CAMPANAS"].toString().split(',').map(c => c.trim()).filter(c => c !== "");
+                        }
+                        
+                        const userData = {
+                            nombre: row["NOMBRE"] ? row["NOMBRE"].toString() : "",
+                            password: row["PASSWORD"] ? row["PASSWORD"].toString() : "",
+                            rol: row["ROL"] ? row["ROL"].toString().toUpperCase() : "AGENTE",
+                            firma: row["FIRMA"] ? row["FIRMA"].toString() : "",
+                            firma_img: row["URL_FIRMA"] ? row["URL_FIRMA"].toString() : "",
+                            campaña: campArr
+                        };
+                        
+                        await setDoc(doc(db, "Usuarios", id), userData);
+                        importados++;
+                    }
+                    
+                    mostrarToast(`¡Éxito! ${importados} usuarios importados/actualizados.`, "success");
+                    event.target.value = ""; 
+                } catch (error) {
+                    mostrarToast("Error al procesar el Excel. Revisa el formato.", "error");
+                    console.error(error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+    </script>
+</body>
+</html>
