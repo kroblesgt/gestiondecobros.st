@@ -193,7 +193,7 @@
             <div class="nav-item" id="nav-3" onclick="showSec('sec-3', this)"><i class="fas fa-headset"></i> Seguimientos</div>
             <div class="nav-item" id="nav-4" onclick="showSec('sec-4', this)"><i class="fas fa-chart-pie"></i> Dashboard</div>
             <div class="nav-item" id="nav-5" onclick="showSec('sec-5', this)"><i class="fas fa-desktop"></i> Monitor Agentes</div>
-            <div class="nav-item" id="nav-6" onclick="showSec('sec-6', this)"><i class="fas fa-paper-plane"></i> Avisos Internos</div>
+            <div class="nav-item" id="nav-6" onclick="showSec('sec-6', this)"><i class="fas fa-paper-plane"></i> Avisos</div>
             <div class="nav-item" id="nav-7" onclick="showSec('sec-7', this)"><i class="fas fa-cogs"></i> Ajustes Sistema</div>
             <hr style="opacity:0.1; margin:15px 25px;">
             <div class="nav-item" id="nav-0" onclick="showSec('sec-0', this)"><i class="fas fa-user-shield"></i> Roles</div>
@@ -409,7 +409,7 @@
             <section id="sec-5" style="display:none"><h2 class="module-header">Monitor Agentes</h2><div class="card" style="padding:0;"><div class="table-responsive"><table><thead><tr><th>Estado</th><th>Agente</th><th>Rol</th><th>Campaña</th><th>Última Actividad</th></tr></thead><tbody id="lista-monitor"></tbody></table></div></div></section>
             
             <section id="sec-6" style="display:none">
-                <h2 class="module-header">Avisos Internos</h2>
+                <h2 class="module-header">Avisos</h2>
                 <div id="sec-6-grid" style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
                     <div class="card" id="panel-enviar-aviso" style="background: #f8fafc; margin-bottom:0;">
                         <h3 class="module-header" style="font-size: 16px;"><i class="fas fa-pen-square"></i> Enviar Aviso</h3>
@@ -486,11 +486,23 @@
 
         window.renderizarCampana = () => {
             let todasLasAlertas = window.notifSistema.concat(window.notifTickets);
-            window.totalAlertas = todasLasAlertas.length;
+            let nuevoTotal = todasLasAlertas.length;
+
+            if (window.totalAlertas !== undefined && nuevoTotal > window.totalAlertas) {
+                try {
+                    const alertaSonora = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3');
+                    alertaSonora.play().catch(e => console.log("El navegador requiere interacción previa para sonido."));
+                } catch(e) {}
+            }
+
+            window.totalAlertas = nuevoTotal;
             const badge = document.getElementById('bell-badge'); const campana = document.getElementById('bell-icon-container'); 
             document.getElementById('notif-count-header').innerText = window.totalAlertas; 
-            if (window.totalAlertas > 0) { badge.innerText = window.totalAlertas; badge.style.display = 'flex'; campana.classList.add('ring-anim'); document.getElementById('notif-list').innerHTML = todasLasAlertas.join(''); 
-            } else { badge.style.display = 'none'; campana.classList.remove('ring-anim'); document.getElementById('notif-list').innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted); font-weight: 700;"><i class="fas fa-check-circle" style="font-size: 30px; color: var(--success); margin-bottom: 10px;"></i><br>Bandeja y tickets al día.</div>`; }
+            if (window.totalAlertas > 0) { 
+                badge.innerText = window.totalAlertas; badge.style.display = 'flex'; campana.classList.add('ring-anim'); document.getElementById('notif-list').innerHTML = todasLasAlertas.join(''); 
+            } else { 
+                badge.style.display = 'none'; campana.classList.remove('ring-anim'); document.getElementById('notif-list').innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted); font-weight: 700;"><i class="fas fa-check-circle" style="font-size: 30px; color: var(--success); margin-bottom: 10px;"></i><br>Bandeja y tickets al día.</div>`; 
+            }
         };
 
         window.crearNotificacionSistema = async (ticket, campaña, agente, subtipo, mensaje) => { try { await addDoc(collection(db, "Notificaciones"), { tipo: 'SISTEMA', subtipo: subtipo, remitente: 'SISTEMA CRM', destinatario: agente, campaña: campaña, ticket: ticket, mensaje: mensaje, fecha: new Date().toISOString(), leido: false }); } catch(e) {} };
@@ -566,11 +578,14 @@
             if(serviciosTemporales.length === 0) return mostrarToast("Agrega un servicio.", 'warning');
 
             let motivoWa = "";
+            let waWindow = null;
+
             if (metodo === 'WhatsApp') {
                 motivoWa = prompt("🚨 MOTIVO DE WHATSAPP OBLIGATORIO:\nPor favor, ingresa la razón por la cual estás solicitando este cobro por el grupo de WhatsApp (Ej: Cliente sin correo, Urgencia, etc.):");
                 if (!motivoWa || motivoWa.trim() === "") {
                     return mostrarToast("Operación cancelada. El motivo es obligatorio.", "warning");
                 }
+                waWindow = window.open('about:blank', '_blank');
             }
 
             const esNuevoTicket = !window.currentTicketEditing;
@@ -599,16 +614,22 @@
                     mostrarToast(`Ticket enviado a Outlook con éxito.`, 'success'); 
                 } 
                 else if (metodo === 'WhatsApp') { 
-                    const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('%0A'); 
-                    const msg = `*NUEVA GESTIÓN DE COBRO* 🛠️%0A%0A*Ticket:* ${ticketId} %0A-------------------------- %0A*CLIENTE:* ${clienteNombre} %0A*TEL:* ${datos.cliente.tel || 'N/A'} %0A-------------------------- %0A*FACTURACIÓN:* %0A*Razón Social:* ${datos.facturacion.nombre || 'C/F'} %0A*NIT:* ${datos.facturacion.nit || 'C/F'} %0A-------------------------- %0A*DETALLE DE SERVICIOS:* %0A${rServ} %0A%0A*TOTAL: Q ${total.toFixed(2)}* %0A-------------------------- %0A*LINK DE PAGO:* ${datos.pago_link || 'Pendiente'}%0A%0A*🚨 MOTIVO DE SOLICITUD:*%0A_${motivoWa.trim()}_`; 
-                    window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank'); 
+                    const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
+                    const msgRaw = `*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* ${ticketId} \n-------------------------- \n*CLIENTE:* ${clienteNombre} \n*TEL:* ${datos.cliente.tel || 'N/A'} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* ${datos.facturacion.nombre || 'C/F'} \n*NIT:* ${datos.facturacion.nit || 'C/F'} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n${rServ} \n\n*TOTAL: Q ${total.toFixed(2)}* \n-------------------------- \n*LINK DE PAGO:* ${datos.pago_link || 'Pendiente'}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_${motivoWa.trim()}_`; 
+                    
+                    const linkOficial = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgRaw)}`;
+                    if (waWindow) { waWindow.location.href = linkOficial; } else { window.open(linkOficial, '_blank'); }
+                    
                     mostrarToast("Selecciona el grupo en WhatsApp para enviar.", 'success'); 
                 } else { 
                     mostrarToast("Borrador guardado exitosamente.", 'success'); 
                 }
                 
                 limpiarGestorCobro(); showSec('sec-3', document.getElementById('nav-3'));
-            } catch (e) { mostrarToast("Error al guardar.", 'error'); }
+            } catch (e) { 
+                if (waWindow) waWindow.close();
+                mostrarToast("Error al guardar.", 'error'); 
+            }
         };
 
         window.retomarGestion = (id) => { const d = window.allDashboardData.find(x => x.id === id); if (!d) return; window.currentTicketEditing = d.ticket; document.getElementById('gc-tipo').value = d.servicios[0]?.tipo || "Diagnóstico"; cambioTipoServicio(); const sTemp = document.getElementById('cli-temperamento'); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp); document.getElementById('cli-obs-internas').value = d.prioridad?.observaciones_internas || ""; document.getElementById('cli-nit').value = d.cliente.nit || ""; document.getElementById('cli-contacto').value = d.cliente.contacto || ""; document.getElementById('cli-tel').value = d.cliente.tel || ""; document.getElementById('cli-dir').value = d.cliente.dir || ""; document.getElementById('cli-correo').value = d.cliente.correo || ""; document.getElementById('cli-obs-tec').value = d.cliente.obs_tec || ""; document.getElementById('fac-nit').value = d.facturacion?.nit || ""; document.getElementById('fac-nombre').value = d.facturacion?.nombre || ""; document.getElementById('pago-link').value = d.pago_link || ""; serviciosTemporales = d.servicios || []; renderServicios(); showSec('sec-2', document.getElementById('nav-2')); };
@@ -631,8 +652,20 @@
             if (d.historial_respuestas && d.historial_respuestas.length > 0) {
                 chatHTML += d.historial_respuestas.map(h => { 
                     const fStr = new Date(h.fecha).toLocaleString(); 
-                    if (h.tipo === 'cliente') { return `<div class="bubble bubble-client"><div class="bubble-header"><span><i class="fas fa-user"></i> ${d.cliente?.contacto || 'Cliente'}</span> <span class="time">${fStr}</span></div><div style="font-weight:600; white-space: pre-wrap;">${detectarArchivos(h.mensaje)}</div></div>`; } 
-                    else { let iconoModo = h.enviado_por_correo ? '<i class="fas fa-envelope" title="Enviado por correo"></i>' : '<i class="fas fa-lock" title="Nota interna"></i>'; return `<div class="bubble bubble-agent"><div class="bubble-header"><span style="color:var(--primary);"><i class="fas fa-headset"></i> ${h.agente} ${iconoModo}</span> <span class="time" style="color:#64748b;">${fStr}</span></div><div style="font-weight:600; white-space: pre-wrap;">${detectarArchivos(h.mensaje)}</div></div>`; } 
+                    if (h.tipo === 'cliente') { 
+                        return `<div class="bubble bubble-client"><div class="bubble-header"><span><i class="fas fa-user"></i> ${d.cliente?.contacto || 'Cliente'}</span> <span class="time">${fStr}</span></div><div style="font-weight:600; white-space: pre-wrap;">${detectarArchivos(h.mensaje)}</div></div>`; 
+                    } else { 
+                        let iconoModo = '';
+                        let estiloBurbuja = '';
+                        if (h.enviado_por_correo) {
+                            iconoModo = '<i class="fas fa-envelope" title="Enviado por correo"></i>';
+                            estiloBurbuja = 'background: white; border-left: 5px solid var(--accent);';
+                        } else {
+                            iconoModo = '<i class="fas fa-lock" title="Nota interna"></i>';
+                            estiloBurbuja = 'background: #fef9c3; border-left: 5px solid #eab308;';
+                        }
+                        return `<div class="bubble bubble-agent" style="${estiloBurbuja}"><div class="bubble-header"><span style="color:var(--primary);"><i class="fas fa-headset"></i> ${h.agente} ${iconoModo}</span> <span class="time" style="color:#64748b;">${fStr}</span></div><div style="font-weight:600; white-space: pre-wrap;">${detectarArchivos(h.mensaje)}</div></div>`; 
+                    } 
                 }).join('');
             }
 
@@ -660,12 +693,14 @@
             const rU = window.userRol || '';
             if (rU === 'ADMIN' || rU === 'ADMINISTRADOR' || rU === 'LIDER' || rU === 'LÍDER') { let listaAgentes = Object.values(window.adminData.usuarios).filter(u => u.nombre).map(u => u.nombre); if (d.agente && !listaAgentes.includes(d.agente)) listaAgentes.push(d.agente); let opcionesAgentes = [...new Set(listaAgentes)].sort().map(ag => `<option value="${ag}" ${ag === d.agente ? 'selected' : ''}>${ag}</option>`).join(''); selectorAgenteHTML = `<select id="v-nuevo-agente" style="padding:4px; font-size:11px; font-weight:700; border:1px solid var(--border); border-radius:4px; max-width: 120px;">${opcionesAgentes}</select>`; }
 
+            let waReasonHtml = d.motivo_whatsapp ? `<p style="margin:2px 0; margin-top:8px; color:#d97706; font-weight:900; background: #fef9c3; padding: 6px; border-radius: 4px; border-left: 4px solid #eab308;"><i class="fab fa-whatsapp"></i> Motivo WA: <span style="font-weight:600; color:#000;">${d.motivo_whatsapp}</span></p>` : '';
+
             document.getElementById('v-cuerpo').innerHTML = `
                 <div class="card" style="background:#f8fafc; font-size:12px; margin-bottom:15px; padding:15px; border-radius:8px;">
                     <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:14px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;"><i class="fas fa-user"></i> Datos del Cliente y Prioridad</h4>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
                         <div><p style="margin:2px 0;"><b>Nombre:</b> ${d.cliente?.contacto || 'N/A'}</p><p style="margin:2px 0;"><b>NIT:</b> ${d.cliente?.nit || 'C/F'}</p><p style="margin:2px 0;"><b>Teléfono:</b> ${d.cliente?.tel || 'N/A'}</p><p style="margin:2px 0;"><b>Correo:</b> ${d.cliente?.correo || 'N/A'}</p></div>
-                        <div><p style="margin:2px 0;"><b>Dirección:</b> ${d.cliente?.dir || 'N/A'}</p><p style="margin:2px 0;"><b>Temperamento:</b> ${d.prioridad?.temperamento || 'Normal'}</p><p style="margin:2px 0; color:var(--warning);"><b>Obs. Técnico:</b> ${d.cliente?.obs_tec || 'Ninguna'}</p><p style="margin:2px 0; color:var(--danger);"><b>Obs. Internas:</b> ${d.prioridad?.observaciones_internas || 'Ninguna'}</p></div>
+                        <div><p style="margin:2px 0;"><b>Dirección:</b> ${d.cliente?.dir || 'N/A'}</p><p style="margin:2px 0;"><b>Temperamento:</b> ${d.prioridad?.temperamento || 'Normal'}</p><p style="margin:2px 0; color:var(--warning);"><b>Obs. Técnico:</b> ${d.cliente?.obs_tec || 'Ninguna'}</p><p style="margin:2px 0; color:var(--danger);"><b>Obs. Internas:</b> ${d.prioridad?.observaciones_internas || 'Ninguna'}</p>${waReasonHtml}</div>
                     </div>
                     <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:14px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;"><i class="fas fa-file-invoice"></i> Facturación y Servicios</h4>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
@@ -825,12 +860,10 @@
             const msj = document.getElementById('aviso-mensaje').value.trim(); 
             if(!dest || !msj) return mostrarToast("Selecciona destino y mensaje.", "warning"); 
             try { 
-                console.log("Guardando aviso...", { remitente: window.userName, destinatario: dest, mensaje: msj });
                 await addDoc(collection(db, "Notificaciones"), { tipo: 'MENSAJE', subtipo: 'MENSAJE', remitente: window.userName || "Desconocido", destinatario: dest, mensaje: msj, fecha: new Date().toISOString(), leido: false }); 
                 mostrarToast("Enviado.", "success"); 
                 document.getElementById('aviso-mensaje').value = ""; 
             } catch(e) { 
-                console.error("Error al guardar aviso: ", e);
                 mostrarToast("Error.", "error"); 
             } 
         };
@@ -839,6 +872,20 @@
             window.filtroActualSeguimiento = tipo;
             if (btnElement) { document.querySelectorAll('.f-pill').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); }
             renderSeguimientosTable(tipo); 
+        };
+
+        window.eliminarTicket = async (id, ticketName) => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') {
+                return mostrarToast("No tienes permisos para eliminar.", "error");
+            }
+            if (confirm(`⚠️ CUIDADO: Estás a punto de ELIMINAR el ticket ${ticketName} por completo de la base de datos.\n\nEsta acción no se puede deshacer. ¿Estás absolutamente seguro?`)) {
+                try {
+                    await deleteDoc(doc(db, "Cobros", id));
+                    mostrarToast(`Ticket ${ticketName} eliminado.`, "success");
+                } catch(e) {
+                    mostrarToast("Error al eliminar.", "error");
+                }
+            }
         };
 
         function renderSeguimientosTable(filtroTipo) {
@@ -873,7 +920,7 @@
                 let fechaFmt = '---';
                 if (d.fechaFormateada) {
                     const fechaTxt = d.fechaFormateada.toLocaleDateString(); const horaTxt = d.fechaFormateada.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    fechaFmt = `${fechaTxt} <br><span style="color:var(--text-muted); font-size:10px;"><i class="fas fa-clock"></i> ${horaTxt}</span>`;
+                    fechaFmt = `<span style="color:var(--text-muted); font-size:10px; font-weight:800; text-transform:uppercase;">Creado el:</span><br><span style="font-weight:700;">${fechaTxt}</span> <span style="color:var(--primary); font-size:11px; font-weight:900; margin-left:4px;"><i class="fas fa-clock"></i> ${horaTxt}</span>`;
                 }
 
                 const msjCorto = d.ultimo_mensaje_cliente ? `<div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${d.ultimo_mensaje_cliente.replace(/"/g, '&quot;')}">${d.ultimo_mensaje_cliente.replace(/(https?:\/\/[^\s]+)/g, '📎 [Archivo Adjunto]')}</div>` : '<span style="color:#94a3b8; font-style:italic;">---</span>';
@@ -884,13 +931,19 @@
 
                 let btnHTML = d.estatus === "BORRADOR" ? `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : `<button class="btn btn-outline" style="padding:5px; width:28px; height:28px;" onclick="window.abrirVisor('${d.id}')" title="Ver Gestión"><i class="fas fa-eye"></i></button>`;
                 if (d.nueva_respuesta_cliente) { btnHTML += ` <button class="btn btn-success" style="padding:5px 8px; font-size:10px; margin-left:5px;" onclick="window.marcarRevisado('${d.id}')" title="Marcar como Revisado"><i class="fas fa-check-double"></i></button>`; }
+                
+                const esAdmin = (window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR');
+                if (esAdmin) {
+                    btnHTML += ` <button class="btn btn-danger" style="padding:5px; width:28px; height:28px; margin-left:5px;" onclick="window.eliminarTicket('${d.id}', '${d.ticket}')" title="Eliminar Ticket"><i class="fas fa-trash"></i></button>`;
+                }
 
-                const estatusFinal = `<span class="badge ${bc}">${d.estatus}</span> <span style="margin-left:5px;">${icA}</span>`;
+                let motivoTabla = d.motivo_whatsapp ? `<div style="margin-top:5px; font-size:10px; color:#d97706; font-weight:800; white-space:normal; max-width:180px; line-height:1.2;"><i class="fab fa-whatsapp"></i> Razón: ${d.motivo_whatsapp}</div>` : '';
+                const estatusFinal = `<span class="badge ${bc}">${d.estatus}</span> <span style="margin-left:5px;">${icA}</span>${motivoTabla}`;
                 const nombreCli = d.cliente?.contacto || 'N/A'; const nitCli = d.cliente?.nit || 'C/F';
 
                 tb.innerHTML += `<tr class="${rC}">
                     <td style="color:var(--primary); font-weight:900; font-size:11px;">${d.ticket}</td>
-                    <td style="font-size:11px;"><span style="font-weight:700;">${fechaFmt}</span><br><span style="font-weight:800; color:var(--text-muted);">${d.agente || 'N/A'}</span></td>
+                    <td style="font-size:11px;">${fechaFmt}<br><span style="font-weight:800; color:var(--text-muted); margin-top:4px; display:inline-block;">Agente: ${d.agente || 'N/A'}</span></td>
                     <td style="font-size:11px;"><span style="font-weight:800; color:#000;">${nombreCli}</span> ${icT}<br><span style="font-size:10px; color:var(--accent); font-weight:900;">NIT: ${nitCli}</span></td>
                     <td>${estatusFinal}</td>
                     <td style="font-size:11px;">${msjCorto}</td>
@@ -900,6 +953,33 @@
             });
             if (data.length === 0) tb.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted); font-weight:700;"><i class="fas fa-search" style="font-size: 24px; color: var(--border); margin-bottom:10px; display:block;"></i>No se encontraron tickets.</td></tr>`;
         }
+
+        window.renderTablaAvisos = () => {
+            let combinados = [...(window.avisosFirebase || []), ...(window.virtualAvisosTickets || [])];
+            combinados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            let tbAvisos = "";
+            combinados.forEach(d => {
+                const fechaFmt = new Date(d.fecha).toLocaleString();
+                let iconA = ""; let nomA = "";
+                
+                if (d.tipo === 'MENSAJE') {
+                    const esMio = d.remitente === window.userName;
+                    iconA = esMio ? '<i class="fas fa-arrow-right" style="color:var(--success);"></i> Para:' : '<i class="fas fa-arrow-left" style="color:var(--accent);"></i> De:';
+                    nomA = esMio ? d.destinatario : d.remitente;
+                } else if (d.subtipo === 'NUEVO_CORREO') {
+                    iconA = '<i class="fas fa-envelope" style="color:var(--success);"></i> Correo';
+                    nomA = `(Ticket: ${d.ticket})`;
+                } else {
+                    iconA = '<i class="fas fa-robot" style="color:#64748b;"></i> Sistema';
+                    nomA = d.ticket ? `(Ticket: ${d.ticket})` : 'Aviso General';
+                }
+                
+                const txtLeido = d.leido ? '<span class="badge status-completado">Revisado</span>' : '<span class="badge status-recibido">Pendiente</span>'; 
+                tbAvisos += `<tr><td style="font-size:11px;">${fechaFmt}</td><td style="font-weight:700; font-size:12px; white-space:nowrap;">${iconA} <span style="color:var(--primary);">${nomA}</span></td><td style="font-size:12px;">${d.mensaje}</td><td>${txtLeido}</td></tr>`;
+            });
+            const tabla = document.getElementById('lista-avisos');
+            if(tabla) tabla.innerHTML = tbAvisos; 
+        };
 
         function iniciarEscuchas() {
             onSnapshot(doc(db, "Configuracion", "General"), docSnap => {
@@ -924,7 +1004,7 @@
             });
 
             onSnapshot(collection(db, "Notificaciones"), s => {
-                window.notifSistema = []; let arrayAvisos = [];
+                window.notifSistema = []; window.avisosFirebase = [];
                 s.forEach(docSnap => {
                     const d = {id: docSnap.id, ...docSnap.data()}; 
                     let soyDestinatario = false; if (d.destinatario === window.userName) soyDestinatario = true; if ((window.userRol === 'LIDER' || window.userRol === 'LÍDER' || window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR') && window.userCamp.includes(d.campaña)) soyDestinatario = true;
@@ -936,22 +1016,14 @@
                     }
                     let mostrarEnTabla = false; const esAdmin = (window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR');
                     if (d.tipo === 'MENSAJE') { if (esAdmin || d.destinatario === window.userName || d.remitente === window.userName) mostrarEnTabla = true; } else if (d.tipo === 'SISTEMA') { if (esAdmin || soyDestinatario) mostrarEnTabla = true; }
-                    if (mostrarEnTabla) arrayAvisos.push(d);
+                    if (mostrarEnTabla) window.avisosFirebase.push(d);
                 });
-                arrayAvisos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                let tbAvisos = "";
-                arrayAvisos.forEach(d => {
-                    const fechaFmt = new Date(d.fecha).toLocaleString(); let iconA = ""; let nomA = "";
-                    if (d.tipo === 'MENSAJE') { const esMio = d.remitente === window.userName; iconA = esMio ? '<i class="fas fa-arrow-right" style="color:var(--success);"></i> Para:' : '<i class="fas fa-arrow-left" style="color:var(--accent);"></i> De:'; nomA = esMio ? d.destinatario : d.remitente; } else { iconA = '<i class="fas fa-robot" style="color:#64748b;"></i> Sistema'; nomA = d.ticket ? `(Ticket: ${d.ticket})` : 'Aviso General'; }
-                    const txtLeido = d.leido ? '<span class="badge status-completado">Leído</span>' : '<span class="badge status-recibido">No</span>'; 
-                    tbAvisos += `<tr><td style="font-size:11px;">${fechaFmt}</td><td style="font-weight:700; font-size:12px; white-space:nowrap;">${iconA} <span style="color:var(--primary);">${nomA}</span></td><td style="font-size:12px;">${d.mensaje}</td><td>${txtLeido}</td></tr>`;
-                });
-                document.getElementById('lista-avisos').innerHTML = tbAvisos; 
+                if(window.renderTablaAvisos) window.renderTablaAvisos();
                 window.renderizarCampana();
             });
 
             onSnapshot(collection(db, "Cobros"), s => {
-                let docs = []; const now = new Date(); window.notifTickets = []; 
+                let docs = []; const now = new Date(); window.notifTickets = []; window.virtualAvisosTickets = [];
                 s.forEach(docSnap => {
                     try {
                         let d = { id: docSnap.id, ...docSnap.data() }; 
@@ -965,12 +1037,26 @@
                         if (puedeVer) {
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24 && !d.alerta_sla_creada) { updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de 24 horas.`); } docs.push(d);
-                            if (d.nueva_respuesta_cliente) { window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">El ticket ${d.ticket} tiene una respuesta</div></div></div>`); }
+                            
+                            if (d.nueva_respuesta_cliente) { 
+                                window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">El ticket ${d.ticket} tiene una respuesta</div></div></div>`); 
+                                
+                                window.virtualAvisosTickets.push({
+                                    fecha: new Date().toISOString(),
+                                    tipo: 'SISTEMA', subtipo: 'NUEVO_CORREO',
+                                    mensaje: `Nueva respuesta recibida del cliente: ${d.cliente?.contacto || 'N/A'}`,
+                                    ticket: d.ticket, leido: false
+                                });
+                            }
                         }
                     } catch(err) {}
                 });
-                docs.sort((a,b) => (b.fechaFormateada || 0) - (a.fechaFormateada || 0)); window.datosSeguimientos = docs; window.allDashboardData = docs; renderSeguimientosTable(window.filtroActualSeguimiento);
+                docs.sort((a,b) => (b.fechaFormateada || 0) - (a.fechaFormateada || 0)); window.datosSeguimientos = docs; window.allDashboardData = docs; 
+                renderSeguimientosTable(window.filtroActualSeguimiento);
+                
                 const comboAgentes = document.getElementById('filtro-agente'); const agenteActual = comboAgentes.value; const agentesUnicos = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort(); comboAgentes.innerHTML = '<option value="TODOS">Todos</option>'; agentesUnicos.forEach(ag => comboAgentes.innerHTML += `<option value="${ag}">${ag}</option>`); if(agentesUnicos.includes(agenteActual)) comboAgentes.value = agenteActual; window.aplicarFiltrosDashboard();
+                
+                if(window.renderTablaAvisos) window.renderTablaAvisos();
                 window.renderizarCampana();
             });
         }
@@ -1013,7 +1099,6 @@
         window.exportarExcelDashboard = () => { if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) return mostrarToast("No hay datos.", "warning"); const dl = window.datosDashboardActual.map(d => ({ "TICKET": d.ticket, "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', "AGENTE": d.agente, "CAMPAÑA": d.campaña, "CLIENTE": d.cliente?.contacto, "TEL": d.cliente?.tel, "TOTAL": d.total, "ESTATUS": d.estatus, "MÉTODO": d.metodoEnvio })); const h = XLSX.utils.json_to_sheet(dl); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Reporte"); XLSX.writeFile(l, `ST_${new Date().getTime()}.xlsx`); };
         window.generarReporteEjecutivo = () => { if(!window.allDashboardData || window.allDashboardData.length === 0) return mostrarToast("No hay datos.", "warning"); let rC = {}; window.allDashboardData.forEach(d => { let c = d.campaña || "Sin Asignar"; if(!rC[c]) rC[c] = { "Campaña": c, "Atendidos": 0, "Éxito": 0, "Monto (Q)": 0, "Críticos": 0 }; rC[c]["Atendidos"]++; if(d.estatus === "COMPLETADO") rC[c]["Éxito"]++; if(d.estatus !== "ANULADO" && d.estatus !== "BORRADOR") rC[c]["Monto (Q)"] += (d.total || 0); if(d.prioridad?.temperamento === "Molesto" || d.prioridad?.temperamento === "Escalado") rC[c]["Críticos"]++; }); const h = XLSX.utils.json_to_sheet(Object.values(rC)); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Resumen"); XLSX.writeFile(l, `Gerencial_ST_${new Date().getTime()}.xlsx`); };
 
-        // --- EXPORTAR USUARIOS A EXCEL ---
         window.exportarUsuariosExcel = () => {
             const usuarios = window.adminData.usuarios;
             if (!usuarios || Object.keys(usuarios).length === 0) return mostrarToast("No hay usuarios para exportar.", "warning");
@@ -1037,7 +1122,6 @@
             XLSX.writeFile(wb, `Usuarios_ST_${new Date().getTime()}.xlsx`);
         };
 
-        // --- IMPORTAR USUARIOS DESDE EXCEL ---
         window.importarUsuariosExcel = (event) => {
             const file = event.target.files[0];
             if (!file) return;
