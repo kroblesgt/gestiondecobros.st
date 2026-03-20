@@ -267,9 +267,15 @@
                     <div style="padding: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                             <h2 style="font-weight:900; font-size: 20px; margin: 0;"><i class="fas fa-list-ul"></i> Seguimiento</h2>
-                            <div style="flex: 1; min-width: 250px; max-width: 400px; position: relative;">
-                                <i class="fas fa-search" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
-                                <input type="text" id="buscador-tickets" placeholder="Buscar ticket, NIT, nombre, teléfono o agente..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px 10px 38px; border: 2px solid var(--border); border-radius: 30px; font-size: 13px; width: 100%; font-weight: 700;">
+                            <div style="flex: 1; min-width: 250px; max-width: 500px; display: flex; gap: 10px; align-items: center;">
+                                <div style="position: relative; flex: 1;">
+                                    <i class="fas fa-search" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
+                                    <input type="text" id="buscador-tickets" placeholder="Buscar ticket, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px 10px 38px; border: 2px solid var(--border); border-radius: 8px; font-size: 13px; width: 100%; font-weight: 700;">
+                                </div>
+                                <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px; border-radius: 8px; font-weight: 900; border: 2px solid var(--border); background: #f8fafc; color: var(--primary); outline: none; cursor: pointer;">
+                                    <option value="MIS_TICKETS">👤 Mis Tickets</option>
+                                    <option value="EQUIPO">🌐 Ver Equipo</option>
+                                </select>
                             </div>
                         </div>
 
@@ -695,6 +701,28 @@
 
             let waReasonHtml = d.motivo_whatsapp ? `<p style="margin:2px 0; margin-top:8px; color:#d97706; font-weight:900; background: #fef9c3; padding: 6px; border-radius: 4px; border-left: 4px solid #eab308;"><i class="fab fa-whatsapp"></i> Motivo WA: <span style="font-weight:600; color:#000;">${d.motivo_whatsapp}</span></p>` : '';
 
+            let esLectura = (d.agente !== window.userName && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
+
+            let bloqueAcciones = "";
+            if (esLectura) {
+                bloqueAcciones = `<div style="background:#fffbeb; color:#d97706; padding:15px; text-align:center; font-weight:900; border-radius:8px; border: 2px dashed #d97706; margin-top:15px; font-size: 14px;"><i class="fas fa-eye"></i> <b>MODO LECTURA</b><br><span style="font-weight:600; font-size:12px; color:var(--text-muted);">Este ticket está asignado a ${d.agente}. Sólo puedes visualizar la información para apoyar al cliente.</span></div>`;
+            } else {
+                bloqueAcciones = `
+                <div style="display:flex; gap:10px; background:white; padding:10px; border-radius:8px; border:2px solid var(--border); align-items: center;">
+                    <textarea id="chat-input-${id}" placeholder="Escribe tu respuesta al cliente o nota técnica..." style="flex:1; border:none; resize:none; outline:none; font-weight:600;" rows="2"></textarea>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <button class="btn btn-accent" onclick="enviarMensajeChat('${id}', 'correo')" style="padding: 8px 12px; font-size:11px;"><i class="fas fa-paper-plane"></i> Enviar a Correo</button>
+                        <button class="btn btn-outline" onclick="enviarMensajeChat('${id}', 'interna')" style="padding: 8px 12px; font-size:11px; color: var(--text-muted); border-color: var(--text-muted);"><i class="fas fa-lock"></i> Nota Interna</button>
+                    </div>
+                </div>
+
+                <div style="background:#f1f5f9; padding:10px; border-radius:8px; border:1px solid var(--border); margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:5px;"><label style="font-size:11px; font-weight:900; white-space:nowrap;"><i class="fas fa-user-tie"></i> Agente:</label>${selectorAgenteHTML}</div>
+                    <div style="display:flex; align-items:center; gap:5px; flex:1;"><label style="font-size:11px; font-weight:900; white-space:nowrap; margin-left:10px;">Estatus:</label><select id="v-nuevo-estatus" style="padding:6px; font-size:12px; flex:1;"><option value="ENVIADO" ${d.estatus === 'ENVIADO' ? 'selected' : ''}>ENVIADO</option><option value="COMPROBANTE RECIBIDO" ${d.estatus === 'COMPROBANTE RECIBIDO' ? 'selected' : ''}>COMPROBANTE RECIBIDO</option><option value="COMPLETADO" ${d.estatus === 'COMPLETADO' ? 'selected' : ''}>COMPLETADO</option><option value="ANULADO" ${d.estatus === 'ANULADO' ? 'selected' : ''}>ANULADO</option></select></div>
+                    <button class="btn btn-success" style="padding:6px 15px;" onclick="guardarEstatus('${id}')">Aplicar Cambios</button>
+                </div>`;
+            }
+
             document.getElementById('v-cuerpo').innerHTML = `
                 <div class="card" style="background:#f8fafc; font-size:12px; margin-bottom:15px; padding:15px; border-radius:8px;">
                     <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:14px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;"><i class="fas fa-user"></i> Datos del Cliente y Prioridad</h4>
@@ -716,20 +744,7 @@
                 
                 <h4 style="margin:0 0 5px 0; color:var(--primary); font-size:13px;"><i class="fas fa-history"></i> Historial de Comunicación</h4>
                 <div class="chat-area" style="height: 250px; border: 2px solid var(--border); background: #e2e8f0; margin-bottom: 10px;">${chatHTML}</div>
-                
-                <div style="display:flex; gap:10px; background:white; padding:10px; border-radius:8px; border:2px solid var(--border); align-items: center;">
-                    <textarea id="chat-input-${id}" placeholder="Escribe tu respuesta al cliente o nota técnica..." style="flex:1; border:none; resize:none; outline:none; font-weight:600;" rows="2"></textarea>
-                    <div style="display:flex; flex-direction:column; gap:5px;">
-                        <button class="btn btn-accent" onclick="enviarMensajeChat('${id}', 'correo')" style="padding: 8px 12px; font-size:11px;"><i class="fas fa-paper-plane"></i> Enviar a Correo</button>
-                        <button class="btn btn-outline" onclick="enviarMensajeChat('${id}', 'interna')" style="padding: 8px 12px; font-size:11px; color: var(--text-muted); border-color: var(--text-muted);"><i class="fas fa-lock"></i> Nota Interna</button>
-                    </div>
-                </div>
-
-                <div style="background:#f1f5f9; padding:10px; border-radius:8px; border:1px solid var(--border); margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <div style="display:flex; align-items:center; gap:5px;"><label style="font-size:11px; font-weight:900; white-space:nowrap;"><i class="fas fa-user-tie"></i> Agente:</label>${selectorAgenteHTML}</div>
-                    <div style="display:flex; align-items:center; gap:5px; flex:1;"><label style="font-size:11px; font-weight:900; white-space:nowrap; margin-left:10px;">Estatus:</label><select id="v-nuevo-estatus" style="padding:6px; font-size:12px; flex:1;"><option value="ENVIADO" ${d.estatus === 'ENVIADO' ? 'selected' : ''}>ENVIADO</option><option value="COMPROBANTE RECIBIDO" ${d.estatus === 'COMPROBANTE RECIBIDO' ? 'selected' : ''}>COMPROBANTE RECIBIDO</option><option value="COMPLETADO" ${d.estatus === 'COMPLETADO' ? 'selected' : ''}>COMPLETADO</option><option value="ANULADO" ${d.estatus === 'ANULADO' ? 'selected' : ''}>ANULADO</option></select></div>
-                    <button class="btn btn-success" style="padding:6px 15px;" onclick="guardarEstatus('${id}')">Aplicar Cambios</button>
-                </div>
+                ${bloqueAcciones}
             `;
             document.getElementById('modal-visor').style.display = "flex";
             const chatBox = document.querySelector('.chat-area'); if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
@@ -910,6 +925,13 @@
                     return ticketMatch || nitMatch || nombreMatch || telMatch || agenteMatch;
                 });
             }
+
+            const modoVista = document.getElementById('filtro-vista-equipo') ? document.getElementById('filtro-vista-equipo').value : 'MIS_TICKETS';
+            const esAgenteNormal = (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
+            
+            if (esAgenteNormal && modoVista === 'MIS_TICKETS') {
+                data = data.filter(d => d.agente === window.userName);
+            }
             
             data.forEach(d => {
                 const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : "status-recibido";
@@ -929,8 +951,16 @@
                 const linkTabla = d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || d.link_pago || '';
                 if(linkTabla && linkTabla !== '#' && linkTabla.trim() !== '') { adjuntoHTML = `<a href="${linkTabla}" target="_blank" class="btn btn-outline" style="padding:4px 8px; font-size:10px; color:var(--accent); border-color:var(--accent);"><i class="fas fa-image"></i> Ver</a>`; }
 
-                let btnHTML = d.estatus === "BORRADOR" ? `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : `<button class="btn btn-outline" style="padding:5px; width:28px; height:28px;" onclick="window.abrirVisor('${d.id}')" title="Ver Gestión"><i class="fas fa-eye"></i></button>`;
-                if (d.nueva_respuesta_cliente) { btnHTML += ` <button class="btn btn-success" style="padding:5px 8px; font-size:10px; margin-left:5px;" onclick="window.marcarRevisado('${d.id}')" title="Marcar como Revisado"><i class="fas fa-check-double"></i></button>`; }
+                let esPropioOAdmin = (d.agente === window.userName || !esAgenteNormal);
+                let btnHTML = '';
+                if (esPropioOAdmin && d.estatus === "BORRADOR") {
+                    btnHTML = `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Editar"><i class="fas fa-edit"></i></button>`;
+                } else {
+                    btnHTML = `<button class="btn btn-outline" style="padding:5px; width:28px; height:28px;" onclick="window.abrirVisor('${d.id}')" title="Ver Gestión"><i class="fas fa-eye"></i></button>`;
+                }
+                if (esPropioOAdmin && d.nueva_respuesta_cliente) { 
+                    btnHTML += ` <button class="btn btn-success" style="padding:5px 8px; font-size:10px; margin-left:5px;" onclick="window.marcarRevisado('${d.id}')" title="Marcar como Revisado"><i class="fas fa-check-double"></i></button>`; 
+                }
                 
                 const esAdmin = (window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR');
                 if (esAdmin) {
@@ -1033,7 +1063,7 @@
                             d.ultimo_mensaje_cliente = txt.trim() || '[Respuesta vacía o sin texto detectado]';
                         }
                         let puedeVer = false; const rolUser = window.userRol || "";
-                        if (rolUser === "ADMINISTRADOR" || rolUser === "ADMIN") { puedeVer = true; } else if (rolUser === "LIDER" || rolUser === "LÍDER") { const tickCamps = Array.isArray(d.campaña) ? d.campaña : [d.campaña || ""]; if (window.userCamp && window.userCamp.some(c => tickCamps.includes(c))) puedeVer = true; } else { if (d.agente === window.userName) puedeVer = true; }
+                        if (rolUser === "ADMINISTRADOR" || rolUser === "ADMIN") { puedeVer = true; } else if (rolUser === "LIDER" || rolUser === "LÍDER") { const tickCamps = Array.isArray(d.campaña) ? d.campaña : [d.campaña || ""]; if (window.userCamp && window.userCamp.some(c => tickCamps.includes(c))) puedeVer = true; } else { const tickCamps = Array.isArray(d.campaña) ? d.campaña : [d.campaña || ""]; if (window.userCamp && window.userCamp.some(c => tickCamps.includes(c))) puedeVer = true; }
                         if (puedeVer) {
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24 && !d.alerta_sla_creada) { updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de 24 horas.`); } docs.push(d);
