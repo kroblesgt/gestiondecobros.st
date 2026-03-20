@@ -601,16 +601,26 @@
             const correoCliente = document.getElementById('cli-correo').value;
             const linkNeoNet = document.getElementById('pago-link').value;
             
+            // NUEVO: Generar Historial Automático de Creación
+            let histToSave = [];
+            if (esNuevoTicket) {
+                histToSave = [{ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `✨ Ticket creado originalmente por ${nombreAgente}.`, enviado_por_correo: false }];
+            } else {
+                const dExt = window.allDashboardData.find(x => x.id === ticketId);
+                if (dExt && dExt.historial_respuestas) histToSave = dExt.historial_respuestas;
+            }
+            
             const datos = { 
                 ticket: ticketId, fecha: new Date(), agente: nombreAgente, campaña: (window.userCamp && window.userCamp.length > 0) ? window.userCamp[0] : "", servicios: serviciosTemporales, total: total, 
                 prioridad: { temperamento: document.getElementById('cli-temperamento').value, observaciones_internas: document.getElementById('cli-obs-internas').value }, 
                 cliente: { nit: document.getElementById('cli-nit').value, contacto: clienteNombre, tel: document.getElementById('cli-tel').value, dir: document.getElementById('cli-dir').value, correo: correoCliente, obs_tec: document.getElementById('cli-obs-tec').value }, 
                 facturacion: { nit: document.getElementById('fac-nit').value, nombre: document.getElementById('fac-nombre').value }, pago_link: linkNeoNet, estatus: (metodo === 'Guardar') ? "BORRADOR" : "ENVIADO", metodoEnvio: metodo, alerta_sla_creada: false,
-                motivo_whatsapp: motivoWa.trim() 
+                motivo_whatsapp: motivoWa.trim(),
+                historial_respuestas: histToSave 
             };
 
             try {
-                await setDoc(doc(db, "Cobros", ticketId), datos);
+                await setDoc(doc(db, "Cobros", ticketId), datos, { merge: true });
                 if (esNuevoTicket && metodo !== 'Guardar') { window.mostrarPopupTicket(ticketId); }
                 
                 if (metodo === 'Correo') { 
@@ -639,6 +649,30 @@
         };
 
         window.retomarGestion = (id) => { const d = window.allDashboardData.find(x => x.id === id); if (!d) return; window.currentTicketEditing = d.ticket; document.getElementById('gc-tipo').value = d.servicios[0]?.tipo || "Diagnóstico"; cambioTipoServicio(); const sTemp = document.getElementById('cli-temperamento'); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp); document.getElementById('cli-obs-internas').value = d.prioridad?.observaciones_internas || ""; document.getElementById('cli-nit').value = d.cliente.nit || ""; document.getElementById('cli-contacto').value = d.cliente.contacto || ""; document.getElementById('cli-tel').value = d.cliente.tel || ""; document.getElementById('cli-dir').value = d.cliente.dir || ""; document.getElementById('cli-correo').value = d.cliente.correo || ""; document.getElementById('cli-obs-tec').value = d.cliente.obs_tec || ""; document.getElementById('fac-nit').value = d.facturacion?.nit || ""; document.getElementById('fac-nombre').value = d.facturacion?.nombre || ""; document.getElementById('pago-link').value = d.pago_link || ""; serviciosTemporales = d.servicios || []; renderServicios(); showSec('sec-2', document.getElementById('nav-2')); };
+
+        // --- NUEVO: Función para Adueñarse del Ticket ---
+        window.tomarSeguimiento = async (id, agenteAnterior) => {
+            if (confirm(`¿Estás seguro que deseas TOMAR EL SEGUIMIENTO de este ticket?\n\nPasará a ser de tu propiedad y tú serás el responsable de darle respuesta al cliente.`)) {
+                const nombreNuevo = document.getElementById('uName').innerText;
+                const d = window.allDashboardData.find(x => x.id === id);
+                if (!d) return;
+
+                let historialActualizado = [...(d.historial_respuestas || [])];
+                historialActualizado.push({
+                    tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', 
+                    mensaje: `🔄 ${nombreNuevo} ha tomado el seguimiento del ticket (Anteriormente asignado a ${agenteAnterior}).`, 
+                    enviado_por_correo: false
+                });
+
+                try {
+                    await updateDoc(doc(db, "Cobros", id), { agente: nombreNuevo, historial_respuestas: historialActualizado });
+                    mostrarToast("¡El ticket ahora está asignado a ti!", "success");
+                    window.abrirVisor(id); 
+                } catch(e) {
+                    mostrarToast("Error al tomar el ticket.", "error");
+                }
+            }
+        };
 
         // --- VISOR DE CHAT INTELIGENTE ---
         window.abrirVisor = async (id) => {
@@ -705,7 +739,10 @@
 
             let bloqueAcciones = "";
             if (esLectura) {
-                bloqueAcciones = `<div style="background:#fffbeb; color:#d97706; padding:15px; text-align:center; font-weight:900; border-radius:8px; border: 2px dashed #d97706; margin-top:15px; font-size: 14px;"><i class="fas fa-eye"></i> <b>MODO LECTURA</b><br><span style="font-weight:600; font-size:12px; color:var(--text-muted);">Este ticket está asignado a ${d.agente}. Sólo puedes visualizar la información para apoyar al cliente.</span></div>`;
+                bloqueAcciones = `<div style="background:#fffbeb; color:#d97706; padding:15px; text-align:center; font-weight:900; border-radius:8px; border: 2px dashed #d97706; margin-top:15px; font-size: 14px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                    <div><i class="fas fa-eye"></i> <b>MODO LECTURA</b><br><span style="font-weight:600; font-size:12px; color:var(--text-muted);">Este ticket está asignado a ${d.agente}. Sólo puedes visualizar la información.</span></div>
+                    <button class="btn btn-warning" onclick="tomarSeguimiento('${id}', '${d.agente}')" style="box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fas fa-hand-paper"></i> Tomar Seguimiento</button>
+                </div>`;
             } else {
                 bloqueAcciones = `
                 <div style="display:flex; gap:10px; background:white; padding:10px; border-radius:8px; border:2px solid var(--border); align-items: center;">
@@ -746,8 +783,6 @@
                 <div class="chat-area" style="height: 250px; border: 2px solid var(--border); background: #e2e8f0; margin-bottom: 10px;">${chatHTML}</div>
                 ${bloqueAcciones}
             `;
-            document.getElementById('modal-visor').style.display = "flex";
-            const chatBox = document.querySelector('.chat-area'); if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
         };
 
         window.enviarMensajeChat = async (id, modo) => {
@@ -1062,21 +1097,21 @@
                             for (let sep of separadores_correo) { txt = txt.split(sep)[0]; }
                             d.ultimo_mensaje_cliente = txt.trim() || '[Respuesta vacía o sin texto detectado]';
                         }
+                        
                         let puedeVer = false; const rolUser = window.userRol || "";
                         if (rolUser === "ADMINISTRADOR" || rolUser === "ADMIN") { puedeVer = true; } else if (rolUser === "LIDER" || rolUser === "LÍDER") { const tickCamps = Array.isArray(d.campaña) ? d.campaña : [d.campaña || ""]; if (window.userCamp && window.userCamp.some(c => tickCamps.includes(c))) puedeVer = true; } else { const tickCamps = Array.isArray(d.campaña) ? d.campaña : [d.campaña || ""]; if (window.userCamp && window.userCamp.some(c => tickCamps.includes(c))) puedeVer = true; }
+                        
                         if (puedeVer) {
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24 && !d.alerta_sla_creada) { updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de 24 horas.`); } docs.push(d);
                             
-                            if (d.nueva_respuesta_cliente) { 
-                                window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">El ticket ${d.ticket} tiene una respuesta</div></div></div>`); 
-                                
-                                window.virtualAvisosTickets.push({
-                                    fecha: new Date().toISOString(),
-                                    tipo: 'SISTEMA', subtipo: 'NUEVO_CORREO',
-                                    mensaje: `Nueva respuesta recibida del cliente: ${d.cliente?.contacto || 'N/A'}`,
-                                    ticket: d.ticket, leido: false
-                                });
+                            // NUEVO: Validación estricta para notificaciones
+                            if (d.nueva_respuesta_cliente) {
+                                const soyResponsable = (d.agente === window.userName || rolUser === 'ADMIN' || rolUser === 'ADMINISTRADOR' || rolUser === 'LIDER' || rolUser === 'LÍDER');
+                                if (soyResponsable) {
+                                    window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">El ticket ${d.ticket} tiene una respuesta</div></div></div>`); 
+                                    window.virtualAvisosTickets.push({ fecha: new Date().toISOString(), tipo: 'SISTEMA', subtipo: 'NUEVO_CORREO', mensaje: `Nueva respuesta recibida del cliente: ${d.cliente?.contacto || 'N/A'}`, ticket: d.ticket, leido: false });
+                                }
                             }
                         }
                     } catch(err) {}
