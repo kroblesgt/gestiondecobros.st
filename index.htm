@@ -783,6 +783,11 @@
                 <div class="chat-area" style="height: 250px; border: 2px solid var(--border); background: #e2e8f0; margin-bottom: 10px;">${chatHTML}</div>
                 ${bloqueAcciones}
             `;
+            
+            // ¡AQUÍ ESTÁ LA MAGIA QUE SE ME BORRÓ!
+            document.getElementById('modal-visor').style.display = "flex";
+            const chatBox = document.querySelector('.chat-area'); 
+            if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
         };
 
         window.enviarMensajeChat = async (id, modo) => {
