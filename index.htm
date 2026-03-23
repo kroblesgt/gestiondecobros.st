@@ -309,8 +309,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                     <h2 style="color:var(--primary); margin:0; font-weight:900; font-size: 20px;"><i class="fas fa-chart-pie"></i> Dashboard</h2>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button class="btn btn-success" onclick="exportarExcelDashboard()"><i class="fas fa-file-excel"></i> Datos</button>
-                        <button class="btn" style="background: var(--primary); color: white;" onclick="generarReporteEjecutivo()"><i class="fas fa-briefcase"></i> Ejecutivo</button>
+                        <button class="btn btn-success" onclick="exportarExcelDashboard()"><i class="fas fa-file-excel"></i> Exportar Datos</button>
                     </div>
                 </div>
 
@@ -475,20 +474,6 @@
                         </div>
                     </div>
 
-                    <div class="card" style="border-top: 5px solid var(--danger); margin-bottom: 0; background: #fff1f2; grid-column: 1 / -1;">
-                        <h3 style="font-size:16px; color:var(--danger); margin-top:0;"><i class="fas fa-database"></i> Respaldo y Migración</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Descarga una copia de seguridad total de la base de datos. Útil para auditorías o migraciones de tecnología.</p>
-                        
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn" style="background: #1e293b; color: white; flex:1;" onclick="descargarRespaldoMaestroJSON()">
-                                <i class="fas fa-file-code"></i> Respaldo Maestro (.JSON)
-                            </button>
-                            <button class="btn btn-danger" style="flex:1;" onclick="exportarExcelDashboard()">
-                                <i class="fas fa-file-excel"></i> Base Completa (.XLSX)
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
             </section>
 
@@ -520,7 +505,6 @@
         window.configSistema = { sla_horas: 24 }; 
         window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
         
-        // Variable Global para la Plantilla de WhatsApp (Con el texto por defecto)
         window.configPlantillas = { 
             whatsapp: "*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* {{ticket}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_{{motivo}}_" 
         };
@@ -683,13 +667,11 @@
                 else if (metodo === 'WhatsApp') { 
                     const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
                     
-                    // --- AQUÍ ESTÁ LA MAGIA DE LA PLANTILLA DINÁMICA ---
                     let msgRaw = window.configPlantillas?.whatsapp || "";
                     if (!msgRaw) {
                         msgRaw = "*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* {{ticket}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_{{motivo}}_";
                     }
 
-                    // Reemplazamos los comodines por los datos reales
                     msgRaw = msgRaw.replace(/\{\{ticket\}\}/g, ticketId)
                                    .replace(/\{\{cliente\}\}/g, clienteNombre)
                                    .replace(/\{\{telefono\}\}/g, datos.cliente.tel || 'N/A')
@@ -699,7 +681,6 @@
                                    .replace(/\{\{total\}\}/g, total.toFixed(2))
                                    .replace(/\{\{link_pago\}\}/g, datos.pago_link || 'Pendiente')
                                    .replace(/\{\{motivo\}\}/g, motivoWa.trim());
-                    // --------------------------------------------------
 
                     const linkOficial = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgRaw)}`;
                     if (waWindow) { waWindow.location.href = linkOficial; } else { window.open(linkOficial, '_blank'); }
@@ -1319,7 +1300,6 @@
         }
 
         window.exportarExcelDashboard = () => { if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) return mostrarToast("No hay datos.", "warning"); const dl = window.datosDashboardActual.map(d => ({ "TICKET": d.ticket, "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', "AGENTE": d.agente, "CAMPAÑA": d.campaña, "CLIENTE": d.cliente?.contacto, "TEL": d.cliente?.tel, "TOTAL": d.total, "ESTATUS": d.estatus, "MÉTODO": d.metodoEnvio })); const h = XLSX.utils.json_to_sheet(dl); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Reporte"); XLSX.writeFile(l, `ST_${new Date().getTime()}.xlsx`); };
-        window.generarReporteEjecutivo = () => { if(!window.allDashboardData || window.allDashboardData.length === 0) return mostrarToast("No hay datos.", "warning"); let rC = {}; window.allDashboardData.forEach(d => { let c = d.campaña || "Sin Asignar"; if(!rC[c]) rC[c] = { "Campaña": c, "Atendidos": 0, "Éxito": 0, "Monto (Q)": 0, "Críticos": 0 }; rC[c]["Atendidos"]++; if(d.estatus === "COMPLETADO") rC[c]["Éxito"]++; if(d.estatus !== "ANULADO" && d.estatus !== "BORRADOR") rC[c]["Monto (Q)"] += (d.total || 0); if(d.prioridad?.temperamento === "Molesto" || d.prioridad?.temperamento === "Escalado") rC[c]["Críticos"]++; }); const h = XLSX.utils.json_to_sheet(Object.values(rC)); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Resumen"); XLSX.writeFile(l, `Gerencial_ST_${new Date().getTime()}.xlsx`); };
 
         window.exportarUsuariosExcel = () => {
             const usuarios = window.adminData.usuarios;
@@ -1395,35 +1375,6 @@
                 }
             };
             reader.readAsArrayBuffer(file);
-        };
-
-        window.descargarRespaldoMaestroJSON = () => {
-            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') {
-                return mostrarToast("Solo el Administrador puede hacer respaldos maestros.", "error");
-            }
-            if (!window.allDashboardData || window.allDashboardData.length === 0) {
-                return mostrarToast("No hay datos en la base para respaldar.", "warning");
-            }
-            
-            if (confirm("¿Deseas descargar el Respaldo Maestro?\n\nEste archivo JSON contiene toda la información en crudo (raw) de la base de datos, ideal para ingenieros o migraciones de sistema.")) {
-                try {
-                    const dataStr = JSON.stringify(window.allDashboardData, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: "application/json" });
-                    const url = URL.createObjectURL(dataBlob);
-                    
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `ST_Respaldo_Maestro_Cobros_${new Date().toISOString().slice(0,10)}.json`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    
-                    mostrarToast("Respaldo maestro descargado con éxito.", "success");
-                } catch (error) {
-                    mostrarToast("Error al generar el archivo JSON.", "error");
-                }
-            }
         };
 
     </script>
