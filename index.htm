@@ -214,7 +214,7 @@
                 <div class="card">
                     <h3 class="module-header" style="font-size:18px;">1. Servicios</h3>
                     <div class="form-grid">
-                        <div class="input-group"><label>Tipo *</label><select id="gc-tipo" onchange="cambioTipoServicio()"><option value="Diagnóstico">Diagnóstico</option><option value="Mantenimiento">Mantenimiento</option><option value="Instalación">Instalación</option><option value="Presupuesto">Presupuesto</option><option value="Otro">Otro</option></select></div>
+                        <div class="input-group"><label>Tipo *</label><select id="gc-tipo" onchange="cambioTipoServicio()"></select></div>
                         <div class="input-group"><label id="lbl-falla">Falla Reportada *</label><input type="text" id="gc-detalle"></div>
                         <div class="input-group"><label>Precio (Q) *</label><input type="number" id="gc-precio"></div>
                     </div>
@@ -432,18 +432,63 @@
 
             <section id="sec-7" style="display:none">
                 <h2 class="module-header">Ajustes Generales del Sistema</h2>
-                <div class="card" style="border-top: 5px solid var(--primary);">
-                    <h3 style="font-size:16px; color:var(--primary); margin-top:0;"><i class="fas fa-envelope-open-text"></i> Configuración de Power Automate</h3>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define qué cuenta de correo se utilizará para enviar las notificaciones y respuestas a los clientes.</p>
-                    <div class="form-grid">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    
+                    <div class="card" style="border-top: 5px solid var(--warning); margin-bottom: 0;">
+                        <h3 style="font-size:16px; color:var(--warning); margin-top:0;"><i class="fas fa-clock"></i> Reglas Operativas (SLA)</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define después de cuántas horas de inactividad un ticket debe marcarse como ATRASADO (Rojo).</p>
                         <div class="input-group">
-                            <label>Correo Remitente (Responder A) *</label>
-                            <input type="email" id="conf-correo-salida" placeholder="Ej: krobles@distelsa.com.gt">
+                            <label>Límite de Horas SLA *</label>
+                            <input type="number" id="conf-sla" placeholder="Ej: 24" min="1">
+                        </div>
+                        <div style="text-align: right; margin-top: 15px;">
+                            <button class="btn btn-warning" onclick="guardarConfiguracionSLA()"><i class="fas fa-save"></i> Guardar Reglas</button>
                         </div>
                     </div>
-                    <div style="text-align: right; margin-top: 15px;">
-                        <button class="btn btn-primary" onclick="guardarConfiguracion()"><i class="fas fa-save"></i> Guardar Ajustes</button>
+
+                    <div class="card" style="border-top: 5px solid var(--accent); margin-bottom: 0;">
+                        <h3 style="font-size:16px; color:var(--accent); margin-top:0;"><i class="fas fa-tags"></i> Catálogo: Tipos de Servicio</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Agrega o elimina los servicios que aparecen en el listado desplegable de los agentes.</p>
+                        
+                        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+                            <input type="text" id="nuevo-tipo-servicio" placeholder="Ej: Garantía Extendida" style="flex:1;">
+                            <button class="btn btn-accent" onclick="agregarTipoServicio()"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div id="lista-tipos-servicio" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 5px; background: #f8fafc;">
+                            </div>
                     </div>
+
+                    <div class="card" style="border-top: 5px solid #25D366; margin-bottom: 0; grid-column: 1 / -1;">
+                        <h3 style="font-size:16px; color:#128C7E; margin-top:0;"><i class="fab fa-whatsapp"></i> Editor de Plantilla para WhatsApp</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Personaliza el texto oficial que el sistema enviará al grupo de WhatsApp cuando un agente solicite un cobro.</p>
+                        
+                        <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 15px; border: 1px dashed #22c55e; color: #166534;">
+                            <i class="fas fa-info-circle"></i> <b>Usa estas variables exactamente como están escritas (con doble llave) para que el sistema las reemplace:</b><br>
+                            <span style="font-family:monospace; font-weight:700;">{{ticket}}, {{cliente}}, {{telefono}}, {{razon_social}}, {{nit}}, {{servicios}}, {{total}}, {{link_pago}}, {{motivo}}</span>
+                        </div>
+                        
+                        <textarea id="conf-plantilla-wa" rows="12" style="font-family: monospace; font-size: 12px; line-height: 1.5; resize: vertical; border: 2px solid #25D366;"></textarea>
+                        
+                        <div style="text-align: right; margin-top: 15px;">
+                            <button class="btn btn-success" onclick="guardarPlantillaWA()"><i class="fas fa-save"></i> Guardar Plantilla de WhatsApp</button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="border-top: 5px solid var(--danger); margin-bottom: 0; background: #fff1f2; grid-column: 1 / -1;">
+                        <h3 style="font-size:16px; color:var(--danger); margin-top:0;"><i class="fas fa-database"></i> Respaldo y Migración</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Descarga una copia de seguridad total de la base de datos. Útil para auditorías o migraciones de tecnología.</p>
+                        
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn" style="background: #1e293b; color: white; flex:1;" onclick="descargarRespaldoMaestroJSON()">
+                                <i class="fas fa-file-code"></i> Respaldo Maestro (.JSON)
+                            </button>
+                            <button class="btn btn-danger" style="flex:1;" onclick="exportarExcelDashboard()">
+                                <i class="fas fa-file-excel"></i> Base Completa (.XLSX)
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
@@ -471,7 +516,14 @@
         let serviciosTemporales = []; window.currentTicketEditing = null; window.adminData = { roles: {}, campañas: {}, usuarios: {} };
         window.allDashboardData = []; window.datosDashboardActual = []; window.chartInstEstatus = null; window.chartInstAgentes = null; window.datosSeguimientos = []; window.totalAlertas = 0;
         
-        window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; window.configSistema = {};
+        window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; 
+        window.configSistema = { sla_horas: 24 }; 
+        window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
+        
+        // Variable Global para la Plantilla de WhatsApp (Con el texto por defecto)
+        window.configPlantillas = { 
+            whatsapp: "*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* {{ticket}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_{{motivo}}_" 
+        };
 
         window.toggleMenuMobile = () => { document.getElementById('sidebar-menu').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); };
         document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', () => { if (window.innerWidth <= 768) window.toggleMenuMobile(); }); });
@@ -568,7 +620,7 @@
             document.querySelectorAll('#sec-2 input, #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; }); 
             document.getElementById('check-confirmar').checked = false; 
             const selectTemp = document.getElementById('cli-temperamento'); selectTemp.value = "Normal"; cambiarColorTemperamento(selectTemp); 
-            document.getElementById('gc-tipo').value = "Diagnóstico"; 
+            const selectTipo = document.getElementById('gc-tipo'); if(selectTipo.options.length > 0) selectTipo.selectedIndex = 0;
             window.cambioTipoServicio(); 
         };
 
@@ -601,7 +653,6 @@
             const correoCliente = document.getElementById('cli-correo').value;
             const linkNeoNet = document.getElementById('pago-link').value;
             
-            // NUEVO: Generar Historial Automático de Creación
             let histToSave = [];
             if (esNuevoTicket) {
                 histToSave = [{ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `✨ Ticket creado originalmente por ${nombreAgente}.`, enviado_por_correo: false }];
@@ -625,14 +676,31 @@
                 
                 if (metodo === 'Correo') { 
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
-                    const payloadPA = { "tipo_accion": "NUEVO_COBRO", "ticket": ticketId, "correo": correoCliente || "sin-correo@distelsa.com.gt", "cliente": clienteNombre, "total": total.toString(), "agente": nombreAgente, "link": linkNeoNet || "Pendiente de generar", "detalle_servicios": `<ul>${resumenServicios}</ul>`, "mensaje": "Envío de cobro inicial", "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "correo_remitente": window.configSistema?.correo_salida || "tu-correo-por-defecto@distelsa.com.gt" };
+                    const payloadPA = { "tipo_accion": "NUEVO_COBRO", "ticket": ticketId, "correo": correoCliente || "sin-correo@distelsa.com.gt", "cliente": clienteNombre, "total": total.toString(), "agente": nombreAgente, "link": linkNeoNet || "Pendiente de generar", "detalle_servicios": `<ul>${resumenServicios}</ul>`, "mensaje": "Envío de cobro inicial", "firma_texto": window.userFirma, "firma_img": window.userFirmaImg };
                     await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
                     mostrarToast(`Ticket enviado a Outlook con éxito.`, 'success'); 
                 } 
                 else if (metodo === 'WhatsApp') { 
                     const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
-                    const msgRaw = `*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* ${ticketId} \n-------------------------- \n*CLIENTE:* ${clienteNombre} \n*TEL:* ${datos.cliente.tel || 'N/A'} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* ${datos.facturacion.nombre || 'C/F'} \n*NIT:* ${datos.facturacion.nit || 'C/F'} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n${rServ} \n\n*TOTAL: Q ${total.toFixed(2)}* \n-------------------------- \n*LINK DE PAGO:* ${datos.pago_link || 'Pendiente'}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_${motivoWa.trim()}_`; 
                     
+                    // --- AQUÍ ESTÁ LA MAGIA DE LA PLANTILLA DINÁMICA ---
+                    let msgRaw = window.configPlantillas?.whatsapp || "";
+                    if (!msgRaw) {
+                        msgRaw = "*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* {{ticket}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_{{motivo}}_";
+                    }
+
+                    // Reemplazamos los comodines por los datos reales
+                    msgRaw = msgRaw.replace(/\{\{ticket\}\}/g, ticketId)
+                                   .replace(/\{\{cliente\}\}/g, clienteNombre)
+                                   .replace(/\{\{telefono\}\}/g, datos.cliente.tel || 'N/A')
+                                   .replace(/\{\{razon_social\}\}/g, datos.facturacion.nombre || 'C/F')
+                                   .replace(/\{\{nit\}\}/g, datos.facturacion.nit || 'C/F')
+                                   .replace(/\{\{servicios\}\}/g, rServ)
+                                   .replace(/\{\{total\}\}/g, total.toFixed(2))
+                                   .replace(/\{\{link_pago\}\}/g, datos.pago_link || 'Pendiente')
+                                   .replace(/\{\{motivo\}\}/g, motivoWa.trim());
+                    // --------------------------------------------------
+
                     const linkOficial = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgRaw)}`;
                     if (waWindow) { waWindow.location.href = linkOficial; } else { window.open(linkOficial, '_blank'); }
                     
@@ -650,7 +718,6 @@
 
         window.retomarGestion = (id) => { const d = window.allDashboardData.find(x => x.id === id); if (!d) return; window.currentTicketEditing = d.ticket; document.getElementById('gc-tipo').value = d.servicios[0]?.tipo || "Diagnóstico"; cambioTipoServicio(); const sTemp = document.getElementById('cli-temperamento'); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp); document.getElementById('cli-obs-internas').value = d.prioridad?.observaciones_internas || ""; document.getElementById('cli-nit').value = d.cliente.nit || ""; document.getElementById('cli-contacto').value = d.cliente.contacto || ""; document.getElementById('cli-tel').value = d.cliente.tel || ""; document.getElementById('cli-dir').value = d.cliente.dir || ""; document.getElementById('cli-correo').value = d.cliente.correo || ""; document.getElementById('cli-obs-tec').value = d.cliente.obs_tec || ""; document.getElementById('fac-nit').value = d.facturacion?.nit || ""; document.getElementById('fac-nombre').value = d.facturacion?.nombre || ""; document.getElementById('pago-link').value = d.pago_link || ""; serviciosTemporales = d.servicios || []; renderServicios(); showSec('sec-2', document.getElementById('nav-2')); };
 
-        // --- NUEVO: Función para Adueñarse del Ticket ---
         window.tomarSeguimiento = async (id, agenteAnterior) => {
             if (confirm(`¿Estás seguro que deseas TOMAR EL SEGUIMIENTO de este ticket?\n\nPasará a ser de tu propiedad y tú serás el responsable de darle respuesta al cliente.`)) {
                 const nombreNuevo = document.getElementById('uName').innerText;
@@ -674,7 +741,6 @@
             }
         };
 
-        // --- VISOR DE CHAT INTELIGENTE ---
         window.abrirVisor = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             document.getElementById('v-titulo').innerText = "Gestión Ticket: " + d.ticket;
@@ -784,7 +850,6 @@
                 ${bloqueAcciones}
             `;
             
-            // ¡AQUÍ ESTÁ LA MAGIA QUE SE ME BORRÓ!
             document.getElementById('modal-visor').style.display = "flex";
             const chatBox = document.querySelector('.chat-area'); 
             if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
@@ -828,7 +893,7 @@
                 });
 
                 if (modo === 'correo') {
-                    const payloadPA = { "tipo_accion": "NUEVA_RESPUESTA_AGENTE", "ticket": d.ticket, "correo": d.cliente.correo, "cliente": d.cliente.contacto, "total": d.total.toString(), "agente": nombreAgenteActual, "link": d.pago_link || "", "detalle_servicios": "Ver histórico del ticket", "mensaje": msg, "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "historial_html": hiloZendesk, "correo_remitente": window.configSistema?.correo_salida || "tu-correo-por-defecto@distelsa.com.gt" };
+                    const payloadPA = { "tipo_accion": "NUEVA_RESPUESTA_AGENTE", "ticket": d.ticket, "correo": d.cliente.correo, "cliente": d.cliente.contacto, "total": d.total.toString(), "agente": nombreAgenteActual, "link": d.pago_link || "", "detalle_servicios": "Ver histórico del ticket", "mensaje": msg, "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "historial_html": hiloZendesk };
                     await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } });
                     mostrarToast("Mensaje enviado al cliente.", "success");
                 } else { mostrarToast("Nota interna registrada.", "info"); }
@@ -865,11 +930,55 @@
             } catch (error) { mostrarToast("Error al aplicar cambios.", 'error'); }
         };
 
-        window.guardarConfiguracion = async () => {
+        // --- FUNCIONES DE AJUSTES ---
+        window.guardarConfiguracionSLA = async () => {
             if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
-            const correo = document.getElementById('conf-correo-salida').value.trim();
-            if (!correo) return mostrarToast("El correo no puede estar vacío.", "warning");
-            try { await setDoc(doc(db, "Configuracion", "General"), { correo_salida: correo }, { merge: true }); mostrarToast("Configuración del sistema actualizada.", "success"); } catch(e) { mostrarToast("Error al guardar configuración.", "error"); }
+            const sla = parseInt(document.getElementById('conf-sla').value) || 24;
+            try { 
+                await setDoc(doc(db, "Configuracion", "General"), { sla_horas: sla }, { merge: true }); 
+                mostrarToast("Reglas de SLA actualizadas.", "success"); 
+            } catch(e) { mostrarToast("Error al guardar SLA.", "error"); }
+        };
+
+        window.agregarTipoServicio = async () => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            const nuevoServicio = document.getElementById('nuevo-tipo-servicio').value.trim();
+            if (!nuevoServicio) return mostrarToast("Escribe un tipo de servicio válido.", "warning");
+            
+            try {
+                let actual = window.configCatalogos?.tipos_servicio || ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"];
+                if (!actual.includes(nuevoServicio)) {
+                    actual.push(nuevoServicio);
+                    await setDoc(doc(db, "Configuracion", "Catalogos"), { tipos_servicio: actual }, { merge: true });
+                    document.getElementById('nuevo-tipo-servicio').value = "";
+                    mostrarToast("Servicio agregado correctamente.", "success");
+                } else {
+                    mostrarToast("Este servicio ya existe en el catálogo.", "warning");
+                }
+            } catch(e) { mostrarToast("Error al guardar en catálogo.", "error"); }
+        };
+
+        window.eliminarTipoServicio = async (servicio) => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            if(confirm(`¿Estás seguro que deseas eliminar el servicio: "${servicio}"?`)) {
+                try {
+                    let actual = window.configCatalogos?.tipos_servicio || [];
+                    actual = actual.filter(t => t !== servicio);
+                    if(actual.length === 0) actual = ["Otro"]; 
+                    await setDoc(doc(db, "Configuracion", "Catalogos"), { tipos_servicio: actual }, { merge: true });
+                    mostrarToast("Servicio eliminado del catálogo.", "success");
+                } catch(e) { mostrarToast("Error al eliminar.", "error"); }
+            }
+        };
+
+        window.guardarPlantillaWA = async () => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            const plantilla = document.getElementById('conf-plantilla-wa').value.trim();
+            if (!plantilla) return mostrarToast("La plantilla no puede estar vacía.", "warning");
+            try { 
+                await setDoc(doc(db, "Configuracion", "Plantillas"), { whatsapp: plantilla }, { merge: true }); 
+                mostrarToast("Plantilla de WhatsApp actualizada.", "success"); 
+            } catch(e) { mostrarToast("Error al guardar plantilla.", "error"); }
         };
 
         window.cargarEdicion = (tipo, id) => {
@@ -945,10 +1054,11 @@
 
         function renderSeguimientosTable(filtroTipo) {
             const tb = document.getElementById('lista-seguimientos'); tb.innerHTML = ""; let data = window.datosSeguimientos; let cAtraso = 0; let cComp = 0; let cResp = 0; const now = new Date();
+            const slaLimite = window.configSistema?.sla_horas || 24; 
             
             data.forEach(d => {
                 const hPasadas = Math.abs(now - (d.fechaFormateada || now)) / 36e5; let t_alert = 'NADA';
-                if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24) { t_alert = 'ATRASO'; cAtraso++; } d.temp_alerta = t_alert; 
+                if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } d.temp_alerta = t_alert; 
             });
             document.getElementById('pill-count-atraso').innerText = cAtraso; document.getElementById('pill-count-comp').innerText = cComp; document.getElementById('pill-count-resp').innerText = cResp;
             
@@ -1052,12 +1162,47 @@
         };
 
         function iniciarEscuchas() {
+            // ESCUCHA REGLAS DE NEGOCIO (SLA)
             onSnapshot(doc(db, "Configuracion", "General"), docSnap => {
                 if (docSnap.exists()) {
                     window.configSistema = docSnap.data();
-                    const inputCorreo = document.getElementById('conf-correo-salida');
-                    if (inputCorreo) inputCorreo.value = window.configSistema.correo_salida || '';
+                    const inputSLA = document.getElementById('conf-sla');
+                    if (inputSLA) inputSLA.value = window.configSistema.sla_horas || 24;
+                } else {
+                    window.configSistema = { sla_horas: 24 };
                 }
+            });
+
+            // ESCUCHA CATÁLOGOS DINÁMICOS
+            onSnapshot(doc(db, "Configuracion", "Catalogos"), docSnap => {
+                let tipos = ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"]; 
+                if (docSnap.exists() && docSnap.data().tipos_servicio) { tipos = docSnap.data().tipos_servicio; }
+                window.configCatalogos = { tipos_servicio: tipos };
+
+                const selCobro = document.getElementById('gc-tipo');
+                if(selCobro) {
+                    const valActual = selCobro.value;
+                    selCobro.innerHTML = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+                    if(tipos.includes(valActual)) selCobro.value = valActual; 
+                }
+
+                const listAjustes = document.getElementById('lista-tipos-servicio');
+                if(listAjustes) {
+                    listAjustes.innerHTML = tipos.map(t => `
+                        <div style="display:flex; justify-content:space-between; padding:8px 12px; border-bottom:1px solid #e2e8f0; align-items:center;">
+                            <span style="font-weight:700; font-size: 13px; color: var(--text-muted);"><i class="fas fa-tag" style="color:var(--accent); margin-right:5px;"></i> ${t}</span> 
+                            <button class="btn btn-danger btn-icon" style="padding:4px; width:28px; height:28px;" onclick="eliminarTipoServicio('${t}')"><i class="fas fa-trash" style="font-size:12px;"></i></button>
+                        </div>`).join('');
+                }
+            });
+
+            // ESCUCHA PLANTILLA DE WHATSAPP
+            onSnapshot(doc(db, "Configuracion", "Plantillas"), docSnap => {
+                if (docSnap.exists() && docSnap.data().whatsapp) {
+                    window.configPlantillas.whatsapp = docSnap.data().whatsapp;
+                }
+                const inputWA = document.getElementById('conf-plantilla-wa');
+                if (inputWA) inputWA.value = window.configPlantillas.whatsapp;
             });
 
             onSnapshot(collection(db, "Roles"), s => { const sel = document.getElementById('u-rol'); sel.innerHTML = ""; const tb = document.getElementById('l-roles'); tb.innerHTML = ""; s.forEach(d => { const data = d.data(); const isAdmin = d.id.toUpperCase() === 'ADMIN' || d.id.toUpperCase() === 'ADMINISTRADOR'; if (isAdmin && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return; window.adminData.roles[d.id] = data; let bg = data.permisos==="ALL" ? '<span class="badge" style="background:var(--success); color:white;">ACCESO TOTAL</span>' : (data.permisos ? '<span class="badge" style="background:var(--primary); color:white;">PERSONALIZADO</span>' : '<span class="badge" style="background:var(--danger); color:white;">SIN ACCESO</span>'); tb.innerHTML += `<tr><td><b>${d.id}</b></td><td>${bg} <span style="font-size:10px; color:var(--text-muted); display:block; margin-top:4px;">(${data.permisos || 'Ninguno'})</span></td><td style="text-align:right;"><button class="btn btn-outline btn-icon" style="padding:5px;" onclick="cargarEdicion('Roles', '${d.id}')"><i class="fas fa-pen"></i></button> <button class="btn btn-danger btn-icon" style="padding:5px;" onclick="eliminarDato('Roles', '${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`; sel.innerHTML += `<option value="${d.id}">${d.id}</option>`; }); });
@@ -1094,6 +1239,8 @@
 
             onSnapshot(collection(db, "Cobros"), s => {
                 let docs = []; const now = new Date(); window.notifTickets = []; window.virtualAvisosTickets = [];
+                const slaLimite = window.configSistema?.sla_horas || 24; 
+                
                 s.forEach(docSnap => {
                     try {
                         let d = { id: docSnap.id, ...docSnap.data() }; 
@@ -1108,9 +1255,14 @@
                         
                         if (puedeVer) {
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
-                            const hPasadas = Math.abs(now - fechaTick) / 36e5; if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > 24 && !d.alerta_sla_creada) { updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de 24 horas.`); } docs.push(d);
                             
-                            // NUEVO: Validación estricta para notificaciones
+                            const hPasadas = Math.abs(now - fechaTick) / 36e5; 
+                            if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
+                                updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); 
+                                window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de ${slaLimite} horas.`); 
+                            } 
+                            docs.push(d);
+                            
                             if (d.nueva_respuesta_cliente) {
                                 const soyResponsable = (d.agente === window.userName || rolUser === 'ADMIN' || rolUser === 'ADMINISTRADOR' || rolUser === 'LIDER' || rolUser === 'LÍDER');
                                 if (soyResponsable) {
@@ -1244,6 +1396,36 @@
             };
             reader.readAsArrayBuffer(file);
         };
+
+        window.descargarRespaldoMaestroJSON = () => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') {
+                return mostrarToast("Solo el Administrador puede hacer respaldos maestros.", "error");
+            }
+            if (!window.allDashboardData || window.allDashboardData.length === 0) {
+                return mostrarToast("No hay datos en la base para respaldar.", "warning");
+            }
+            
+            if (confirm("¿Deseas descargar el Respaldo Maestro?\n\nEste archivo JSON contiene toda la información en crudo (raw) de la base de datos, ideal para ingenieros o migraciones de sistema.")) {
+                try {
+                    const dataStr = JSON.stringify(window.allDashboardData, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: "application/json" });
+                    const url = URL.createObjectURL(dataBlob);
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `ST_Respaldo_Maestro_Cobros_${new Date().toISOString().slice(0,10)}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    mostrarToast("Respaldo maestro descargado con éxito.", "success");
+                } catch (error) {
+                    mostrarToast("Error al generar el archivo JSON.", "error");
+                }
+            }
+        };
+
     </script>
 </body>
 </html>
