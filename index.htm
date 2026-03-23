@@ -270,10 +270,10 @@
                             <div style="flex: 1; min-width: 250px; max-width: 500px; display: flex; gap: 10px; align-items: center;">
                                 <div style="position: relative; flex: 1;">
                                     <i class="fas fa-search" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
-                                    <input type="text" id="buscador-tickets" placeholder="Buscar ticket, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px 10px 38px; border: 2px solid var(--border); border-radius: 8px; font-size: 13px; width: 100%; font-weight: 700;">
+                                    <input type="text" id="buscador-tickets" placeholder="Buscar solicitud, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px 10px 38px; border: 2px solid var(--border); border-radius: 8px; font-size: 13px; width: 100%; font-weight: 700;">
                                 </div>
                                 <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px; border-radius: 8px; font-weight: 900; border: 2px solid var(--border); background: #f8fafc; color: var(--primary); outline: none; cursor: pointer;">
-                                    <option value="MIS_TICKETS">👤 Mis Tickets</option>
+                                    <option value="MIS_SOLICITUDES">👤 Mis Solicitudes</option>
                                     <option value="EQUIPO">🌐 Ver Equipo</option>
                                 </select>
                             </div>
@@ -290,7 +290,7 @@
                         <table style="min-width: 1000px;">
                             <thead>
                                 <tr>
-                                    <th>Ticket</th>
+                                    <th>Solicitud</th>
                                     <th>Fecha / Agente</th>
                                     <th>Cliente</th>
                                     <th>Estatus / SLA</th>
@@ -328,10 +328,10 @@
                 </div>
 
                 <div class="kpi-grid">
-                    <div class="kpi-card"><i class="fas fa-ticket-alt"></i><div><div class="value" id="kpi-tickets">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">TICKETS</div></div></div>
+                    <div class="kpi-card"><i class="fas fa-file-invoice"></i><div><div class="value" id="kpi-tickets">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">SOLICITUDES</div></div></div>
                     <div class="kpi-card"><i class="fas fa-coins" style="color:var(--success); background:rgba(5,150,105,0.1);"></i><div><div class="value" id="kpi-monto">Q 0.00</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">MONTO (Q)</div></div></div>
                     <div class="kpi-card"><i class="fas fa-clock" style="color:var(--warning); background:rgba(217,119,6,0.1);"></i><div><div class="value" id="kpi-espera">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">EN ESPERA</div></div></div>
-                    <div class="kpi-card"><i class="fas fa-check-circle" style="color:var(--accent); background:rgba(0,163,224,0.1);"></i><div><div class="value" id="kpi-completados">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">COMPLETADOS</div></div></div>
+                    <div class="kpi-card"><i class="fas fa-check-circle" style="color:var(--accent); background:rgba(0,163,224,0.1);"></i><div><div class="value" id="kpi-completados">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">COMPLETADAS</div></div></div>
                 </div>
 
                 <div class="form-grid">
@@ -436,7 +436,7 @@
                     
                     <div class="card" style="border-top: 5px solid var(--warning); margin-bottom: 0;">
                         <h3 style="font-size:16px; color:var(--warning); margin-top:0;"><i class="fas fa-clock"></i> Reglas Operativas (SLA)</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define después de cuántas horas de inactividad un ticket debe marcarse como ATRASADO (Rojo).</p>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define después de cuántas horas de inactividad una solicitud debe marcarse como ATRASADA (Rojo).</p>
                         <div class="input-group">
                             <label>Límite de Horas SLA *</label>
                             <input type="number" id="conf-sla" placeholder="Ej: 24" min="1">
@@ -460,11 +460,11 @@
 
                     <div class="card" style="border-top: 5px solid #25D366; margin-bottom: 0; grid-column: 1 / -1;">
                         <h3 style="font-size:16px; color:#128C7E; margin-top:0;"><i class="fab fa-whatsapp"></i> Editor de Plantilla para WhatsApp</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Personaliza el texto oficial que el sistema enviará al grupo de WhatsApp cuando un agente solicite un cobro.</p>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Personaliza el texto oficial que el sistema enviará al grupo de WhatsApp cuando un agente envíe una solicitud de cobro.</p>
                         
                         <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 15px; border: 1px dashed #22c55e; color: #166534;">
                             <i class="fas fa-info-circle"></i> <b>Usa estas variables exactamente como están escritas (con doble llave) para que el sistema las reemplace:</b><br>
-                            <span style="font-family:monospace; font-weight:700;">{{ticket}}, {{cliente}}, {{telefono}}, {{razon_social}}, {{nit}}, {{servicios}}, {{total}}, {{link_pago}}, {{motivo}}</span>
+                            <span style="font-family:monospace; font-weight:700;">{{solicitud}}, {{cliente}}, {{telefono}}, {{razon_social}}, {{nit}}, {{servicios}}, {{total}}, {{link_pago}}, {{motivo}}</span>
                         </div>
                         
                         <textarea id="conf-plantilla-wa" rows="12" style="font-family: monospace; font-size: 12px; line-height: 1.5; resize: vertical; border: 2px solid #25D366;"></textarea>
@@ -506,7 +506,7 @@
         window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
         
         window.configPlantillas = { 
-            whatsapp: "*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* {{ticket}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_{{motivo}}_" 
+            whatsapp: "*NUEVA SOLICITUD DE COBRO* 🛠️\n\n*Solicitud:* {{solicitud}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE LA SOLICITUD:*\n_{{motivo}}_" 
         };
 
         window.toggleMenuMobile = () => { document.getElementById('sidebar-menu').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); };
@@ -543,7 +543,7 @@
             if (window.totalAlertas > 0) { 
                 badge.innerText = window.totalAlertas; badge.style.display = 'flex'; campana.classList.add('ring-anim'); document.getElementById('notif-list').innerHTML = todasLasAlertas.join(''); 
             } else { 
-                badge.style.display = 'none'; campana.classList.remove('ring-anim'); document.getElementById('notif-list').innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted); font-weight: 700;"><i class="fas fa-check-circle" style="font-size: 30px; color: var(--success); margin-bottom: 10px;"></i><br>Bandeja y tickets al día.</div>`; 
+                badge.style.display = 'none'; campana.classList.remove('ring-anim'); document.getElementById('notif-list').innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted); font-weight: 700;"><i class="fas fa-check-circle" style="font-size: 30px; color: var(--success); margin-bottom: 10px;"></i><br>Bandeja y solicitudes al día.</div>`; 
             }
         };
 
@@ -560,7 +560,7 @@
                     updates.ultimo_mensaje_cliente = 'Sin mensaje reciente';
                 }
                 await updateDoc(doc(db, "Cobros", idTicket), updates); 
-                mostrarToast("Ticket revisado e historial guardado.", "success"); 
+                mostrarToast("Solicitud revisada e historial guardado.", "success"); 
                 window.abrirVisor(idTicket);
             } catch (e) { mostrarToast("Error al actualizar.", "error"); }
         };
@@ -610,7 +610,7 @@
 
         window.mostrarPopupTicket = (ticket) => {
             const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.style.zIndex = '4000'; 
-            overlay.innerHTML = `<div class="modal-content" style="max-width: 400px; text-align: center; padding: 35px 25px; animation: slideDown 0.3s ease;"><div style="font-size: 60px; color: var(--success); margin-bottom: 15px;"><i class="fas fa-check-circle"></i></div><h2 style="color: var(--primary); margin: 0 0 10px 0; font-weight: 900;">¡Gestión Exitosa!</h2><p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">El cobro se ha registrado correctamente en el sistema. El número de ticket asignado es:</p><div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 2px dashed var(--success); margin-bottom: 25px;"><span style="font-size: 28px; font-weight: 900; color: var(--primary); letter-spacing: 2px;">${ticket}</span></div><button class="btn btn-primary" style="width: 100%; font-size: 15px; padding: 14px;" onclick="this.closest('.modal-overlay').remove()">Aceptar y Continuar</button></div>`;
+            overlay.innerHTML = `<div class="modal-content" style="max-width: 400px; text-align: center; padding: 35px 25px; animation: slideDown 0.3s ease;"><div style="font-size: 60px; color: var(--success); margin-bottom: 15px;"><i class="fas fa-check-circle"></i></div><h2 style="color: var(--primary); margin: 0 0 10px 0; font-weight: 900;">¡Gestión Exitosa!</h2><p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">El cobro se ha registrado correctamente en el sistema. El número de solicitud asignado es:</p><div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 2px dashed var(--success); margin-bottom: 25px;"><span style="font-size: 28px; font-weight: 900; color: var(--primary); letter-spacing: 2px;">${ticket}</span></div><button class="btn btn-primary" style="width: 100%; font-size: 15px; padding: 14px;" onclick="this.closest('.modal-overlay').remove()">Aceptar y Continuar</button></div>`;
             document.body.appendChild(overlay);
         };
 
@@ -623,7 +623,7 @@
             let waWindow = null;
 
             if (metodo === 'WhatsApp') {
-                motivoWa = prompt("🚨 MOTIVO DE WHATSAPP OBLIGATORIO:\nPor favor, ingresa la razón por la cual estás solicitando este cobro por el grupo de WhatsApp (Ej: Cliente sin correo, Urgencia, etc.):");
+                motivoWa = prompt("🚨 MOTIVO DE WHATSAPP OBLIGATORIO:\nPor favor, ingresa la razón por la cual estás requiriendo este cobro por el grupo de WhatsApp (Ej: Cliente sin correo, Urgencia, etc.):");
                 if (!motivoWa || motivoWa.trim() === "") {
                     return mostrarToast("Operación cancelada. El motivo es obligatorio.", "warning");
                 }
@@ -639,7 +639,7 @@
             
             let histToSave = [];
             if (esNuevoTicket) {
-                histToSave = [{ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `✨ Ticket creado originalmente por ${nombreAgente}.`, enviado_por_correo: false }];
+                histToSave = [{ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `✨ Solicitud creada originalmente por ${nombreAgente}.`, enviado_por_correo: false }];
             } else {
                 const dExt = window.allDashboardData.find(x => x.id === ticketId);
                 if (dExt && dExt.historial_respuestas) histToSave = dExt.historial_respuestas;
@@ -662,17 +662,17 @@
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
                     const payloadPA = { "tipo_accion": "NUEVO_COBRO", "ticket": ticketId, "correo": correoCliente || "sin-correo@distelsa.com.gt", "cliente": clienteNombre, "total": total.toString(), "agente": nombreAgente, "link": linkNeoNet || "Pendiente de generar", "detalle_servicios": `<ul>${resumenServicios}</ul>`, "mensaje": "Envío de cobro inicial", "firma_texto": window.userFirma, "firma_img": window.userFirmaImg };
                     await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
-                    mostrarToast(`Ticket enviado a Outlook con éxito.`, 'success'); 
+                    mostrarToast(`Solicitud enviada a Outlook con éxito.`, 'success'); 
                 } 
                 else if (metodo === 'WhatsApp') { 
                     const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
                     
                     let msgRaw = window.configPlantillas?.whatsapp || "";
                     if (!msgRaw) {
-                        msgRaw = "*NUEVA GESTIÓN DE COBRO* 🛠️\n\n*Ticket:* {{ticket}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE SOLICITUD:*\n_{{motivo}}_";
+                        msgRaw = "*NUEVA SOLICITUD DE COBRO* 🛠️\n\n*Solicitud:* {{solicitud}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE LA SOLICITUD:*\n_{{motivo}}_";
                     }
 
-                    msgRaw = msgRaw.replace(/\{\{ticket\}\}/g, ticketId)
+                    msgRaw = msgRaw.replace(/\{\{solicitud\}\}/g, ticketId)
                                    .replace(/\{\{cliente\}\}/g, clienteNombre)
                                    .replace(/\{\{telefono\}\}/g, datos.cliente.tel || 'N/A')
                                    .replace(/\{\{razon_social\}\}/g, datos.facturacion.nombre || 'C/F')
@@ -700,7 +700,7 @@
         window.retomarGestion = (id) => { const d = window.allDashboardData.find(x => x.id === id); if (!d) return; window.currentTicketEditing = d.ticket; document.getElementById('gc-tipo').value = d.servicios[0]?.tipo || "Diagnóstico"; cambioTipoServicio(); const sTemp = document.getElementById('cli-temperamento'); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp); document.getElementById('cli-obs-internas').value = d.prioridad?.observaciones_internas || ""; document.getElementById('cli-nit').value = d.cliente.nit || ""; document.getElementById('cli-contacto').value = d.cliente.contacto || ""; document.getElementById('cli-tel').value = d.cliente.tel || ""; document.getElementById('cli-dir').value = d.cliente.dir || ""; document.getElementById('cli-correo').value = d.cliente.correo || ""; document.getElementById('cli-obs-tec').value = d.cliente.obs_tec || ""; document.getElementById('fac-nit').value = d.facturacion?.nit || ""; document.getElementById('fac-nombre').value = d.facturacion?.nombre || ""; document.getElementById('pago-link').value = d.pago_link || ""; serviciosTemporales = d.servicios || []; renderServicios(); showSec('sec-2', document.getElementById('nav-2')); };
 
         window.tomarSeguimiento = async (id, agenteAnterior) => {
-            if (confirm(`¿Estás seguro que deseas TOMAR EL SEGUIMIENTO de este ticket?\n\nPasará a ser de tu propiedad y tú serás el responsable de darle respuesta al cliente.`)) {
+            if (confirm(`¿Estás seguro que deseas TOMAR EL SEGUIMIENTO de esta solicitud?\n\nPasará a ser de tu propiedad y tú serás el responsable de darle respuesta al cliente.`)) {
                 const nombreNuevo = document.getElementById('uName').innerText;
                 const d = window.allDashboardData.find(x => x.id === id);
                 if (!d) return;
@@ -708,23 +708,23 @@
                 let historialActualizado = [...(d.historial_respuestas || [])];
                 historialActualizado.push({
                     tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', 
-                    mensaje: `🔄 ${nombreNuevo} ha tomado el seguimiento del ticket (Anteriormente asignado a ${agenteAnterior}).`, 
+                    mensaje: `🔄 ${nombreNuevo} ha tomado el seguimiento de la solicitud (Anteriormente asignada a ${agenteAnterior}).`, 
                     enviado_por_correo: false
                 });
 
                 try {
                     await updateDoc(doc(db, "Cobros", id), { agente: nombreNuevo, historial_respuestas: historialActualizado });
-                    mostrarToast("¡El ticket ahora está asignado a ti!", "success");
+                    mostrarToast("¡La solicitud ahora está asignada a ti!", "success");
                     window.abrirVisor(id); 
                 } catch(e) {
-                    mostrarToast("Error al tomar el ticket.", "error");
+                    mostrarToast("Error al tomar la solicitud.", "error");
                 }
             }
         };
 
         window.abrirVisor = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
-            document.getElementById('v-titulo').innerText = "Gestión Ticket: " + d.ticket;
+            document.getElementById('v-titulo').innerText = "Gestión Solicitud: " + d.ticket;
             
             const detectarArchivos = (text) => {
                 if(!text) return '';
@@ -787,7 +787,7 @@
             let bloqueAcciones = "";
             if (esLectura) {
                 bloqueAcciones = `<div style="background:#fffbeb; color:#d97706; padding:15px; text-align:center; font-weight:900; border-radius:8px; border: 2px dashed #d97706; margin-top:15px; font-size: 14px; display:flex; flex-direction:column; align-items:center; gap:10px;">
-                    <div><i class="fas fa-eye"></i> <b>MODO LECTURA</b><br><span style="font-weight:600; font-size:12px; color:var(--text-muted);">Este ticket está asignado a ${d.agente}. Sólo puedes visualizar la información.</span></div>
+                    <div><i class="fas fa-eye"></i> <b>MODO LECTURA</b><br><span style="font-weight:600; font-size:12px; color:var(--text-muted);">Esta solicitud está asignada a ${d.agente}. Sólo puedes visualizar la información.</span></div>
                     <button class="btn btn-warning" onclick="tomarSeguimiento('${id}', '${d.agente}')" style="box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fas fa-hand-paper"></i> Tomar Seguimiento</button>
                 </div>`;
             } else {
@@ -826,7 +826,7 @@
                     </div>
                 </div>
                 
-                <h4 style="margin:0 0 5px 0; color:var(--primary); font-size:13px;"><i class="fas fa-history"></i> Historial de Comunicación</h4>
+                <h4 style="margin:0 0 5px 0; color:var(--primary); font-size:13px;"><i class="fas fa-history"></i> Historial de la Solicitud</h4>
                 <div class="chat-area" style="height: 250px; border: 2px solid var(--border); background: #e2e8f0; margin-bottom: 10px;">${chatHTML}</div>
                 ${bloqueAcciones}
             `;
@@ -847,7 +847,7 @@
             try {
                 let hiloZendesk = "";
                 if (modo === 'correo') {
-                    hiloZendesk = `<div style="font-family: Arial, sans-serif; color: #333; font-size: 14px;"><div style="margin-bottom: 25px;"><p style="font-weight: bold; margin-bottom: 5px; color: #0077A3;">${nombreAgenteActual} (Soporte)</p><div style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; border-left: 4px solid #0077A3;">${msg.replace(/\n/g, '<br>')}</div></div><hr style="border: 0; border-bottom: 1px solid #e2e8f0; margin: 20px 0;"><h4 style="color: #64748b; font-size: 12px; text-transform: uppercase;">Historial del Ticket</h4>`;
+                    hiloZendesk = `<div style="font-family: Arial, sans-serif; color: #333; font-size: 14px;"><div style="margin-bottom: 25px;"><p style="font-weight: bold; margin-bottom: 5px; color: #0077A3;">${nombreAgenteActual} (Soporte)</p><div style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; border-left: 4px solid #0077A3;">${msg.replace(/\n/g, '<br>')}</div></div><hr style="border: 0; border-bottom: 1px solid #e2e8f0; margin: 20px 0;"><h4 style="color: #64748b; font-size: 12px; text-transform: uppercase;">Historial de la Solicitud</h4>`;
                     if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== '[Respuesta vacía o sin texto detectado]' && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente') {
                         hiloZendesk += `<div style="margin-bottom: 15px;"><p style="font-weight: bold; margin-bottom: 3px; font-size: 13px;">${d.cliente?.contacto || 'Cliente'}</p><div style="color: #475569; font-size: 13px;">${d.ultimo_mensaje_cliente.replace(/\n/g, '<br>')}</div></div>`;
                     }
@@ -874,7 +874,7 @@
                 });
 
                 if (modo === 'correo') {
-                    const payloadPA = { "tipo_accion": "NUEVA_RESPUESTA_AGENTE", "ticket": d.ticket, "correo": d.cliente.correo, "cliente": d.cliente.contacto, "total": d.total.toString(), "agente": nombreAgenteActual, "link": d.pago_link || "", "detalle_servicios": "Ver histórico del ticket", "mensaje": msg, "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "historial_html": hiloZendesk };
+                    const payloadPA = { "tipo_accion": "NUEVA_RESPUESTA_AGENTE", "ticket": d.ticket, "correo": d.cliente.correo, "cliente": d.cliente.contacto, "total": d.total.toString(), "agente": nombreAgenteActual, "link": d.pago_link || "", "detalle_servicios": "Ver histórico de la solicitud", "mensaje": msg, "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "historial_html": hiloZendesk };
                     await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } });
                     mostrarToast("Mensaje enviado al cliente.", "success");
                 } else { mostrarToast("Nota interna registrada.", "info"); }
@@ -894,19 +894,19 @@
             const selectAgente = document.getElementById('v-nuevo-agente');
             if (selectAgente && selectAgente.value !== d.agente) {
                 const nuevoAgente = selectAgente.value; actualizaciones.agente = nuevoAgente;
-                historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `🔄 Ticket reasignado de ${d.agente || 'N/A'} a ${nuevoAgente} por ${usuarioActual}.`, enviado_por_correo: false });
+                historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `🔄 Solicitud reasignada de ${d.agente || 'N/A'} a ${nuevoAgente} por ${usuarioActual}.`, enviado_por_correo: false });
             }
 
             if (nuevo === 'ANULADO' && d.estatus !== 'ANULADO') {
-                const motivo = prompt("🚨 ATENCIÓN: El estatus ANULADO requiere un motivo de forma obligatoria.\n\nPor favor ingrese el motivo por el cual anula este ticket:");
+                const motivo = prompt("🚨 ATENCIÓN: El estatus ANULADO requiere un motivo de forma obligatoria.\n\nPor favor ingrese el motivo por el cual anula esta solicitud:");
                 if (!motivo || motivo.trim() === "") { return mostrarToast("Operación cancelada. Debe ingresar un motivo para anular.", "warning"); }
-                historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: usuarioActual, mensaje: `🚫 TICKET ANULADO. \nMotivo: ${motivo.trim()}`, enviado_por_correo: false });
+                historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: usuarioActual, mensaje: `🚫 SOLICITUD ANULADA. \nMotivo: ${motivo.trim()}`, enviado_por_correo: false });
             }
 
             try { 
                 if (historialExtra.length > 0) { actualizaciones.historial_respuestas = [...(d.historial_respuestas || []), ...historialExtra]; }
                 await updateDoc(doc(db, "Cobros", id), actualizaciones); 
-                if (nuevo === 'COMPROBANTE RECIBIDO' && d.estatus !== 'COMPROBANTE RECIBIDO') { window.crearNotificacionSistema(d.ticket, d.campaña, (actualizaciones.agente || d.agente), 'COMPROBANTE', `Comprobante recibido para el ticket ${d.ticket}`); }
+                if (nuevo === 'COMPROBANTE RECIBIDO' && d.estatus !== 'COMPROBANTE RECIBIDO') { window.crearNotificacionSistema(d.ticket, d.campaña, (actualizaciones.agente || d.agente), 'COMPROBANTE', `Comprobante recibido para la solicitud ${d.ticket}`); }
                 mostrarToast(`Cambios aplicados correctamente.`, 'success'); abrirVisor(id);
             } catch (error) { mostrarToast("Error al aplicar cambios.", 'error'); }
         };
@@ -995,7 +995,7 @@
             } catch (error) { mostrarToast("Error al guardar.", 'error'); }
         };
 
-        window.eliminarDato = async (tipo, id) => { if (tipo === 'Usuarios' && window.adminData.usuarios[id]?.rol.toUpperCase().includes('ADMIN')) return mostrarToast("No puedes eliminar al Admin.", "error"); if (tipo === 'Roles' && id.toUpperCase().includes('ADMIN')) return mostrarToast("No puedes eliminar rol Admin.", "error"); if(confirm(`¿Eliminar ${id}?`)) { try { await deleteDoc(doc(db, tipo, id)); mostrarToast(`Eliminado.`, 'success'); } catch(e) { mostrarToast("Error.", 'error'); } } };
+        window.eliminarDato = async (tipo, id) => { if (tipo === 'Usuarios' && window.adminData.usuarios[id]?.rol.toUpperCase().includes('ADMIN')) return mostrarToast("No puedes eliminar al Admin.", "error"); if (tipo === 'Roles' && id.toUpperCase().includes('ADMIN')) return mostrarToast("No puedes eliminar rol Admin.", "error"); if(confirm(`¿Eliminar ${id}?`)) { try { await deleteDoc(doc(db, tipo, id)); mostrarToast(`Eliminada.`, 'success'); } catch(e) { mostrarToast("Error.", 'error'); } } };
 
         window.enviarAvisoInterno = async () => { 
             if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER') { 
@@ -1023,10 +1023,10 @@
             if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') {
                 return mostrarToast("No tienes permisos para eliminar.", "error");
             }
-            if (confirm(`⚠️ CUIDADO: Estás a punto de ELIMINAR el ticket ${ticketName} por completo de la base de datos.\n\nEsta acción no se puede deshacer. ¿Estás absolutamente seguro?`)) {
+            if (confirm(`⚠️ CUIDADO: Estás a punto de ELIMINAR la solicitud ${ticketName} por completo de la base de datos.\n\nEsta acción no se puede deshacer. ¿Estás absolutamente seguro?`)) {
                 try {
                     await deleteDoc(doc(db, "Cobros", id));
-                    mostrarToast(`Ticket ${ticketName} eliminado.`, "success");
+                    mostrarToast(`Solicitud ${ticketName} eliminada.`, "success");
                 } catch(e) {
                     mostrarToast("Error al eliminar.", "error");
                 }
@@ -1057,10 +1057,10 @@
                 });
             }
 
-            const modoVista = document.getElementById('filtro-vista-equipo') ? document.getElementById('filtro-vista-equipo').value : 'MIS_TICKETS';
+            const modoVista = document.getElementById('filtro-vista-equipo') ? document.getElementById('filtro-vista-equipo').value : 'MIS_SOLICITUDES';
             const esAgenteNormal = (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
             
-            if (esAgenteNormal && modoVista === 'MIS_TICKETS') {
+            if (esAgenteNormal && modoVista === 'MIS_SOLICITUDES') {
                 data = data.filter(d => d.agente === window.userName);
             }
             
@@ -1095,7 +1095,7 @@
                 
                 const esAdmin = (window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR');
                 if (esAdmin) {
-                    btnHTML += ` <button class="btn btn-danger" style="padding:5px; width:28px; height:28px; margin-left:5px;" onclick="window.eliminarTicket('${d.id}', '${d.ticket}')" title="Eliminar Ticket"><i class="fas fa-trash"></i></button>`;
+                    btnHTML += ` <button class="btn btn-danger" style="padding:5px; width:28px; height:28px; margin-left:5px;" onclick="window.eliminarTicket('${d.id}', '${d.ticket}')" title="Eliminar Solicitud"><i class="fas fa-trash"></i></button>`;
                 }
 
                 let motivoTabla = d.motivo_whatsapp ? `<div style="margin-top:5px; font-size:10px; color:#d97706; font-weight:800; white-space:normal; max-width:180px; line-height:1.2;"><i class="fab fa-whatsapp"></i> Razón: ${d.motivo_whatsapp}</div>` : '';
@@ -1112,7 +1112,7 @@
                     <td style="white-space:nowrap; text-align:right;">${btnHTML}</td>
                 </tr>`;
             });
-            if (data.length === 0) tb.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted); font-weight:700;"><i class="fas fa-search" style="font-size: 24px; color: var(--border); margin-bottom:10px; display:block;"></i>No se encontraron tickets.</td></tr>`;
+            if (data.length === 0) tb.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted); font-weight:700;"><i class="fas fa-search" style="font-size: 24px; color: var(--border); margin-bottom:10px; display:block;"></i>No se encontraron solicitudes.</td></tr>`;
         }
 
         window.renderTablaAvisos = () => {
@@ -1129,10 +1129,10 @@
                     nomA = esMio ? d.destinatario : d.remitente;
                 } else if (d.subtipo === 'NUEVO_CORREO') {
                     iconA = '<i class="fas fa-envelope" style="color:var(--success);"></i> Correo';
-                    nomA = `(Ticket: ${d.ticket})`;
+                    nomA = `(Solicitud: ${d.ticket})`;
                 } else {
                     iconA = '<i class="fas fa-robot" style="color:#64748b;"></i> Sistema';
-                    nomA = d.ticket ? `(Ticket: ${d.ticket})` : 'Aviso General';
+                    nomA = d.ticket ? `(Solicitud: ${d.ticket})` : 'Aviso General';
                 }
                 
                 const txtLeido = d.leido ? '<span class="badge status-completado">Revisado</span>' : '<span class="badge status-recibido">Pendiente</span>'; 
@@ -1240,14 +1240,14 @@
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; 
                             if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
                                 updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); 
-                                window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `El ticket superó el SLA de ${slaLimite} horas.`); 
+                                window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `La solicitud superó el SLA de ${slaLimite} horas.`); 
                             } 
                             docs.push(d);
                             
                             if (d.nueva_respuesta_cliente) {
                                 const soyResponsable = (d.agente === window.userName || rolUser === 'ADMIN' || rolUser === 'ADMINISTRADOR' || rolUser === 'LIDER' || rolUser === 'LÍDER');
                                 if (soyResponsable) {
-                                    window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">El ticket ${d.ticket} tiene una respuesta</div></div></div>`); 
+                                    window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); window.showSec('sec-3'); window.abrirVisor('${d.id}');"><div class="notif-icon" style="font-size:20px; color: var(--success);"><i class="fas fa-envelope-open-text"></i></div><div><div style="font-weight:900; color:var(--primary); font-size:13px;">Mensaje de ${d.cliente?.contacto || 'Cliente'}</div><div style="font-size:11px; color:var(--text-muted); font-weight:600;">La solicitud ${d.ticket} tiene una respuesta</div></div></div>`); 
                                     window.virtualAvisosTickets.push({ fecha: new Date().toISOString(), tipo: 'SISTEMA', subtipo: 'NUEVO_CORREO', mensaje: `Nueva respuesta recibida del cliente: ${d.cliente?.contacto || 'N/A'}`, ticket: d.ticket, leido: false });
                                 }
                             }
@@ -1299,7 +1299,7 @@
             const ctxA = document.getElementById('chartAgentes').getContext('2d'); if(window.chartInstAgentes) window.chartInstAgentes.destroy(); const aOrd = Object.keys(rA).sort((a,b) => rA[b] - rA[a]); window.chartInstAgentes = new Chart(ctxA, { type: 'bar', data: { labels: aOrd, datasets: [{ data: aOrd.map(ag => rA[ag]), backgroundColor: '#002244', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
         }
 
-        window.exportarExcelDashboard = () => { if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) return mostrarToast("No hay datos.", "warning"); const dl = window.datosDashboardActual.map(d => ({ "TICKET": d.ticket, "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', "AGENTE": d.agente, "CAMPAÑA": d.campaña, "CLIENTE": d.cliente?.contacto, "TEL": d.cliente?.tel, "TOTAL": d.total, "ESTATUS": d.estatus, "MÉTODO": d.metodoEnvio })); const h = XLSX.utils.json_to_sheet(dl); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Reporte"); XLSX.writeFile(l, `ST_${new Date().getTime()}.xlsx`); };
+        window.exportarExcelDashboard = () => { if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) return mostrarToast("No hay datos.", "warning"); const dl = window.datosDashboardActual.map(d => ({ "SOLICITUD": d.ticket, "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', "AGENTE": d.agente, "CAMPAÑA": d.campaña, "CLIENTE": d.cliente?.contacto, "TEL": d.cliente?.tel, "TOTAL": d.total, "ESTATUS": d.estatus, "MÉTODO": d.metodoEnvio })); const h = XLSX.utils.json_to_sheet(dl); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Reporte"); XLSX.writeFile(l, `ST_${new Date().getTime()}.xlsx`); };
 
         window.exportarUsuariosExcel = () => {
             const usuarios = window.adminData.usuarios;
