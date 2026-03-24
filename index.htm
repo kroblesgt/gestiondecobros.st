@@ -550,7 +550,7 @@
                 // 1. Sonido discreto y suave (volumen bajo)
                 try {
                     const alertaSonora = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3');
-                    alertaSonora.volume = 0.3; // 30% de volumen
+                    alertaSonora.volume = 1.0; // 100% de volumen
                     alertaSonora.play().catch(e => console.log("El navegador requiere interacción previa para sonido."));
                 } catch(e) {}
                 
