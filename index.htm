@@ -857,8 +857,10 @@
                     if (d.historial_respuestas && d.historial_respuestas.length > 0) {
                         let rev = [...d.historial_respuestas].reverse();
                         rev.forEach(h => {
-                            let sender = h.tipo === 'cliente' ? (d.cliente?.contacto || 'Cliente') : (h.agente + ' (Soporte)'); let color = h.tipo === 'cliente' ? '#475569' : '#0077A3';
-                            hiloZendesk += `<div style="margin-bottom: 15px; border-left: 2px solid #e2e8f0; padding-left: 10px;"><p style="font-weight: bold; margin-bottom: 3px; font-size: 13px; color: ${color};">${sender} <span style="font-weight: normal; color: #94a3b8; font-size: 11px;">${new Date(h.fecha).toLocaleString()}</span></p><div style="color: #475569; font-size: 13px;">${h.mensaje.replace(/\n/g, '<br>')}</div></div>`;
+                            if (h.tipo === 'cliente' || (h.tipo === 'agente' && h.enviado_por_correo === true && h.agente !== 'SISTEMA')) {
+                                let sender = h.tipo === 'cliente' ? (d.cliente?.contacto || 'Cliente') : (h.agente + ' (Soporte)'); let color = h.tipo === 'cliente' ? '#475569' : '#0077A3';
+                                hiloZendesk += `<div style="margin-bottom: 15px; border-left: 2px solid #e2e8f0; padding-left: 10px;"><p style="font-weight: bold; margin-bottom: 3px; font-size: 13px; color: ${color};">${sender} <span style="font-weight: normal; color: #94a3b8; font-size: 11px;">${new Date(h.fecha).toLocaleString()}</span></p><div style="color: #475569; font-size: 13px;">${h.mensaje.replace(/\n/g, '<br>')}</div></div>`;
+                            }
                         });
                     }
                     hiloZendesk += `</div>`;
