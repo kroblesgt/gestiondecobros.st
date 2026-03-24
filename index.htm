@@ -660,7 +660,10 @@
                 
                 if (metodo === 'Correo') { 
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
-                    const payloadPA = { "tipo_accion": "NUEVO_COBRO", "ticket": ticketId, "correo": correoCliente || "sin-correo@distelsa.com.gt", "cliente": clienteNombre, "total": total.toString(), "agente": nombreAgente, "link": linkNeoNet || "Pendiente de generar", "detalle_servicios": `<ul>${resumenServicios}</ul>`, "mensaje": "Envío de cobro inicial", "firma_texto": window.userFirma, "firma_img": window.userFirmaImg };
+                    
+                    // JSON ENVIADO A POWER AUTOMATE (Ahora incluye telefono, direccion y obs_tecnico)
+                    const payloadPA = { "tipo_accion": "NUEVO_COBRO", "ticket": ticketId, "correo": correoCliente || "sin-correo@distelsa.com.gt", "cliente": clienteNombre, "total": total.toString(), "agente": nombreAgente, "link": linkNeoNet || "Pendiente de generar", "detalle_servicios": `<ul>${resumenServicios}</ul>`, "mensaje": "Envío de cobro inicial", "firma_texto": window.userFirma, "firma_img": window.userFirmaImg, "telefono": document.getElementById('cli-tel').value || "No indicado", "direccion": document.getElementById('cli-dir').value || "No indicada", "obs_tecnico": document.getElementById('cli-obs-tec').value || "Ninguna" };
+                    
                     await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
                     mostrarToast(`Solicitud enviada a Outlook con éxito.`, 'success'); 
                 } 
