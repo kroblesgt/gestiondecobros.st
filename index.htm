@@ -109,7 +109,7 @@
         .notif-panel { display: none; position: absolute; top: 60px; right: 20px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); width: 350px; max-width: 90vw; z-index: 2000; border: 1px solid var(--border); }
         .notif-panel.show { display: block; animation: slideDown 0.3s ease; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .notif-header { background: var(--primary); color: white; padding: 12px 15px; font-weight: 900; font-size: 14px; display: flex; justify-content: space-between; align-items: center;}
+        .notif-header { background: var(--primary); color: white; padding: 12px 15px; font-weight: 900; font-size: 14px; display: justify-content: space-between; align-items: center;}
         .notif-body { max-height: 350px; overflow-y: auto; background: #f8fafc;}
         .notif-item { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; transition: 0.2s; cursor: pointer; background: white; }
         .notif-item:hover { background: #f1f5f9; padding-left: 20px; }
@@ -547,10 +547,10 @@
             let nuevoTotal = todasLasAlertas.length;
 
             if (window.totalAlertas !== undefined && nuevoTotal > window.totalAlertas) {
-                // 1. Sonido discreto y suave (volumen bajo)
+                // 1. Sonido original de notificaciones push (volumen al 15%)
                 try {
-                    const alertaSonora = new Audio('alerta.mp3');
-                    alertaSonora.volume = 1.0;
+                    const alertaSonora = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3');
+                    alertaSonora.volume = 0.15;
                     alertaSonora.play().catch(e => console.log("El navegador requiere interacción previa para sonido."));
                 } catch(e) {}
                 
