@@ -526,15 +526,36 @@
         window.toggleNotifications = () => { document.getElementById('notif-panel').classList.toggle('show'); };
         document.addEventListener('click', function(event) { const panel = document.getElementById('notif-panel'); const campana = document.getElementById('bell-icon-container'); if (!panel.contains(event.target) && !campana.contains(event.target)) { panel.classList.remove('show'); } });
 
+        // --- SISTEMA DE NOTIFICACIONES PUSH VISIBLES ---
+        window.solicitarPermisosPush = () => {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        };
+
+        window.lanzarNotificacionPush = (titulo, cuerpo) => {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(titulo, {
+                    body: cuerpo,
+                    icon: "https://cdn-icons-png.flaticon.com/512/1067/1067566.png" // Icono genérico de campana
+                });
+            }
+        };
+
         window.renderizarCampana = () => {
             let todasLasAlertas = window.notifSistema.concat(window.notifTickets);
             let nuevoTotal = todasLasAlertas.length;
 
             if (window.totalAlertas !== undefined && nuevoTotal > window.totalAlertas) {
+                // 1. Sonido discreto y suave (volumen bajo)
                 try {
-                    const alertaSonora = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3');
+                    const alertaSonora = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3');
+                    alertaSonora.volume = 0.3; // 30% de volumen
                     alertaSonora.play().catch(e => console.log("El navegador requiere interacción previa para sonido."));
                 } catch(e) {}
+                
+                // 2. Notificación Push en Windows/Android
+                window.lanzarNotificacionPush("Actualización en ST CRM", "Tienes nuevos mensajes o seguimientos pendientes por revisar.");
             }
 
             window.totalAlertas = nuevoTotal;
@@ -572,6 +593,10 @@
             if (window.userRol === 'AGENTE' || (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER')) { document.getElementById('panel-enviar-aviso').style.display = 'none'; document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr'; document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Mis Avisos Recibidos'; } else { document.getElementById('panel-enviar-aviso').style.display = 'block'; if(window.innerWidth > 768) { document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr 2fr'; } document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Historial de Mensajes'; }
             const permisosArray = perms.split(','); document.querySelectorAll('.nav-item').forEach(item => { const id = item.id.replace('nav-', ''); if(perms === "ALL" || permisosArray.includes(id)) item.style.display = 'flex'; else item.style.display = 'none'; });
             const primerMenuPermitido = document.querySelector('.nav-item[style*="display: flex"]'); if (primerMenuPermitido) primerMenuPermitido.click();
+            
+            // Solicitar permisos para notificaciones al entrar
+            window.solicitarPermisosPush();
+            
             iniciarEscuchas(); 
         }
 
