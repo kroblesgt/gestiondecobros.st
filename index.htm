@@ -549,7 +549,7 @@
             if (window.totalAlertas !== undefined && nuevoTotal > window.totalAlertas) {
                 // 1. Sonido discreto y suave (volumen bajo)
                 try {
-                    const alertaSonora = new Audio('https://actions.google.com/sounds/v1/water/water_drop.ogg');
+                    const alertaSonora = new Audio('alerta.mp3');
                     alertaSonora.volume = 1.0;
                     alertaSonora.play().catch(e => console.log("El navegador requiere interacción previa para sonido."));
                 } catch(e) {}
