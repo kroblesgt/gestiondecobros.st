@@ -423,8 +423,19 @@
                         <button class="btn" style="background:#8b5cf6; color:white;" onclick="enviarAvisoInterno()"><i class="fas fa-paper-plane"></i> ENVIAR</button>
                     </div>
                     <div class="card" style="padding:0; margin-bottom:0;">
-                        <h3 class="module-header" id="titulo-historial-aviso" style="font-size: 16px; padding: 15px 15px 0 15px; margin-bottom:5px;"><i class="fas fa-history"></i> Historial de Mensajes</h3>
-                        <div class="table-responsive" style="max-height: 350px; padding:0 15px 15px 15px;"><table style="margin-top:0;"><thead><tr><th>Fecha</th><th>De/Para</th><th>Mensaje</th><th>Edo</th></tr></thead><tbody id="lista-avisos"></tbody></table></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); margin-bottom: 5px; flex-wrap: wrap; gap: 10px;">
+                            <h3 class="module-header" id="titulo-historial-aviso" style="font-size: 16px; margin: 0; border: none; padding: 0;"><i class="fas fa-history"></i> Historial de Mensajes</h3>
+                            <div id="filtro-avisos-container" style="display:none; align-items: center; gap: 8px;">
+                                <i class="fas fa-filter" style="color: var(--text-muted); font-size: 12px;"></i>
+                                <input type="text" id="filtro-avisos-agente" placeholder="Filtrar agente..." style="padding: 6px 10px; font-size: 12px; width: 160px; border: 2px solid var(--border); border-radius: 6px; outline: none;" onkeyup="renderTablaAvisos()">
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 350px; padding:0 15px 15px 15px;">
+                            <table style="margin-top:0;">
+                                <thead><tr><th>Fecha</th><th>De/Para</th><th>Mensaje</th><th>Edo / Acción</th></tr></thead>
+                                <tbody id="lista-avisos"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -587,7 +598,17 @@
             document.getElementById('uName').innerText = window.userName; document.getElementById('uRole').innerText = window.userRol;
             let perms = "ALL"; if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') { const rolSnap = await getDoc(doc(db, "Roles", window.userRol)); if (rolSnap.exists()) perms = rolSnap.data().permisos || ""; else perms = ""; }
             document.getElementById('login-view').style.display = 'none'; document.getElementById('app-view').style.display = 'block';
-            if (window.userRol === 'AGENTE' || (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER')) { document.getElementById('panel-enviar-aviso').style.display = 'none'; document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr'; document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Mis Avisos Recibidos'; } else { document.getElementById('panel-enviar-aviso').style.display = 'block'; if(window.innerWidth > 768) { document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr 2fr'; } document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Historial de Mensajes'; }
+            if (window.userRol === 'AGENTE' || (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER')) { 
+                document.getElementById('panel-enviar-aviso').style.display = 'none'; 
+                document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr'; 
+                document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Mis Avisos Recibidos'; 
+                document.getElementById('filtro-avisos-container').style.display = 'none';
+            } else { 
+                document.getElementById('panel-enviar-aviso').style.display = 'block'; 
+                if(window.innerWidth > 768) { document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr 2fr'; } 
+                document.getElementById('titulo-historial-aviso').innerHTML = '<i class="fas fa-history"></i> Historial de Mensajes'; 
+                document.getElementById('filtro-avisos-container').style.display = 'flex';
+            }
             const permisosArray = perms.split(','); document.querySelectorAll('.nav-item').forEach(item => { const id = item.id.replace('nav-', ''); if(perms === "ALL" || permisosArray.includes(id)) item.style.display = 'flex'; else item.style.display = 'none'; });
             const primerMenuPermitido = document.querySelector('.nav-item[style*="display: flex"]'); if (primerMenuPermitido) primerMenuPermitido.click();
             
@@ -726,7 +747,7 @@
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
                     
                     const payloadPA = { 
-                        "tipo_accion": "NUEVO_COBRO", 
+                        "tipo_accion": "NUEVA_COBRO", 
                         "ticket": ticketId, 
                         "correo": correoCliente || "sin-correo@distelsa.com.gt", 
                         "cliente": clienteNombre, 
@@ -1212,6 +1233,20 @@
             } 
         };
 
+        window.eliminarAvisoInterno = async (idAviso) => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER') {
+                return mostrarToast("No tienes permisos para eliminar.", "error");
+            }
+            if (confirm("⚠️ ¿Estás seguro que deseas eliminar este mensaje permanentemente del historial? Esta acción no se puede deshacer.")) {
+                try {
+                    await deleteDoc(doc(db, "Notificaciones", idAviso));
+                    mostrarToast("Aviso eliminado correctamente.", "success");
+                } catch(e) {
+                    mostrarToast("Error al eliminar el aviso.", "error");
+                }
+            }
+        };
+
         window.aplicarFiltroSeguimientos = (tipo, btnElement) => { 
             window.filtroActualSeguimiento = tipo;
             if (btnElement) { document.querySelectorAll('.f-pill').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); }
@@ -1264,7 +1299,7 @@
             }
             
             data.forEach(d => {
-                const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : "status-recibido";
+                const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : d.estatus === "ANULADO" ? "status-anulado" : "status-recibido";
                 let icT = ''; if (d.prioridad?.temperamento === 'Molesto') icT = '<i class="fas fa-fire" style="color:var(--danger); margin-left:4px;" title="Molesto"></i>'; else if (d.prioridad?.temperamento === 'Escalado') icT = '<i class="fas fa-bomb" style="color:#1e293b; margin-left:4px;" title="Escalado"></i>'; else if (d.prioridad?.temperamento === 'Acelerado') icT = '<i class="fas fa-bolt" style="color:var(--warning); margin-left:4px;" title="Acelerado"></i>';
                 let icA = ""; let rC = ""; 
                 if (d.temp_alerta === "ATRASO") { icA = '<i class="fas fa-exclamation-triangle" style="color:var(--danger); font-size: 16px;"></i>'; rC = "row-alert"; } else if (d.temp_alerta === "COMPROBANTE") { icA = '<i class="fas fa-file-invoice-dollar" style="color:var(--warning); font-size: 16px;"></i>'; rC = "row-comp"; } else if (d.temp_alerta === "NUEVA_RESPUESTA") { icA = '<i class="fas fa-bell" style="color:var(--success); font-size: 14px;"></i>'; rC = "ticket-nuevo"; }
@@ -1317,7 +1352,21 @@
         window.renderTablaAvisos = () => {
             let combinados = [...(window.avisosFirebase || []), ...(window.virtualAvisosTickets || [])];
             combinados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+            // Lógica de Filtro por Agente
+            const inputFiltro = document.getElementById('filtro-avisos-agente');
+            if (inputFiltro && inputFiltro.value.trim() !== '') {
+                const termino = inputFiltro.value.toLowerCase().trim();
+                combinados = combinados.filter(d => {
+                    const remitente = (d.remitente || '').toLowerCase();
+                    const destinatario = (d.destinatario || '').toLowerCase();
+                    return remitente.includes(termino) || destinatario.includes(termino);
+                });
+            }
+
+            const esAdminOLider = (window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR' || window.userRol === 'LIDER' || window.userRol === 'LÍDER');
             let tbAvisos = "";
+
             combinados.forEach(d => {
                 const fechaFmt = new Date(d.fecha).toLocaleString();
                 let iconA = ""; let nomA = "";
@@ -1326,7 +1375,7 @@
                     const esMio = d.remitente === window.userName;
                     iconA = esMio ? '<i class="fas fa-arrow-right" style="color:var(--success);"></i> Para:' : '<i class="fas fa-arrow-left" style="color:var(--accent);"></i> De:';
                     nomA = esMio ? d.destinatario : d.remitente;
-                } else if (d.subtipo === 'NUEVO_CORREO') {
+                } else if (d.subtipo === 'NUECORREO' || d.subtipo === 'NUEVO_CORREO') {
                     iconA = '<i class="fas fa-envelope" style="color:var(--success);"></i> Correo';
                     nomA = `(Solicitud: ${d.ticket})`;
                 } else {
@@ -1335,10 +1384,23 @@
                 }
                 
                 const txtLeido = d.leido ? '<span class="badge status-completado">Revisado</span>' : '<span class="badge status-recibido">Pendiente</span>'; 
-                tbAvisos += `<tr><td style="font-size:11px;">${fechaFmt}</td><td style="font-weight:700; font-size:12px; white-space:nowrap;">${iconA} <span style="color:var(--primary);">${nomA}</span></td><td style="font-size:12px;">${d.mensaje}</td><td>${txtLeido}</td></tr>`;
+                
+                let btnEliminar = "";
+                if (esAdminOLider && d.id) {
+                    btnEliminar = `<button class="btn btn-danger btn-icon" style="padding:4px; width:26px; height:26px; margin-left:10px; border-radius:4px;" onclick="eliminarAvisoInterno('${d.id}')" title="Eliminar Aviso"><i class="fas fa-trash" style="font-size:10px;"></i></button>`;
+                }
+
+                tbAvisos += `<tr><td style="font-size:11px;">${fechaFmt}</td><td style="font-weight:700; font-size:12px; white-space:nowrap;">${iconA} <span style="color:var(--primary);">${nomA}</span></td><td style="font-size:12px;">${d.mensaje}</td><td style="white-space:nowrap;">${txtLeido}${btnEliminar}</td></tr>`;
             });
+
             const tabla = document.getElementById('lista-avisos');
-            if(tabla) tabla.innerHTML = tbAvisos; 
+            if(tabla) {
+                if(combinados.length === 0) {
+                    tabla.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color:var(--text-muted);"><i class="fas fa-search"></i> No hay mensajes que coincidan.</td></tr>`;
+                } else {
+                    tabla.innerHTML = tbAvisos; 
+                }
+            }
         };
 
         function iniciarEscuchas() {
@@ -1495,7 +1557,50 @@
             const ctxA = document.getElementById('chartAgentes').getContext('2d'); if(window.chartInstAgentes) window.chartInstAgentes.destroy(); const aOrd = Object.keys(rA).sort((a,b) => rA[b] - rA[a]); window.chartInstAgentes = new Chart(ctxA, { type: 'bar', data: { labels: aOrd, datasets: [{ data: aOrd.map(ag => rA[ag]), backgroundColor: '#002244', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
         }
 
-        window.exportarExcelDashboard = () => { if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) return mostrarToast("No hay datos.", "warning"); const dl = window.datosDashboardActual.map(d => ({ "SOLICITUD": d.ticket, "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', "AGENTE": d.agente, "CAMPAÑA": d.campaña, "CLIENTE": d.cliente?.contacto, "TEL": d.cliente?.tel, "TOTAL": d.total, "ESTATUS": d.estatus, "MÉTODO": d.metodoEnvio })); const h = XLSX.utils.json_to_sheet(dl); const l = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(l, h, "Reporte"); XLSX.writeFile(l, `ST_${new Date().getTime()}.xlsx`); };
+        window.exportarExcelDashboard = () => { 
+            if(!window.datosDashboardActual || window.datosDashboardActual.length === 0) {
+                return mostrarToast("No hay datos para exportar.", "warning"); 
+            }
+
+            const dl = window.datosDashboardActual.map(d => {
+                let detalleServicios = "";
+                let marcasEquipos = "";
+                
+                if (d.servicios && d.servicios.length > 0) {
+                    detalleServicios = d.servicios.map(s => `[${s.tipo}] ${s.producto || ''} ${s.marca || ''} ${s.modelo || ''} - ${s.detalle} (Q${s.precio})`).join(" | ");
+                    marcasEquipos = [...new Set(d.servicios.map(s => s.marca).filter(Boolean))].join(", ");
+                }
+
+                return { 
+                    "SOLICITUD": d.ticket || 'N/A', 
+                    "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : 'N/A', 
+                    "ESTATUS ACTUAL": d.estatus || 'N/A',
+                    "AGENTE": d.agente || 'N/A', 
+                    "CAMPAÑA": d.campaña || 'N/A', 
+                    "TEMPERAMENTO": d.prioridad?.temperamento || 'Normal',
+                    "OBS. INTERNAS": d.prioridad?.observaciones_internas || 'Ninguna',
+                    "CLIENTE": d.cliente?.contacto || 'N/A', 
+                    "NIT CLIENTE": d.cliente?.nit || 'C/F',
+                    "TELÉFONO": d.cliente?.tel || 'N/A', 
+                    "CORREO": d.cliente?.correo || 'N/A',
+                    "DIRECCIÓN": d.cliente?.dir || 'N/A',
+                    "OBS. TÉCNICO": d.cliente?.obs_tec || 'Ninguna',
+                    "SERVICIOS REALIZADOS": detalleServicios || 'Sin servicios',
+                    "MARCAS": marcasEquipos || 'N/A',
+                    "TOTAL (Q)": d.total || 0, 
+                    "RAZÓN SOCIAL (FACTURA)": d.facturacion?.nombre || 'C/F',
+                    "NIT FACTURA": d.facturacion?.nit || 'C/F',
+                    "MÉTODO ENVÍO": d.metodoEnvio || 'N/A',
+                    "LINK NEO-NET": d.pago_link || 'N/A',
+                    "LINK COMPROBANTE": d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || 'Sin comprobante adjunto'
+                };
+            }); 
+
+            const h = XLSX.utils.json_to_sheet(dl); 
+            const l = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(l, h, "Reporte Completo"); 
+            XLSX.writeFile(l, `Reporte_Cobros_ST_${new Date().getTime()}.xlsx`); 
+        };
 
         window.exportarUsuariosExcel = () => {
             const usuarios = window.adminData.usuarios;
