@@ -411,7 +411,14 @@
                 </div>
             </section>
             
-            <section id="sec-5" style="display:none"><h2 class="module-header">Monitor Agentes</h2><div class="card" style="padding:0;"><div class="table-responsive"><table><thead><tr><th>Estado</th><th>Agente</th><th>Rol</th><th>Campaña</th><th>Última Actividad</th></tr></thead><tbody id="lista-monitor"></tbody></table></div></div></section>
+            <section id="sec-5" style="display:none">
+                <h2 class="module-header">Monitor Agentes <span id="contador-online" class="badge status-completado" style="font-size: 14px; margin-left: 10px;">0 Conectados</span></h2>
+                <div class="card" style="padding:0;">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Estado</th><th>Agente</th><th>Rol</th><th>Campaña</th><th>Última Actividad</th></tr></thead><tbody id="lista-monitor"></tbody></table>
+                    </div>
+                </div>
+            </section>
             
             <section id="sec-6" style="display:none">
                 <h2 class="module-header">Avisos</h2>
@@ -636,7 +643,19 @@
 
         window.addEventListener('DOMContentLoaded', async () => { const guardado = localStorage.getItem('st_session_crm'); if (guardado) { const sesion = JSON.parse(guardado); window.userId = sesion.userId; window.userName = sesion.userName; window.userRol = sesion.userRol; window.userCamp = sesion.userCamp; window.userFirma = sesion.userFirma; window.userFirmaImg = sesion.userFirmaImg; await completarLoginUI(); } });
 
-        window.cambioTipoServicio = () => { const t = document.getElementById('gc-tipo').value; document.getElementById('lbl-falla').innerText = (t === "Diagnóstico") ? "Falla Reportada *" : "Servicio a Realizar *"; const esPresupuesto = (t === "Presupuesto"); document.querySelectorAll('.campo-cliente').forEach(input => { input.disabled = esPresupuesto; if(esPresupuesto) input.value = ""; }); };
+        window.cambioTipoServicio = () => { 
+            const t = document.getElementById('gc-tipo').value; 
+            document.getElementById('lbl-falla').innerText = (t === "Diagnóstico") ? "Falla Reportada *" : "Servicio a Realizar *"; 
+            const esPresupuesto = (t === "Presupuesto"); 
+            
+            document.querySelectorAll('.campo-cliente').forEach(input => { 
+                // Dejamos el campo de correo siempre activo para poder enviar cotizaciones
+                if (input.id !== 'cli-correo') {
+                    input.disabled = esPresupuesto; 
+                    if(esPresupuesto) input.value = ""; 
+                }
+            }); 
+        };
         
         window.agregarServicio = () => { 
             const serv = { tipo: document.getElementById('gc-tipo').value, detalle: document.getElementById('gc-detalle').value, precio: parseFloat(document.getElementById('gc-precio').value) || 0, producto: document.getElementById('gc-producto').value, marca: document.getElementById('gc-marca').value, modelo: document.getElementById('gc-modelo').value }; 
@@ -676,6 +695,12 @@
             if (metodo !== 'Guardar' && !document.getElementById('check-confirmar').checked) return mostrarToast("Debes confirmar los datos.", 'warning');
             if(serviciosTemporales.length === 0) return mostrarToast("Agrega un servicio.", 'warning');
 
+            const correoCliente = document.getElementById('cli-correo').value;
+            // Si elige enviar por correo, DEBE haber un correo proporcionado, aunque sea un presupuesto.
+            if (metodo === 'Correo' && (!correoCliente || correoCliente.trim() === '')) {
+                return mostrarToast("Debes ingresar un correo electrónico válido para enviar la solicitud.", "warning");
+            }
+
             let motivoWa = "";
             let waWindow = null;
 
@@ -690,8 +715,7 @@
             const esNuevoTicket = !window.currentTicketEditing;
             const ticketId = window.currentTicketEditing || "ST-" + Date.now().toString().slice(-6); 
             const nombreAgente = document.getElementById('uName').innerText; 
-            const clienteNombre = document.getElementById('cli-contacto').value;
-            const correoCliente = document.getElementById('cli-correo').value;
+            const clienteNombre = document.getElementById('cli-contacto').value || "Cliente no especificado";
             const linkNeoNet = document.getElementById('pago-link').value;
             
             let histToSave = [];
@@ -747,9 +771,9 @@
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
                     
                     const payloadPA = { 
-                        "tipo_accion": "NUEVA_COBRO", 
+                        "tipo_accion": "NUEVO_COBRO", // Ajustado para hacer match general, puedes modificarlo si tu Make pide otra cosa
                         "ticket": ticketId, 
-                        "correo": correoCliente || "sin-correo@distelsa.com.gt", 
+                        "correo": correoCliente, 
                         "cliente": clienteNombre, 
                         "total": total.toString(), 
                         "agente": nombreAgente, 
@@ -1448,13 +1472,20 @@
             onSnapshot(collection(db, "Campañas"), s => { const selC = document.getElementById('u-camp'); selC.innerHTML = ""; const tb = document.getElementById('l-camps'); tb.innerHTML = ""; s.forEach(d => { window.adminData.campañas[d.id] = d.data(); tb.innerHTML += `<tr><td><b>${d.id}</b></td><td style="text-align:right;"><button class="btn btn-danger btn-icon" style="padding:5px;" onclick="eliminarDato('Campañas', '${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`; selC.innerHTML += `<option value="${d.id}">${d.id}</option>`; }); });
             onSnapshot(collection(db, "Usuarios"), s => {
                 const tb = document.getElementById('l-users'); tb.innerHTML = ""; const tbMonitor = document.getElementById('lista-monitor'); tbMonitor.innerHTML = ""; const cboAviso = document.getElementById('aviso-destinatario'); cboAviso.innerHTML = '<option value="">-- Seleccione --</option>';
+                let onlineCount = 0; // Sumamos usuarios en línea
                 s.forEach(d => { 
                     const data = d.data(); const isAdmin = data.rol && (data.rol.toUpperCase() === 'ADMIN' || data.rol.toUpperCase() === 'ADMINISTRADOR'); if (isAdmin && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return; window.adminData.usuarios[d.id] = data; const camps = Array.isArray(data.campaña) ? data.campaña.join(', ') : (data.campaña || 'N/A');
                     tb.innerHTML += `<tr><td><b>${d.id}</b><br><span style="font-size:11px; font-weight:700;">${data.nombre}</span></td><td><span class="badge" style="background:var(--primary); color:white;">${data.rol}</span><br><span style="font-size:10px;">${camps}</span></td><td style="text-align:right;"><button class="btn btn-outline btn-icon" style="padding:5px;" onclick="cargarEdicion('Usuarios', '${d.id}')"><i class="fas fa-pen"></i></button> <button class="btn btn-danger btn-icon" style="padding:5px;" onclick="eliminarDato('Usuarios', '${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`; 
+                    
+                    if (data.is_online) onlineCount++;
+
                     let dot = data.is_online ? 'dot dot-online' : 'dot dot-offline'; let txt = data.is_online ? '<span style="color:var(--success); font-weight:800;">EN LÍNEA</span>' : '<span style="color:var(--text-muted); font-weight:600;">OFFLINE</span>'; let ult = data.last_login ? new Date(data.last_login).toLocaleString() : 'N/A';
                     tbMonitor.innerHTML += `<tr><td><div class="${dot}"></div> ${txt}</td><td style="font-weight:800;">${data.nombre}</td><td><span class="badge" style="background:var(--primary); color:white;">${data.rol}</span></td><td style="font-size:11px;">${camps}</td><td style="font-size:11px;">${ult}</td></tr>`;
                     let puedeAvisar = false; const misCamps = window.userCamp || []; const susCamps = Array.isArray(data.campaña) ? data.campaña : [data.campaña || ""]; if(window.userRol === 'ADMIN' || window.userRol === 'ADMINISTRADOR') puedeAvisar = true; else if (misCamps.some(miCamp => susCamps.includes(miCamp))) puedeAvisar = true; if(puedeAvisar && data.nombre) cboAviso.innerHTML += `<option value="${data.nombre}">${data.nombre}</option>`;
                 });
+                
+                const lblOnline = document.getElementById('contador-online');
+                if(lblOnline) lblOnline.innerText = `${onlineCount} Conectados`;
             });
 
             onSnapshot(collection(db, "Notificaciones"), s => {
