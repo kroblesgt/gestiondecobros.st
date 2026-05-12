@@ -804,8 +804,29 @@
                         "firma_img": window.userFirmaImg
                     };
                     
-                    await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
-                    mostrarToast(`Solicitud enviada a Outlook con éxito.`, 'success'); 
+                    // --- NUEVO SISTEMA DE DIAGNÓSTICO PROFUNDO ---
+                    try {
+                        console.log("Enviando JSON a Make.com:", payloadPA);
+                        const webhookRes = await fetch(WEBHOOK_OUTLOOK, { 
+                            method: 'POST', 
+                            body: JSON.stringify(payloadPA), 
+                            headers: { 'Content-Type': 'application/json' } 
+                        }); 
+                        
+                        if (webhookRes.ok) {
+                            mostrarToast(`Solicitud enviada a Outlook con éxito.`, 'success'); 
+                        } else {
+                            // Si Make.com responde pero rechaza el envío (Ej. Error 400 Bad Request)
+                            const errTxt = await webhookRes.text();
+                            console.error("Make.com rechazó la conexión:", errTxt);
+                            alert(`❌ MAKE.COM RECHAZÓ EL ENVÍO:\n\nCódigo de Error: ${webhookRes.status}\nDetalle: ${errTxt}\n\n💡 SOLUCIÓN:\nVe a tu escenario de Make.com, dale click derecho al módulo del Webhook, selecciona 'Redetermine data structure', y vuelve a intentar enviar desde aquí para que Make aprenda la nueva estructura.`);
+                        }
+                    } catch (netErr) {
+                        // Si el navegador bloquea la salida (CORS o AdBlocker)
+                        console.error("Error de Red / CORS:", netErr);
+                        alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com. Detalle: ${netErr.message}\n\n💡 SOLUCIÓN:\nAsegúrate de que no tienes extensiones (como AdBlockers) bloqueando la conexión a 'hook.us2.make.com', o verifica que la URL del webhook sea exactamente correcta.`);
+                    }
+                    // ---------------------------------------------
                 } 
                 else if (metodo === 'WhatsApp') { 
                     const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
@@ -836,7 +857,7 @@
                 limpiarGestorCobro(); showSec('sec-3', document.getElementById('nav-3'));
             } catch (e) { 
                 if (waWindow) waWindow.close();
-                mostrarToast("Error al guardar.", 'error'); 
+                mostrarToast("Error al guardar en Firebase.", 'error'); 
             }
         };
 
@@ -1130,8 +1151,20 @@
                         "firma_img": window.userFirmaImg, 
                         "historial_html": hiloZendesk 
                     };
-                    await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } });
-                    mostrarToast("Mensaje enviado al cliente.", "success");
+                    
+                    // --- NUEVO SISTEMA DE DIAGNÓSTICO PROFUNDO ---
+                    try {
+                        const webhookRes = await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } });
+                        if (webhookRes.ok) {
+                            mostrarToast("Mensaje enviado al cliente.", "success");
+                        } else {
+                            const errTxt = await webhookRes.text();
+                            alert(`❌ MAKE.COM RECHAZÓ LA RESPUESTA:\n\nCódigo: ${webhookRes.status}\nDetalle: ${errTxt}\n\n💡 SOLUCIÓN:\nVe a tu escenario en Make, asegúrate de que esté encendido y que la estructura acepte los nuevos campos.`);
+                        }
+                    } catch (netErr) {
+                         alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com. Detalle: ${netErr.message}`);
+                    }
+                    // ---------------------------------------------
                 } else { 
                     mostrarToast("Nota interna registrada.", "info"); 
                 }
