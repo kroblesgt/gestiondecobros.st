@@ -737,20 +737,7 @@
             const clienteNombre = document.getElementById('cli-contacto').value || "Cliente";
             const linkNeoNet = document.getElementById('pago-link').value || "";
             
-            let histToSave = [];
-            if (esNuevoTicket) {
-                histToSave = [{ 
-                    tipo: 'agente', 
-                    fecha: new Date().toISOString(), 
-                    agente: 'SISTEMA', 
-                    mensaje: `✨ Solicitud creada originalmente por ${nombreAgente}.`, 
-                    enviado_por_correo: false 
-                }];
-            } else {
-                const dExt = window.allDashboardData.find(x => x.id === ticketId);
-                if (dExt && dExt.historial_respuestas) histToSave = dExt.historial_respuestas;
-            }
-            
+            // CONSTRUIR EL OBJETO DATOS PARA PODER USARLO EN PAYLOAD
             const datos = { 
                 ticket: ticketId, 
                 fecha: new Date(), 
@@ -778,9 +765,24 @@
                 estatus: (metodo === 'Guardar') ? "BORRADOR" : "ENVIADO", 
                 metodoEnvio: metodo, 
                 alerta_sla_creada: false,
-                motivo_whatsapp: motivoWa.trim(),
-                historial_respuestas: histToSave 
+                motivo_whatsapp: motivoWa.trim()
             };
+
+            let histToSave = [];
+            if (esNuevoTicket) {
+                histToSave = [{ 
+                    tipo: 'agente', 
+                    fecha: new Date().toISOString(), 
+                    agente: 'SISTEMA', 
+                    mensaje: `✨ Solicitud creada originalmente por ${nombreAgente}.`, 
+                    enviado_por_correo: false 
+                }];
+            } else {
+                const dExt = window.allDashboardData.find(x => x.id === ticketId);
+                if (dExt && dExt.historial_respuestas) histToSave = dExt.historial_respuestas;
+            }
+            
+            datos.historial_respuestas = histToSave;
 
             try {
                 await setDoc(doc(db, "Cobros", ticketId), datos, { merge: true });
@@ -795,6 +797,9 @@
                         "ticket": ticketId, 
                         "correo": correoCliente, 
                         "cliente": clienteNombre, 
+                        "telefono": datos.cliente.tel || "N/A",
+                        "razon_social": datos.facturacion.nombre || "C/F",
+                        "nit_facturacion": datos.facturacion.nit || "C/F",
                         "total": total.toString(), 
                         "agente": nombreAgente, 
                         "link": linkNeoNet, 
@@ -804,29 +809,11 @@
                         "firma_img": window.userFirmaImg
                     };
                     
-                    // --- NUEVO SISTEMA DE DIAGNÓSTICO PROFUNDO ---
                     try {
-                        console.log("Enviando JSON a Make.com:", payloadPA);
-                        const webhookRes = await fetch(WEBHOOK_OUTLOOK, { 
-                            method: 'POST', 
-                            body: JSON.stringify(payloadPA), 
-                            headers: { 'Content-Type': 'application/json' } 
-                        }); 
-                        
-                        if (webhookRes.ok) {
-                            mostrarToast(`Solicitud enviada a Outlook con éxito.`, 'success'); 
-                        } else {
-                            // Si Make.com responde pero rechaza el envío (Ej. Error 400 Bad Request)
-                            const errTxt = await webhookRes.text();
-                            console.error("Make.com rechazó la conexión:", errTxt);
-                            alert(`❌ MAKE.COM RECHAZÓ EL ENVÍO:\n\nCódigo de Error: ${webhookRes.status}\nDetalle: ${errTxt}\n\n💡 SOLUCIÓN:\nVe a tu escenario de Make.com, dale click derecho al módulo del Webhook, selecciona 'Redetermine data structure', y vuelve a intentar enviar desde aquí para que Make aprenda la nueva estructura.`);
-                        }
-                    } catch (netErr) {
-                        // Si el navegador bloquea la salida (CORS o AdBlocker)
-                        console.error("Error de Red / CORS:", netErr);
-                        alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com. Detalle: ${netErr.message}\n\n💡 SOLUCIÓN:\nAsegúrate de que no tienes extensiones (como AdBlockers) bloqueando la conexión a 'hook.us2.make.com', o verifica que la URL del webhook sea exactamente correcta.`);
-                    }
-                    // ---------------------------------------------
+                        const webhookRes = await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
+                        if (webhookRes.ok) { mostrarToast(`Solicitud enviada a Outlook con éxito.`, 'success'); } 
+                        else { alert(`❌ MAKE.COM RECHAZÓ EL ENVÍO:\n\nCódigo de Error: ${webhookRes.status}\n\n💡 SOLUCIÓN:\nVe a tu escenario de Make, dale 'Redetermine data structure' en el webhook y vuelve a intentar.`); }
+                    } catch (netErr) { alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com.`); }
                 } 
                 else if (metodo === 'WhatsApp') { 
                     const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
@@ -1142,6 +1129,9 @@
                         "ticket": d.ticket, 
                         "correo": d.cliente.correo, 
                         "cliente": d.cliente.contacto, 
+                        "telefono": d.cliente.tel || "N/A",
+                        "razon_social": d.facturacion?.nombre || "C/F",
+                        "nit_facturacion": d.facturacion?.nit || "C/F",
                         "total": d.total.toString(), 
                         "agente": nombreAgenteActual, 
                         "link": d.pago_link || "", 
@@ -1152,19 +1142,11 @@
                         "historial_html": hiloZendesk 
                     };
                     
-                    // --- NUEVO SISTEMA DE DIAGNÓSTICO PROFUNDO ---
                     try {
                         const webhookRes = await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } });
-                        if (webhookRes.ok) {
-                            mostrarToast("Mensaje enviado al cliente.", "success");
-                        } else {
-                            const errTxt = await webhookRes.text();
-                            alert(`❌ MAKE.COM RECHAZÓ LA RESPUESTA:\n\nCódigo: ${webhookRes.status}\nDetalle: ${errTxt}\n\n💡 SOLUCIÓN:\nVe a tu escenario en Make, asegúrate de que esté encendido y que la estructura acepte los nuevos campos.`);
-                        }
-                    } catch (netErr) {
-                         alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com. Detalle: ${netErr.message}`);
-                    }
-                    // ---------------------------------------------
+                        if (webhookRes.ok) { mostrarToast("Mensaje enviado al cliente.", "success"); } 
+                        else { alert(`❌ MAKE.COM RECHAZÓ LA RESPUESTA:\n\nVe a tu escenario en Make, asegúrate de darle 'Redetermine data structure' para que acepte los nuevos campos.`); }
+                    } catch (netErr) { alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com.`); }
                 } else { 
                     mostrarToast("Nota interna registrada.", "info"); 
                 }
@@ -1562,7 +1544,18 @@
                     try {
                         let d = { id: docSnap.id, ...docSnap.data() }; 
                         if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente') {
-                            let txt = d.ultimo_mensaje_cliente; const separadores_correo = [ /El\s[\s\S]*?escribió:/i, /On\s[\s\S]*?wrote:/i, /\r?\nDe:\s/i, /\r?\nFrom:\s/i, /_{10,}/, /<div class="gmail_quote"/i, /--- Original Message ---/i ];
+                            
+                            // ---- CORRECCIÓN DEL BUG "Mensaje d" APLICADA AQUÍ ----
+                            let txt = d.ultimo_mensaje_cliente; 
+                            const separadores_correo = [ 
+                                /\r?\nEl\s[\s\S]*?escribió:/i,  // <-- Modificado: Ahora debe ser un salto de línea antes de "El"
+                                /On\s[\s\S]*?wrote:/i, 
+                                /\r?\nDe:\s/i, 
+                                /\r?\nFrom:\s/i, 
+                                /_{10,}/, 
+                                /<div class="gmail_quote"/i, 
+                                /--- Original Message ---/i 
+                            ];
                             for (let sep of separadores_correo) { txt = txt.split(sep)[0]; }
                             d.ultimo_mensaje_cliente = txt.trim() || '[Respuesta vacía o sin texto detectado]';
                         }
