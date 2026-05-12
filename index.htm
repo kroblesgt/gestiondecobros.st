@@ -715,8 +715,8 @@
             const esNuevoTicket = !window.currentTicketEditing;
             const ticketId = window.currentTicketEditing || "ST-" + Date.now().toString().slice(-6); 
             const nombreAgente = document.getElementById('uName').innerText; 
-            const clienteNombre = document.getElementById('cli-contacto').value || "Cliente no especificado";
-            const linkNeoNet = document.getElementById('pago-link').value;
+            const clienteNombre = document.getElementById('cli-contacto').value || "Cliente"; // Cambiado para evitar fallos en Make
+            const linkNeoNet = document.getElementById('pago-link').value || "";
             
             let histToSave = [];
             if (esNuevoTicket) {
@@ -770,25 +770,18 @@
                 if (metodo === 'Correo') { 
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
                     
+                    // JSON LIMPIO: Se retiran variables extrañas que bloqueaban el escenario de Make
                     const payloadPA = { 
-                        "tipo_accion": "NUEVO_COBRO", // Ajustado para hacer match general, puedes modificarlo si tu Make pide otra cosa
                         "ticket": ticketId, 
                         "correo": correoCliente, 
                         "cliente": clienteNombre, 
                         "total": total.toString(), 
                         "agente": nombreAgente, 
-                        "link": linkNeoNet || "Pendiente de generar", 
+                        "link": linkNeoNet, 
                         "detalle_servicios": `<ul>${resumenServicios}</ul>`, 
                         "mensaje": "Envío de cobro inicial", 
                         "firma_texto": window.userFirma, 
-                        "firma_img": window.userFirmaImg, 
-                        "telefono": document.getElementById('cli-tel').value || "No indicado", 
-                        "direccion": document.getElementById('cli-dir').value || "No indicada", 
-                        "obs_tecnico": document.getElementById('cli-obs-tec').value || "Ninguna", 
-                        "nit": document.getElementById('cli-nit').value || "C/F", 
-                        "razon_social": document.getElementById('fac-nombre').value || "No indicada", 
-                        "nit_facturacion": document.getElementById('fac-nit').value || "C/F", 
-                        "temperamento": document.getElementById('cli-temperamento').value || "Normal" 
+                        "firma_img": window.userFirmaImg
                     };
                     
                     await fetch(WEBHOOK_OUTLOOK, { method: 'POST', body: JSON.stringify(payloadPA), headers: { 'Content-Type': 'application/json' } }); 
