@@ -1555,7 +1555,7 @@
                         let d = { id: docSnap.id, ...docSnap.data() }; 
                         if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente') {
                             
-                            // ---- CORRECCIÓN DEL BUG "Mensaje d" APLICADA AQUÍ ----
+                            // ---- CORRECCIÓN DEL BUG "Respuesta vacía" APLICADA AQUÍ ----
                             let txt = d.ultimo_mensaje_cliente; 
                             const separadores_correo = [ 
                                 /\r?\nEl\s[\s\S]*?escribió:/i,  
@@ -1572,9 +1572,10 @@
                                 /<div id="divRplyFwdMsg"/i
                             ];
                             for (let sep of separadores_correo) { txt = txt.split(sep)[0]; }
-                            // Además, limpiamos la cabecera inyectada por Power Automate para dejar la respuesta limpia:
-                            txt = txt.replace(/Remitente:.*?\n/i, '');
-                            txt = txt.replace(/Mensaje del cliente:.*?\n/i, '');
+                            
+                            // Ahora solo borramos la frase en sí, y dejamos todo el texto que está al lado intacto
+                            txt = txt.replace(/Remitente:\s*[^\n]*\n?/ig, '');
+                            txt = txt.replace(/Mensaje del cliente:\s*/ig, '');
                             
                             d.ultimo_mensaje_cliente = txt.trim() || '[Respuesta vacía o sin texto detectado]';
                         }
