@@ -798,6 +798,11 @@
                         "correo": correoCliente, 
                         "cliente": clienteNombre, 
                         "telefono": datos.cliente.tel || "N/A",
+                        "nit_cliente": datos.cliente.nit || "C/F",
+                        "direccion": datos.cliente.dir || "N/A",
+                        "obs_tecnico": datos.cliente.obs_tec || "Ninguna",
+                        "temperamento": datos.prioridad.temperamento || "Normal",
+                        "obs_internas": datos.prioridad.observaciones_internas || "Ninguna",
                         "razon_social": datos.facturacion.nombre || "C/F",
                         "nit_facturacion": datos.facturacion.nit || "C/F",
                         "total": total.toString(), 
@@ -1130,6 +1135,11 @@
                         "correo": d.cliente.correo, 
                         "cliente": d.cliente.contacto, 
                         "telefono": d.cliente.tel || "N/A",
+                        "nit_cliente": d.cliente.nit || "C/F",
+                        "direccion": d.cliente.dir || "N/A",
+                        "obs_tecnico": d.cliente.obs_tec || "Ninguna",
+                        "temperamento": d.prioridad?.temperamento || "Normal",
+                        "obs_internas": d.prioridad?.observaciones_internas || "Ninguna",
                         "razon_social": d.facturacion?.nombre || "C/F",
                         "nit_facturacion": d.facturacion?.nit || "C/F",
                         "total": d.total.toString(), 
@@ -1548,15 +1558,24 @@
                             // ---- CORRECCIÓN DEL BUG "Mensaje d" APLICADA AQUÍ ----
                             let txt = d.ultimo_mensaje_cliente; 
                             const separadores_correo = [ 
-                                /\r?\nEl\s[\s\S]*?escribió:/i,  // <-- Modificado: Ahora debe ser un salto de línea antes de "El"
+                                /\r?\nEl\s[\s\S]*?escribió:/i,  
+                                />El\s[\s\S]*?escribió:/i, 
                                 /On\s[\s\S]*?wrote:/i, 
                                 /\r?\nDe:\s/i, 
+                                />De:\s/i,
                                 /\r?\nFrom:\s/i, 
+                                />From:\s/i,
                                 /_{10,}/, 
                                 /<div class="gmail_quote"/i, 
-                                /--- Original Message ---/i 
+                                /--- Original Message ---/i,
+                                /<hr tabindex="-1"/i,
+                                /<div id="divRplyFwdMsg"/i
                             ];
                             for (let sep of separadores_correo) { txt = txt.split(sep)[0]; }
+                            // Además, limpiamos la cabecera inyectada por Power Automate para dejar la respuesta limpia:
+                            txt = txt.replace(/Remitente:.*?\n/i, '');
+                            txt = txt.replace(/Mensaje del cliente:.*?\n/i, '');
+                            
                             d.ultimo_mensaje_cliente = txt.trim() || '[Respuesta vacía o sin texto detectado]';
                         }
                         
