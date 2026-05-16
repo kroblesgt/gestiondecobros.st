@@ -299,7 +299,7 @@
                                     <th>Cliente</th>
                                     <th>Estatus / SLA</th>
                                     <th style="width:25%;">Último Mensaje</th>
-                                    <th style="text-align:center;">Comprobante</th>
+                                    <th style="text-align:center;">Comprobantes</th>
                                     <th style="text-align:right;">Acción</th>
                                 </tr>
                             </thead>
@@ -751,7 +751,6 @@
             const clienteNombre = document.getElementById('cli-contacto').value || "Cliente";
             const linkNeoNet = document.getElementById('pago-link').value || "";
             
-            // CONSTRUIR EL OBJETO DATOS PARA PODER USARLO EN PAYLOAD
             const datos = { 
                 ticket: ticketId, 
                 fecha: new Date(), 
@@ -967,40 +966,53 @@
                 servList = "<li>No hay servicios adjuntos</li>"; 
             }
 
-            const linkBuscado = d.boleta || d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || d.link_pago || '';
+            const fuentesComprobantes = d.comprobantes || d.boletas || d.link_comprobante || d.boleta || d.comprobante || d.url_comprobante || d.adjunto || '';
+            let linksArray = [];
             let compLinkHTML = `<span style="color:var(--text-muted); font-size:11px; font-style:italic;"><i class="fas fa-times"></i> Sin comprobante adjunto</span>`;
 
-            if(linkBuscado && linkBuscado !== '#' && linkBuscado.trim() !== '') {
-                if (linkBuscado.includes("uc?export=view")) {
-                    compLinkHTML = `
-                        <div style="display:inline-flex; align-items:center; gap:8px; background:#f0fdf4; padding:5px 10px; border-radius:6px; border:1px solid var(--success);">
-                            <a href="${linkBuscado}" target="_blank" title="Ver tamaño completo">
-                                <img src="${linkBuscado}" class="preview-img" alt="Miniatura" onerror="this.style.display='none'">
-                            </a>
-                            <a href="${linkBuscado}" target="_blank" style="font-size:11px; text-decoration:none; color:var(--success); font-weight:900;">
-                                <i class="fas fa-external-link-alt"></i> ABRIR
-                            </a>
-                        </div>
-                    `;
-                } else {
-                    const matchDrive = linkBuscado.match(/\/d\/(.+?)\//);
-                    if (matchDrive && matchDrive[1]) {
-                        const fileId = matchDrive[1];
-                        const previewUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-                        compLinkHTML = `
+            if (Array.isArray(fuentesComprobantes)) {
+                linksArray = fuentesComprobantes;
+            } else if (typeof fuentesComprobantes === 'string' && fuentesComprobantes.trim() !== '') {
+                linksArray = fuentesComprobantes.split(',').map(l => l.trim()).filter(l => l !== '' && l !== '#');
+            }
+
+            if(linksArray.length > 0) {
+                compLinkHTML = `<div style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">`;
+                linksArray.forEach((linkBuscado, idx) => {
+                    let botonHTML = "";
+                    if (linkBuscado.includes("uc?export=view")) {
+                        botonHTML = `
                             <div style="display:inline-flex; align-items:center; gap:8px; background:#f0fdf4; padding:5px 10px; border-radius:6px; border:1px solid var(--success);">
                                 <a href="${linkBuscado}" target="_blank" title="Ver tamaño completo">
-                                    <img src="${previewUrl}" class="preview-img" alt="Miniatura" onerror="this.style.display='none'">
+                                    <img src="${linkBuscado}" class="preview-img" alt="Miniatura ${idx+1}" onerror="this.style.display='none'">
                                 </a>
                                 <a href="${linkBuscado}" target="_blank" style="font-size:11px; text-decoration:none; color:var(--success); font-weight:900;">
-                                    <i class="fas fa-external-link-alt"></i> ABRIR
+                                    <i class="fas fa-external-link-alt"></i> ADJUNTO ${idx+1}
                                 </a>
                             </div>
                         `;
                     } else {
-                        compLinkHTML = `<a href="${linkBuscado}" target="_blank" class="btn btn-outline" style="font-size:11px; padding:6px 12px; text-decoration:none; border-color:var(--success); color:var(--success); font-weight:900; background:#f0fdf4; box-shadow: 0 4px 6px rgba(5,150,105,0.2);"><i class="fas fa-image"></i> VER COMPROBANTE</a>`;
+                        const matchDrive = linkBuscado.match(/\/d\/(.+?)\//);
+                        if (matchDrive && matchDrive[1]) {
+                            const fileId = matchDrive[1];
+                            const previewUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                            botonHTML = `
+                                <div style="display:inline-flex; align-items:center; gap:8px; background:#f0fdf4; padding:5px 10px; border-radius:6px; border:1px solid var(--success);">
+                                    <a href="${linkBuscado}" target="_blank" title="Ver tamaño completo">
+                                        <img src="${previewUrl}" class="preview-img" alt="Miniatura ${idx+1}" onerror="this.style.display='none'">
+                                    </a>
+                                    <a href="${linkBuscado}" target="_blank" style="font-size:11px; text-decoration:none; color:var(--success); font-weight:900;">
+                                        <i class="fas fa-external-link-alt"></i> ADJUNTO ${idx+1}
+                                    </a>
+                                </div>
+                            `;
+                        } else {
+                            botonHTML = `<a href="${linkBuscado}" target="_blank" class="btn btn-outline" style="font-size:11px; padding:6px 12px; text-decoration:none; border-color:var(--success); color:var(--success); font-weight:900; background:#f0fdf4; box-shadow: 0 4px 6px rgba(5,150,105,0.2);"><i class="fas fa-image"></i> VER ADJUNTO ${idx+1}</a>`;
+                        }
                     }
-                }
+                    compLinkHTML += botonHTML;
+                });
+                compLinkHTML += `</div>`;
             }
 
             let selectorAgenteHTML = `<span style="font-weight:900; color:var(--primary); font-size:12px;">${d.agente || 'Sin asignar'}</span>`;
@@ -1419,11 +1431,17 @@
                     fechaFmt = `<span style="color:var(--text-muted); font-size:10px; font-weight:800; text-transform:uppercase;">Creado el:</span><br><span style="font-weight:700;">${fechaTxt}</span> <span style="color:var(--primary); font-size:11px; font-weight:900; margin-left:4px;"><i class="fas fa-clock"></i> ${horaTxt}</span>`;
                 }
 
-                const msjCorto = d.ultimo_mensaje_cliente ? `<div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${d.ultimo_mensaje_cliente.replace(/"/g, '&quot;')}">${d.ultimo_mensaje_cliente.replace(/(https?:\/\/[^\s]+)/g, '📎 [Archivo Adjunto]')}</div>` : '<span style="color:#94a3b8; font-style:italic;">---</span>';
+                const msjCorto = d.ultimo_mensaje_cliente ? `<div style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${d.ultimo_mensaje_cliente.replace(/"/g, '&quot;')}">${d.ultimo_mensaje_cliente.replace(/(https?:\/\/[^\s]+)/g, '📎 [Evidencia Multi-Adjunta]')}</div>` : '<span style="color:#94a3b8; font-style:italic;">---</span>';
 
                 let adjuntoHTML = '<span style="color:#cbd5e1; font-size:11px;">---</span>';
-                const linkTabla = d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || d.link_pago || '';
-                if(linkTabla && linkTabla !== '#' && linkTabla.trim() !== '') { adjuntoHTML = `<a href="${linkTabla}" target="_blank" class="btn btn-outline" style="padding:4px 8px; font-size:10px; color:var(--accent); border-color:var(--accent);"><i class="fas fa-image"></i> Ver</a>`; }
+                const fComps = d.comprobantes || d.boletas || d.link_comprobante || d.boleta || d.comprobante || d.url_comprobante || d.adjunto || '';
+                let lArr = [];
+                if (Array.isArray(fComps)) lArr = fComps;
+                else if (typeof fComps === 'string' && fComps.trim() !== '') lArr = fComps.split(',').map(l => l.trim()).filter(l => l !== '' && l !== '#');
+
+                if(lArr.length > 0) { 
+                    adjuntoHTML = `<span class="badge status-enviado" style="background:var(--success); font-size:10px; padding:4px 8px;"><i class="fas fa-paperclip"></i> Ver ${lArr.length}</span>`; 
+                }
 
                 let esPropioOAdmin = (d.agente === window.userName || !esAgenteNormal);
                 let btnHTML = '';
@@ -1451,7 +1469,7 @@
                     <td style="font-size:11px;"><span style="font-weight:800; color:#000;">${nombreCli}</span> ${icT}<br><span style="font-size:10px; color:var(--accent); font-weight:900;">NIT: ${nitCli}</span></td>
                     <td>${estatusFinal}</td>
                     <td style="font-size:11px;">${msjCorto}</td>
-                    <td style="text-align:center;">${adjuntoHTML}</td>
+                    <td style="text-align:center; cursor:pointer;" onclick="window.abrirVisor('${d.id}')">${adjuntoHTML}</td>
                     <td style="white-space:nowrap; text-align:right;">${btnHTML}</td>
                 </tr>`;
             });
@@ -1600,16 +1618,34 @@
                         let d = { id: docSnap.id, ...docSnap.data() }; 
                         if (d.ultimo_mensaje_cliente && d.ultimo_mensaje_cliente !== 'Sin mensaje reciente') {
                             
-                            // ---- NUEVO MOTOR ULTRA SEGURO DE LIMPIEZA POR ESTADO ----
                             let txt = d.ultimo_mensaje_cliente || ""; 
                             
-                            // 1. Convertir HTML a texto plano si viene con etiquetas de formato de Outlook
-                            if (txt.includes("<body") || txt.includes("<div") || txt.includes("<p") || txt.includes("<html") || txt.includes("<span")) {
-                                txt = txt.replace(/<br\s*\/?>/gi, "\n")
-                                         .replace(/<\/p>/gi, "\n")
-                                         .replace(/<\/div>/gi, "\n")
-                                         .replace(/<[^>]+>/g, "");
+                            // 0. Decodificar si Power Automate lo envió "escapado" (ej: &lt;html&gt;)
+                            if (txt.includes("&lt;html") || txt.includes("&lt;body") || txt.includes("&lt;div")) {
+                                const txtArea = document.createElement("textarea");
+                                txtArea.innerHTML = txt;
+                                txt = txtArea.value; 
                             }
+
+                            // 1. Motor DOMParser avanzado para devorar el HTML crudo de Outlook
+                            if (txt.includes("<html") || txt.includes("<body") || txt.includes("<div") || txt.includes("<p") || /<[a-z][\s\S]*>/i.test(txt)) {
+                                const parser = new DOMParser();
+                                const htmlDoc = parser.parseFromString(txt, 'text/html');
+                                
+                                // Destruir toda la basura oculta de Outlook (CSS, Metadatos, XML)
+                                const basura = htmlDoc.querySelectorAll('style, head, script, meta, link, title, xml, [style*="display: none"]');
+                                basura.forEach(el => el.remove());
+
+                                // Traducir etiquetas visuales a saltos de línea reales
+                                htmlDoc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                                htmlDoc.querySelectorAll('p, div, li, tr').forEach(el => el.append('\n'));
+
+                                // Extraer solo el texto humano puro
+                                txt = htmlDoc.body.textContent || "";
+                            }
+
+                            // Limpiar espacios múltiples y saltos de línea excesivos
+                            txt = txt.replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
 
                             // 2. Procesar línea por línea con protección de cabeceras iniciales
                             let lineas = txt.split(/\r?\n/);
@@ -1624,20 +1660,21 @@
                                     if (/^_{3,}/.test(lTrim) || /^-{3,}/.test(lTrim) || lTrim === "") {
                                         continue;
                                     }
-                                    // Ignorar los campos del encabezado del reenvío automático de Outlook
+                                    // Ignorar cabeceras de reenvío automático
                                     if (/^(De|From|Para|To|Enviado|Sent|Fecha|Date|Asunto|Subject|CC|CCO|MIME|Reply-To):\s*/i.test(lTrim)) {
                                         continue;
                                     }
-                                    // Superadas las cabeceras decorativas, entramos al contenido del cliente
                                     dentroDelMensajeReal = true;
                                 }
                                 
                                 if (dentroDelMensajeReal) {
-                                    // Si detectamos el historial viejo abajo del mensaje del cliente, rompemos el ciclo
+                                    // Romper si detectamos el historial viejo abajo del mensaje
                                     if (/^---\s*Original Message\s*---/i.test(lTrim) || 
                                         /^\s*De:\s*SISTEMA/i.test(lTrim) ||
                                         /^\s*De:\s*ST\s*Portal\s*CRM/i.test(lTrim) || 
-                                        /^\s*From:\s*ST\s*Portal\s*CRM/i.test(lTrim)) {
+                                        /^\s*From:\s*ST\s*Portal\s*CRM/i.test(lTrim) ||
+                                        /Escribió:/i.test(lTrim) ||
+                                        /Wrote:/i.test(lTrim)) {
                                         break;
                                     }
                                     lineasLimpias.push(linea);
@@ -1646,7 +1683,7 @@
                             
                             txt = lineasLimpias.join("\n").trim();
                             
-                            // 3. Cortes secundarios tradicionales de seguridad
+                            // 3. Cortes secundarios de seguridad
                             const separadores_correo = [ 
                                 /\r?\nEl\s[\s\S]*?escribió:/i,  
                                 />El\s[\s\S]*?escribió:/i, 
