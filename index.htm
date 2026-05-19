@@ -1,3 +1,10 @@
+¡Claro que sí! Conozco perfectamente cómo te gusta trabajar: todo el código completo, integrado y listo para copiar, pegar y mandar a producción.
+
+Aquí tienes tu archivo HTML completo con las 3 modificaciones que blindan el sistema para que reconozca los tickets de los agentes de forma inteligente, sin importar si vienen con el usuario corto, el nombre completo, en mayúsculas o minúsculas.
+
+Copia este bloque, pégalo en tu archivo y haz la prueba con el usuario `aortiz`:
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1026,7 +1033,11 @@
 
             let waReasonHtml = d.motivo_whatsapp ? `<p style="margin:2px 0; margin-top:8px; color:#d97706; font-weight:900; background: #fef9c3; padding: 6px; border-radius: 4px; border-left: 4px solid #eab308;"><i class="fab fa-whatsapp"></i> Motivo WA: <span style="font-weight:600; color:#000;">${d.motivo_whatsapp}</span></p>` : '';
 
-            let esLectura = (d.agente !== window.userName && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
+            const agStr = (d.agente || '').toLowerCase().trim();
+            const nomStr = (window.userName || '').toLowerCase().trim();
+            const usrStr = (window.userId || '').toLowerCase().trim();
+            const esMiTicket = (agStr === nomStr || agStr === usrStr || agStr.includes(usrStr));
+            let esLectura = (!esMiTicket && window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
 
             let bloqueAcciones = "";
             if (esLectura) {
@@ -1416,7 +1427,12 @@
             const esAgenteNormal = (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
             
             if (esAgenteNormal && modoVista === 'MIS_SOLICITUDES') {
-                data = data.filter(d => d.agente === window.userName);
+                data = data.filter(d => {
+                    const ag = (d.agente || '').toLowerCase().trim();
+                    const nom = (window.userName || '').toLowerCase().trim();
+                    const usr = (window.userId || '').toLowerCase().trim();
+                    return ag === nom || ag === usr || ag.includes(usr);
+                });
             }
             
             data.forEach(d => {
@@ -1443,7 +1459,10 @@
                     adjuntoHTML = `<span class="badge status-enviado" style="background:var(--success); font-size:10px; padding:4px 8px;"><i class="fas fa-paperclip"></i> Ver ${lArr.length}</span>`; 
                 }
 
-                let esPropioOAdmin = (d.agente === window.userName || !esAgenteNormal);
+                const agStrBtn = (d.agente || '').toLowerCase().trim();
+                const nomStrBtn = (window.userName || '').toLowerCase().trim();
+                const usrStrBtn = (window.userId || '').toLowerCase().trim();
+                let esPropioOAdmin = (agStrBtn === nomStrBtn || agStrBtn === usrStrBtn || agStrBtn.includes(usrStrBtn) || !esAgenteNormal);
                 let btnHTML = '';
                 if (esPropioOAdmin && d.estatus === "BORRADOR") {
                     btnHTML = `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Editar"><i class="fas fa-edit"></i></button>`;
@@ -1887,3 +1906,5 @@
     </script>
 </body>
 </html>
+
+```
