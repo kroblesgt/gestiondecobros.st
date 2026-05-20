@@ -55,13 +55,11 @@
         input:disabled, select:disabled, textarea:disabled { background: #e2e8f0; cursor: not-allowed; color: #64748b; border-color: #cbd5e1; }
         .edit-mode { background-color: #fffbeb !important; border: 2px solid #f59e0b !important; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2) !important; }
 
-        /* Estilos dinámicos para el buscador */
         .search-input-wrapper { position: relative; flex: 1; min-width: 250px; display: flex; align-items: center; }
         .search-input-wrapper i { position: absolute; left: 16px; color: var(--accent); font-size: 16px; transition: 0.3s; pointer-events: none; }
         .search-input-dynamic { width: 100%; padding: 12px 20px 12px 42px; border: 2px solid var(--border); border-radius: 30px; font-size: 14px; font-weight: 700; background: white; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; color: var(--primary); }
         .search-input-dynamic:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,119,163,0.15); background: #f8fafc; }
         .search-input-wrapper:focus-within i { color: var(--primary); transform: scale(1.15); }
-        /* Fin buscador dinámico */
 
         .btn { padding: 12px 20px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; text-transform: uppercase; transition: 0.2s; }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
@@ -87,6 +85,8 @@
         .status-completado { background: var(--success); color: white; }
         .status-anulado { background: var(--danger); color: white; }
         .status-borrador { background: var(--draft); color: white; }
+        /* Nuevo estado: Error en Envío */
+        .status-error { background: #991b1b; color: white; } 
 
         .ticket-nuevo { background-color: #f0fdf4 !important; border-left: 4px solid var(--success); animation: resplandor 2s infinite alternate; }
         @keyframes resplandor { from { box-shadow: inset 5px 0 0 var(--success); } to { box-shadow: inset 5px 0 15px rgba(5,150,105,0.4); } }
@@ -295,7 +295,7 @@
 
                         <div class="filter-pills" style="margin-top: 15px;">
                             <div class="f-pill p-all active" onclick="aplicarFiltroSeguimientos('TODOS', this)">Todos</div>
-                            <div class="f-pill p-alert" onclick="aplicarFiltroSeguimientos('ATRASO', this)">Atrasos <span class="badge" id="pill-count-atraso" style="background:var(--danger); color:white;">0</span></div>
+                            <div class="f-pill p-alert" onclick="aplicarFiltroSeguimientos('ATRASO', this)">Alertas <span class="badge" id="pill-count-atraso" style="background:var(--danger); color:white;">0</span></div>
                             <div class="f-pill p-comp" onclick="aplicarFiltroSeguimientos('COMPROBANTE', this)">Pagos <span class="badge" id="pill-count-comp" style="background:var(--warning); color:white;">0</span></div>
                             <div class="f-pill" style="background:#e0f2fe; color:var(--accent); border-color:var(--accent);" onclick="aplicarFiltroSeguimientos('NUEVA_RESPUESTA', this)">Resps. <span class="badge" id="pill-count-resp" style="background:var(--accent); color:white;">0</span></div>
                         </div>
@@ -337,6 +337,7 @@
                                 <option value="TODOS">Todos</option>
                                 <option value="BORRADOR">Borradores</option>
                                 <option value="ENVIADO">Enviados</option>
+                                <option value="ERROR EN ENVÍO">Error en Envío</option>
                                 <option value="RECIBIDO">Recibidos (Respuestas)</option>
                                 <option value="COMPROBANTE RECIBIDO">Comp. Recibido</option>
                                 <option value="COMPLETADO">Completados</option>
@@ -1067,6 +1068,7 @@
                         <label style="font-size:11px; font-weight:900; white-space:nowrap; margin-left:10px;">Estatus:</label>
                         <select id="v-nuevo-estatus" style="padding:6px; font-size:12px; flex:1;">
                             <option value="ENVIADO" ${d.estatus === 'ENVIADO' ? 'selected' : ''}>ENVIADO</option>
+                            <option value="ERROR EN ENVÍO" ${d.estatus === 'ERROR EN ENVÍO' ? 'selected' : ''}>ERROR EN ENVÍO</option>
                             <option value="RECIBIDO" ${d.estatus === 'RECIBIDO' ? 'selected' : ''}>RECIBIDO</option>
                             <option value="COMPROBANTE RECIBIDO" ${d.estatus === 'COMPROBANTE RECIBIDO' ? 'selected' : ''}>COMPROBANTE RECIBIDO</option>
                             <option value="COMPLETADO" ${d.estatus === 'COMPLETADO' ? 'selected' : ''}>COMPLETADO</option>
@@ -1408,7 +1410,11 @@
             
             data.forEach(d => {
                 const hPasadas = Math.abs(now - (d.fechaFormateada || now)) / 36e5; let t_alert = 'NADA';
-                if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } d.temp_alerta = t_alert; 
+                if (d.estatus === 'ERROR EN ENVÍO') { t_alert = 'ATRASO'; cAtraso++; }
+                else if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } 
+                else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } 
+                else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } 
+                d.temp_alerta = t_alert; 
             });
             document.getElementById('pill-count-atraso').innerText = cAtraso; document.getElementById('pill-count-comp').innerText = cComp; document.getElementById('pill-count-resp').innerText = cResp;
             
@@ -1439,10 +1445,13 @@
             }
             
             data.forEach(d => {
-                const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : d.estatus === "ANULADO" ? "status-anulado" : d.estatus === "RECIBIDO" ? "status-respuesta" : "status-recibido";
+                const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ERROR EN ENVÍO" ? "status-error" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : d.estatus === "ANULADO" ? "status-anulado" : d.estatus === "RECIBIDO" ? "status-respuesta" : "status-recibido";
                 let icT = ''; if (d.prioridad?.temperamento === 'Molesto') icT = '<i class="fas fa-fire" style="color:var(--danger); margin-left:4px;" title="Molesto"></i>'; else if (d.prioridad?.temperamento === 'Escalado') icT = '<i class="fas fa-bomb" style="color:#1e293b; margin-left:4px;" title="Escalado"></i>'; else if (d.prioridad?.temperamento === 'Acelerado') icT = '<i class="fas fa-bolt" style="color:var(--warning); margin-left:4px;" title="Acelerado"></i>';
                 let icA = ""; let rC = ""; 
-                if (d.temp_alerta === "ATRASO") { icA = '<i class="fas fa-exclamation-triangle" style="color:var(--danger); font-size: 16px;"></i>'; rC = "row-alert"; } else if (d.temp_alerta === "COMPROBANTE") { icA = '<i class="fas fa-file-invoice-dollar" style="color:var(--warning); font-size: 16px;"></i>'; rC = "row-comp"; } else if (d.temp_alerta === "NUEVA_RESPUESTA") { icA = '<i class="fas fa-bell" style="color:var(--success); font-size: 14px;"></i>'; rC = "ticket-nuevo"; }
+                if (d.estatus === 'ERROR EN ENVÍO') { icA = '<i class="fas fa-times-circle" style="color:#991b1b; font-size: 16px;" title="Error en Envío"></i>'; rC = "row-alert"; }
+                else if (d.temp_alerta === "ATRASO") { icA = '<i class="fas fa-exclamation-triangle" style="color:var(--danger); font-size: 16px;"></i>'; rC = "row-alert"; } 
+                else if (d.temp_alerta === "COMPROBANTE") { icA = '<i class="fas fa-file-invoice-dollar" style="color:var(--warning); font-size: 16px;"></i>'; rC = "row-comp"; } 
+                else if (d.temp_alerta === "NUEVA_RESPUESTA") { icA = '<i class="fas fa-bell" style="color:var(--success); font-size: 14px;"></i>'; rC = "ticket-nuevo"; }
 
                 let fechaFmt = '---';
                 if (d.fechaFormateada) {
@@ -1724,7 +1733,7 @@
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
                             
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; 
-                            if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
+                            if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && d.estatus !== "ERROR EN ENVÍO" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
                                 updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); 
                                 window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `La solicitud superó el SLA de ${slaLimite} horas.`); 
                             } 
@@ -1755,7 +1764,7 @@
 
         function actualizarVistaDashboard(docs) {
             let tM = 0; let b = 0; let e = 0; let c = 0; let validTickets = 0;
-            const cE = { 'BORRADOR': 0, 'ENVIADO': 0, 'RECIBIDO': 0, 'COMPROBANTE RECIBIDO': 0, 'COMPLETADO': 0, 'ANULADO': 0 }; 
+            const cE = { 'BORRADOR': 0, 'ENVIADO': 0, 'RECIBIDO': 0, 'COMPROBANTE RECIBIDO': 0, 'COMPLETADO': 0, 'ANULADO': 0, 'ERROR EN ENVÍO': 0 }; 
             const rA = {};
             
             docs.forEach(d => { 
@@ -1781,7 +1790,7 @@
             document.getElementById('kpi-espera').innerText = e; 
             document.getElementById('kpi-completados').innerText = c;
             
-            const ctxE = document.getElementById('chartEstatus').getContext('2d'); if(window.chartInstEstatus) window.chartInstEstatus.destroy(); window.chartInstEstatus = new Chart(ctxE, { type: 'doughnut', data: { labels: ['Borrador', 'Enviado', 'Recibido', 'Comprob.', 'Completado', 'Anulado'], datasets: [{ data: [cE['BORRADOR'], cE['ENVIADO'], cE['RECIBIDO'], cE['COMPROBANTE RECIBIDO'], cE['COMPLETADO'], cE['ANULADO']], backgroundColor: ['#475569', '#0077A3', '#8b5cf6', '#d97706', '#059669', '#dc2626'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } } });
+            const ctxE = document.getElementById('chartEstatus').getContext('2d'); if(window.chartInstEstatus) window.chartInstEstatus.destroy(); window.chartInstEstatus = new Chart(ctxE, { type: 'doughnut', data: { labels: ['Borrador', 'Enviado', 'Error', 'Recibido', 'Comprob.', 'Completado', 'Anulado'], datasets: [{ data: [cE['BORRADOR'], cE['ENVIADO'], cE['ERROR EN ENVÍO'], cE['RECIBIDO'], cE['COMPROBANTE RECIBIDO'], cE['COMPLETADO'], cE['ANULADO']], backgroundColor: ['#475569', '#0077A3', '#991b1b', '#8b5cf6', '#d97706', '#059669', '#dc2626'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } } });
             const ctxA = document.getElementById('chartAgentes').getContext('2d'); if(window.chartInstAgentes) window.chartInstAgentes.destroy(); const aOrd = Object.keys(rA).sort((a,b) => rA[b] - rA[a]); window.chartInstAgentes = new Chart(ctxA, { type: 'bar', data: { labels: aOrd, datasets: [{ data: aOrd.map(ag => rA[ag]), backgroundColor: '#002244', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
         }
 
