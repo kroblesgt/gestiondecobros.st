@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ST Admin CRM | Distelsa</title>
+    <title>Gestión de Cobros ST - Call Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -54,6 +54,14 @@
         input:focus, select:focus, textarea:focus { border-color: var(--accent); background: #ffffff; box-shadow: 0 0 0 3px rgba(0,119,163,0.2); }
         input:disabled, select:disabled, textarea:disabled { background: #e2e8f0; cursor: not-allowed; color: #64748b; border-color: #cbd5e1; }
         .edit-mode { background-color: #fffbeb !important; border: 2px solid #f59e0b !important; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2) !important; }
+
+        /* Estilos dinámicos para el buscador */
+        .search-input-wrapper { position: relative; flex: 1; min-width: 250px; display: flex; align-items: center; }
+        .search-input-wrapper i { position: absolute; left: 16px; color: var(--accent); font-size: 16px; transition: 0.3s; pointer-events: none; }
+        .search-input-dynamic { width: 100%; padding: 12px 20px 12px 42px; border: 2px solid var(--border); border-radius: 30px; font-size: 14px; font-weight: 700; background: white; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; color: var(--primary); }
+        .search-input-dynamic:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,119,163,0.15); background: #f8fafc; }
+        .search-input-wrapper:focus-within i { color: var(--primary); transform: scale(1.15); }
+        /* Fin buscador dinámico */
 
         .btn { padding: 12px 20px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; text-transform: uppercase; transition: 0.2s; }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
@@ -182,7 +190,7 @@
         <header>
             <div style="display:flex; align-items:center; gap:15px;">
                 <button id="btn-menu-mobile" onclick="toggleMenuMobile()"><i class="fas fa-bars"></i></button>
-                <div style="font-weight:900; color:var(--primary); font-size: 18px;"><i class="fas fa-tools"></i> <span class="header-title-text">ST PORTAL CRM</span></div>
+                <div style="font-weight:900; color:var(--primary); font-size: 18px;"><i class="fas fa-tools"></i> <span class="header-title-text">Gestión de Cobros ST - Call Center</span></div>
             </div>
             <div style="display:flex; align-items:center; gap:15px;">
                 <div class="bell-container" id="bell-icon-container" onclick="toggleNotifications()"><i class="fas fa-bell" style="font-size: 18px; color: var(--primary);"></i><div class="bell-badge" id="bell-badge" style="display:none;">0</div></div>
@@ -270,13 +278,15 @@
                 <div class="card" style="padding:0;">
                     <div style="padding: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                            <h2 style="font-weight:900; font-size: 20px; margin: 0;"><i class="fas fa-list-ul"></i> Seguimiento</h2>
-                            <div style="flex: 1; min-width: 250px; max-width: 500px; display: flex; gap: 10px; align-items: center;">
-                                <div style="position: relative; flex: 1;">
-                                    <i class="fas fa-search" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
-                                    <input type="text" id="buscador-tickets" placeholder="Buscar solicitud, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px 10px 38px; border: 2px solid var(--border); border-radius: 8px; font-size: 13px; width: 100%; font-weight: 700;">
+                            <h2 style="font-weight:900; font-size: 20px; margin: 0; white-space: nowrap;"><i class="fas fa-list-ul"></i> Seguimiento</h2>
+                            <div style="flex: 1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                
+                                <div class="search-input-wrapper">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="buscador-tickets" class="search-input-dynamic" placeholder="Buscar solicitud, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)">
                                 </div>
-                                <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px; border-radius: 8px; font-weight: 900; border: 2px solid var(--border); background: #f8fafc; color: var(--primary); outline: none; cursor: pointer;">
+                                
+                                <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px; border-radius: 25px; font-weight: 900; border: 2px solid var(--border); background: white; color: var(--primary); outline: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-width: 160px;">
                                     <option value="MIS_SOLICITUDES">👤 Mis Solicitudes</option>
                                     <option value="EQUIPO">🌐 Ver Equipo</option>
                                 </select>
