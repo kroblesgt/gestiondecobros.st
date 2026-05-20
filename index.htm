@@ -85,7 +85,6 @@
         .status-completado { background: var(--success); color: white; }
         .status-anulado { background: var(--danger); color: white; }
         .status-borrador { background: var(--draft); color: white; }
-        /* Nuevo estado: Error en Envío */
         .status-error { background: #991b1b; color: white; } 
 
         .ticket-nuevo { background-color: #f0fdf4 !important; border-left: 4px solid var(--success); animation: resplandor 2s infinite alternate; }
@@ -127,7 +126,7 @@
         .notif-item.n-accent { border-left: 4px solid var(--accent); }
         .notif-item.n-msg { border-left: 4px solid #8b5cf6; }
         
-        .filter-pills { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;}
+        .filter-pills { display: flex; gap: 8px; flex-wrap: wrap;}
         .f-pill { padding: 8px 14px; border-radius: 30px; font-size: 11px; font-weight: 900; cursor: pointer; border: 2px solid transparent; transition: 0.2s; display: flex; align-items: center; gap: 6px; text-transform: uppercase;}
         .p-all { background: #e2e8f0; color: var(--text-muted); border-color: #cbd5e1; }
         .p-alert { background: #fef2f2; color: var(--danger); border-color: var(--danger); }
@@ -277,7 +276,7 @@
             <section id="sec-3" style="display:none">
                 <div class="card" style="padding:0;">
                     <div style="padding: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
                             <h2 style="font-weight:900; font-size: 20px; margin: 0; white-space: nowrap;"><i class="fas fa-list-ul"></i> Seguimiento</h2>
                             <div style="flex: 1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 
@@ -290,6 +289,42 @@
                                     <option value="MIS_SOLICITUDES">👤 Mis Solicitudes</option>
                                     <option value="EQUIPO">🌐 Ver Equipo</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <h4 style="margin: 0; color: var(--primary); font-weight: 900; font-size: 13px;"><i class="fas fa-filter"></i> Filtros Avanzados</h4>
+                                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; height:auto; color: var(--text-muted); border-color: var(--border);" onclick="limpiarFiltrosSeguimiento()"><i class="fas fa-eraser"></i> Limpiar</button>
+                            </div>
+                            <div class="form-grid" style="margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                                <div class="input-group">
+                                    <label style="font-size:10px;">Desde</label>
+                                    <input type="date" id="seg-filtro-inicio" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
+                                </div>
+                                <div class="input-group">
+                                    <label style="font-size:10px;">Hasta</label>
+                                    <input type="date" id="seg-filtro-fin" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
+                                </div>
+                                <div class="input-group">
+                                    <label style="font-size:10px;">Estatus</label>
+                                    <select id="seg-filtro-estatus" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
+                                        <option value="TODOS">Todos</option>
+                                        <option value="BORRADOR">Borradores</option>
+                                        <option value="ENVIADO">Enviados</option>
+                                        <option value="ERROR EN ENVÍO">Error en Envío</option>
+                                        <option value="RECIBIDO">Recibidos (Respuestas)</option>
+                                        <option value="COMPROBANTE RECIBIDO">Comp. Recibido</option>
+                                        <option value="COMPLETADO">Completados</option>
+                                        <option value="ANULADO">Anulados</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label style="font-size:10px;">Agente</label>
+                                    <select id="seg-filtro-agente" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
+                                        <option value="TODOS">Todos</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -1384,6 +1419,15 @@
             }
         };
 
+        window.limpiarFiltrosSeguimiento = () => {
+            document.getElementById('seg-filtro-inicio').value = '';
+            document.getElementById('seg-filtro-fin').value = '';
+            document.getElementById('seg-filtro-estatus').value = 'TODOS';
+            document.getElementById('seg-filtro-agente').value = 'TODOS';
+            window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null);
+            mostrarToast("Filtros limpiados.", "success");
+        };
+
         window.aplicarFiltroSeguimientos = (tipo, btnElement) => { 
             window.filtroActualSeguimiento = tipo;
             if (btnElement) { document.querySelectorAll('.f-pill').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); }
@@ -1431,6 +1475,24 @@
                     return ticketMatch || nitMatch || nombreMatch || telMatch || agenteMatch;
                 });
             }
+
+            const fInicio = document.getElementById('seg-filtro-inicio') ? document.getElementById('seg-filtro-inicio').value : '';
+            const fFin = document.getElementById('seg-filtro-fin') ? document.getElementById('seg-filtro-fin').value : '';
+            const fEstatus = document.getElementById('seg-filtro-estatus') ? document.getElementById('seg-filtro-estatus').value : 'TODOS';
+            const fAgente = document.getElementById('seg-filtro-agente') ? document.getElementById('seg-filtro-agente').value : 'TODOS';
+
+            data = data.filter(d => {
+                let pasa = true;
+                if (fEstatus !== "TODOS" && d.estatus !== fEstatus) pasa = false;
+                if (fAgente !== "TODOS" && d.agente !== fAgente) pasa = false;
+                if (fInicio || fFin) { 
+                    const fT = new Date(d.fechaFormateada || 0); 
+                    fT.setHours(0,0,0,0); 
+                    if (fInicio) { const dI = new Date(fInicio + 'T00:00:00'); dI.setHours(0,0,0,0); if (fT < dI) pasa = false; } 
+                    if (fFin) { const dF = new Date(fFin + 'T23:59:59'); dF.setHours(23,59,59,999); if (fT > dF) pasa = false; } 
+                }
+                return pasa;
+            });
 
             const modoVista = document.getElementById('filtro-vista-equipo') ? document.getElementById('filtro-vista-equipo').value : 'MIS_SOLICITUDES';
             const esAgenteNormal = (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER');
@@ -1750,6 +1812,16 @@
                     } catch(err) {}
                 });
                 docs.sort((a,b) => (b.fechaFormateada || 0) - (a.fechaFormateada || 0)); window.datosSeguimientos = docs; window.allDashboardData = docs; 
+                
+                const comboAgentesSeg = document.getElementById('seg-filtro-agente');
+                if (comboAgentesSeg) {
+                    const agenteActualSeg = comboAgentesSeg.value;
+                    const agentesUnicos = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort();
+                    comboAgentesSeg.innerHTML = '<option value="TODOS">Todos</option>';
+                    agentesUnicos.forEach(ag => comboAgentesSeg.innerHTML += `<option value="${ag}">${ag}</option>`);
+                    if(agentesUnicos.includes(agenteActualSeg)) comboAgentesSeg.value = agenteActualSeg;
+                }
+
                 renderSeguimientosTable(window.filtroActualSeguimiento);
                 
                 const comboAgentes = document.getElementById('filtro-agente'); const agenteActual = comboAgentes.value; const agentesUnicos = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort(); comboAgentes.innerHTML = '<option value="TODOS">Todos</option>'; agentesUnicos.forEach(ag => comboAgentes.innerHTML += `<option value="${ag}">${ag}</option>`); if(agentesUnicos.includes(agenteActual)) comboAgentes.value = agenteActual; window.aplicarFiltrosDashboard();
