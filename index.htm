@@ -512,6 +512,27 @@
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                     
+                    <div class="card" style="border-top: 5px solid #3b82f6; margin-bottom: 0;">
+                        <h3 style="font-size:16px; color:#3b82f6; margin-top:0;"><i class="fas fa-credit-card"></i> Configuración de Pagos (NeoNet)</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Habilita o deshabilita el enlace de NeoNet globalmente en el sistema.</p>
+                        
+                        <div class="input-group" style="margin-bottom: 10px;">
+                            <label>Estado de NeoNet</label>
+                            <select id="conf-neonet-estado" style="border-color: #3b82f6;">
+                                <option value="true">🟢 HABILITADO (Funcionamiento Normal)</option>
+                                <option value="false">🔴 DESHABILITADO (Fallas o Mantenimiento)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Mensaje Alternativo (Si NeoNet está deshabilitado)</label>
+                            <textarea id="conf-neonet-msg" rows="3" placeholder="Ej: Por favor realizar transferencia a la cuenta monetaria XXXXX..."></textarea>
+                        </div>
+                        
+                        <div style="text-align: right; margin-top: 15px;">
+                            <button class="btn btn-primary" onclick="guardarConfiguracionNeoNet()" style="background:#3b82f6;"><i class="fas fa-save"></i> Guardar Pagos</button>
+                        </div>
+                    </div>
+
                     <div class="card" style="border-top: 5px solid var(--warning); margin-bottom: 0;">
                         <h3 style="font-size:16px; color:var(--warning); margin-top:0;"><i class="fas fa-clock"></i> Reglas Operativas (SLA)</h3>
                         <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define después de cuántas horas de inactividad una solicitud debe marcarse como ATRASADA (Rojo).</p>
@@ -580,7 +601,7 @@
         window.allDashboardData = []; window.datosDashboardActual = []; window.chartInstEstatus = null; window.chartInstAgentes = null; window.datosSeguimientos = []; window.totalAlertas = 0;
         
         window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; 
-        window.configSistema = { sla_horas: 24 }; 
+        window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "" }; 
         window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
         
         window.configPlantillas = { 
@@ -761,6 +782,19 @@
             document.getElementById('check-confirmar').checked = false; 
             const selectTemp = document.getElementById('cli-temperamento'); selectTemp.value = "Normal"; cambiarColorTemperamento(selectTemp); 
             const selectTipo = document.getElementById('gc-tipo'); if(selectTipo.options.length > 0) selectTipo.selectedIndex = 0;
+            
+            // Re-aplicar configuración de NeoNet al limpiar
+            const linkInput = document.getElementById('pago-link');
+            if (linkInput) {
+                if (window.configSistema && window.configSistema.neonet_habilitado === false) {
+                    linkInput.disabled = true;
+                    linkInput.placeholder = "Deshabilitado por sistema";
+                } else {
+                    linkInput.disabled = false;
+                    linkInput.placeholder = "";
+                }
+            }
+            
             window.cambioTipoServicio(); 
         };
 
@@ -795,7 +829,19 @@
             const ticketId = window.currentTicketEditing || "ST-" + Date.now().toString().slice(-6); 
             const nombreAgente = document.getElementById('uName').innerText; 
             const clienteNombre = document.getElementById('cli-contacto').value || "Cliente";
-            const linkNeoNet = document.getElementById('pago-link').value || "";
+            
+            // Lógica de NeoNet Habilitado/Deshabilitado y Generación de HTML Dinámico
+            let linkNeoNet = document.getElementById('pago-link').value || "";
+            let htmlPagoDinamico = "";
+
+            if (window.configSistema && window.configSistema.neonet_habilitado === false) {
+                // Modo Apagado
+                linkNeoNet = window.configSistema.neonet_mensaje_alterno || "Pagos con tarjeta temporalmente inhabilitados. Solicite una alternativa.";
+                htmlPagoDinamico = `<div style="background-color: #fef2f2; border: 1px solid #f87171; border-radius: 8px; padding: 15px; text-align: center; color: #991b1b; font-weight: bold; margin: 15px 0;">⚠️ ${linkNeoNet}</div>`;
+            } else {
+                // Modo Encendido (Botón normal)
+                htmlPagoDinamico = `<div style="text-align: center; margin: 20px 0;"><a href="${linkNeoNet}" target="_blank" style="background-color: #059669; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">💳 CLICK PARA PROCEDER AL PAGO EN LÍNEA</a></div>`;
+            }
             
             const datos = { 
                 ticket: ticketId, 
@@ -867,6 +913,7 @@
                         "total": total.toString(), 
                         "agente": nombreAgente, 
                         "link": linkNeoNet, 
+                        "html_pago_dinamico": htmlPagoDinamico, // AQUÍ ENVIAMOS EL BOTÓN O EL CUADRO DE TEXTO
                         "detalle_servicios": `<ul>${resumenServicios}</ul>`, 
                         "mensaje": "Envío de cobro inicial", 
                         "firma_texto": window.userFirma, 
@@ -894,7 +941,7 @@
                                    .replace(/\{\{nit\}\}/g, datos.facturacion.nit || 'C/F')
                                    .replace(/\{\{servicios\}\}/g, rServ)
                                    .replace(/\{\{total\}\}/g, total.toFixed(2))
-                                   .replace(/\{\{link_pago\}\}/g, datos.pago_link || 'Pendiente')
+                                   .replace(/\{\{link_pago\}\}/g, linkNeoNet)
                                    .replace(/\{\{motivo\}\}/g, motivoWa.trim());
 
                     const linkOficial = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgRaw)}`;
@@ -1146,7 +1193,7 @@
                     </div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; padding-top:10px; border-top:1px dashed #cbd5e1; align-items:center;">
                         <b style="color:var(--primary);">Adjuntos y Enlaces:</b>
-                        <a href="${d.pago_link || '#'}" target="_blank" class="btn btn-accent" style="font-size:10px; padding:5px; text-decoration:none; ${!d.pago_link ? 'opacity:0.5; pointer-events:none;' : ''}"><i class="fas fa-external-link-alt"></i> Link NeoNet</a>
+                        <a href="${d.pago_link || '#'}" target="_blank" class="btn btn-accent" style="font-size:10px; padding:5px; text-decoration:none; ${!d.pago_link || d.pago_link.includes('deshabilitados') || d.pago_link.includes('transferencia') ? 'opacity:0.5; pointer-events:none;' : ''}"><i class="fas fa-external-link-alt"></i> Link NeoNet</a>
                         ${compLinkHTML}
                     </div>
                 </div>
@@ -1254,6 +1301,7 @@
                         "total": d.total.toString(), 
                         "agente": nombreAgenteActual, 
                         "link": d.pago_link || "", 
+                        "html_pago_dinamico": "", // Para una respuesta normal no mandamos botón
                         "detalle_servicios": "Ver histórico de la solicitud", 
                         "mensaje": msg, 
                         "firma_texto": window.userFirma, 
@@ -1302,6 +1350,16 @@
                 if (nuevo === 'COMPROBANTE RECIBIDO' && d.estatus !== 'COMPROBANTE RECIBIDO') { window.crearNotificacionSistema(d.ticket, d.campaña, (actualizaciones.agente || d.agente), 'COMPROBANTE', `Comprobante recibido para la solicitud ${d.ticket}`); }
                 mostrarToast(`Cambios aplicados correctamente.`, 'success'); abrirVisor(id);
             } catch (error) { mostrarToast("Error al aplicar cambios.", 'error'); }
+        };
+
+        window.guardarConfiguracionNeoNet = async () => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            const estado = document.getElementById('conf-neonet-estado').value === 'true';
+            const msg = document.getElementById('conf-neonet-msg').value;
+            try { 
+                await setDoc(doc(db, "Configuracion", "General"), { neonet_habilitado: estado, neonet_mensaje_alterno: msg }, { merge: true }); 
+                mostrarToast("Configuración de pagos actualizada.", "success"); 
+            } catch(e) { mostrarToast("Error al guardar pagos.", "error"); }
         };
 
         window.guardarConfiguracionSLA = async () => {
@@ -1625,11 +1683,30 @@
         function iniciarEscuchas() {
             onSnapshot(doc(db, "Configuracion", "General"), docSnap => {
                 if (docSnap.exists()) {
-                    window.configSistema = docSnap.data();
+                    window.configSistema = { ...window.configSistema, ...docSnap.data() };
                     const inputSLA = document.getElementById('conf-sla');
                     if (inputSLA) inputSLA.value = window.configSistema.sla_horas || 24;
+
+                    // Ajustes de NeoNet
+                    const neoEstado = document.getElementById('conf-neonet-estado');
+                    const neoMsg = document.getElementById('conf-neonet-msg');
+                    if (neoEstado) neoEstado.value = window.configSistema.neonet_habilitado === false ? 'false' : 'true';
+                    if (neoMsg) neoMsg.value = window.configSistema.neonet_mensaje_alterno || '';
+
+                    // Ajustar input de gestión de cobro si está abierto
+                    const linkInput = document.getElementById('pago-link');
+                    if (linkInput) {
+                        if (window.configSistema.neonet_habilitado === false) {
+                            linkInput.disabled = true;
+                            linkInput.value = "";
+                            linkInput.placeholder = "Deshabilitado por sistema";
+                        } else {
+                            linkInput.disabled = false;
+                            linkInput.placeholder = "Ej: https://neonet...";
+                        }
+                    }
                 } else {
-                    window.configSistema = { sla_horas: 24 };
+                    window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "" };
                 }
             });
 
