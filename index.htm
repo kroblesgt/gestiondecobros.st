@@ -584,12 +584,16 @@
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{solicitud}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{cliente}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{telefono}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{correo}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{direccion}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{razon_social}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{nit}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{servicios}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{total}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{link_pago}}</span>
                                 <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{motivo}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{temperamento}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{obs_internas}}</span>
                             </div>
                         </div>
                         
@@ -632,7 +636,7 @@
         window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
         
         window.configPlantillas = { 
-            whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}" 
+            whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\nCORREO: {{correo}}\nDIRECCIÓN: {{direccion}}\n--------------------------\nPRIORIDAD: {{temperamento}}\nOBS: {{obs_internas}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}" 
         };
 
         window.toggleMenuMobile = () => { document.getElementById('sidebar-menu').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); };
@@ -1056,12 +1060,16 @@
                     
                     let msgRaw = window.configPlantillas?.whatsapp || "";
                     if (!msgRaw) {
-                        msgRaw = "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}";
+                        msgRaw = "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\nCORREO: {{correo}}\nDIRECCIÓN: {{direccion}}\n--------------------------\nPRIORIDAD: {{temperamento}}\nOBS: {{obs_internas}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}";
                     }
 
                     msgRaw = msgRaw.replace(/\{\{solicitud\}\}/g, ticketId)
                                    .replace(/\{\{cliente\}\}/g, clienteNombre)
                                    .replace(/\{\{telefono\}\}/g, datos.cliente.tel || 'N/A')
+                                   .replace(/\{\{correo\}\}/g, datos.cliente.correo || 'N/A')
+                                   .replace(/\{\{direccion\}\}/g, datos.cliente.dir || 'N/A')
+                                   .replace(/\{\{temperamento\}\}/g, datos.prioridad.temperamento || 'Normal')
+                                   .replace(/\{\{obs_internas\}\}/g, datos.prioridad.observaciones_internas || 'Ninguna')
                                    .replace(/\{\{razon_social\}\}/g, datos.facturacion.nombre || 'C/F')
                                    .replace(/\{\{nit\}\}/g, datos.facturacion.nit || 'C/F')
                                    .replace(/\{\{servicios\}\}/g, rServ)
