@@ -84,7 +84,7 @@
         .status-respuesta { background: #8b5cf6; color: white; }
         .status-completado { background: var(--success); color: white; }
         .status-anulado { background: var(--danger); color: white; }
-        .status-borrador { background: var(--draft); color: white; }
+        .status-pausado { background: var(--draft); color: white; }
         .status-error { background: #991b1b; color: white; } 
 
         .ticket-nuevo { background-color: #f0fdf4 !important; border-left: 4px solid var(--success); animation: resplandor 2s infinite alternate; }
@@ -214,6 +214,12 @@
 
         <div class="content">
             <section id="sec-2" style="display:none">
+                
+                <div id="buzon-pausados-container" style="display:none; margin-bottom: 25px; padding: 15px; background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; color: #d97706; font-size: 14px;"><i class="fas fa-pause-circle"></i> Buzón de Gestiones Pausadas</h4>
+                    <div id="lista-pausados" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                </div>
+
                 <div class="card" id="card-prioridad" style="border-left: 5px solid var(--success);">
                     <h3 class="module-header" style="font-size:18px;">Prioridad Interna</h3>
                     <div class="form-grid">
@@ -266,8 +272,9 @@
                     <label class="checkbox-wrapper" style="justify-content:flex-end;"><input type="checkbox" id="check-confirmar"> CONFIRMO DATOS</label>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; margin-top:15px;">
                         <button class="btn btn-outline" onclick="limpiarGestorCobro()"><i class="fas fa-eraser"></i> Limpiar</button>
-                        <button class="btn btn-primary" onclick="procesarCobro('Guardar')"><i class="fas fa-save"></i> Borrador</button> 
-                        <button class="btn btn-success" onclick="procesarCobro('WhatsApp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                        <button class="btn btn-danger" onclick="procesarCobro('Anular')" style="margin-right: auto;"><i class="fas fa-ban"></i> Anular Gestión</button> 
+                        <button class="btn btn-warning" onclick="procesarCobro('Pausa')"><i class="fas fa-pause"></i> Pausar Gestión</button> 
+                        <button id="btn-enviar-wa" class="btn btn-success" onclick="procesarCobro('WhatsApp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
                         <button class="btn btn-accent" onclick="procesarCobro('Correo')"><i class="fas fa-envelope"></i> Correo</button>
                     </div>
                 </div>
@@ -310,7 +317,7 @@
                                     <label style="font-size:10px;">Estatus</label>
                                     <select id="seg-filtro-estatus" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
                                         <option value="TODOS">Todos</option>
-                                        <option value="BORRADOR">Borradores</option>
+                                        <option value="PAUSADO">Pausados</option>
                                         <option value="ENVIADO">Enviados</option>
                                         <option value="ERROR EN ENVÍO">Error en Envío</option>
                                         <option value="RECIBIDO">Recibidos (Respuestas)</option>
@@ -370,7 +377,7 @@
                         <div class="input-group"><label>Estatus</label>
                             <select id="filtro-estatus">
                                 <option value="TODOS">Todos</option>
-                                <option value="BORRADOR">Borradores</option>
+                                <option value="PAUSADO">Pausados</option>
                                 <option value="ENVIADO">Enviados</option>
                                 <option value="ERROR EN ENVÍO">Error en Envío</option>
                                 <option value="RECIBIDO">Recibidos (Respuestas)</option>
@@ -558,18 +565,38 @@
                     </div>
 
                     <div class="card" style="border-top: 5px solid #25D366; margin-bottom: 0; grid-column: 1 / -1;">
-                        <h3 style="font-size:16px; color:#128C7E; margin-top:0;"><i class="fab fa-whatsapp"></i> Editor de Plantilla para WhatsApp</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Personaliza el texto oficial que el sistema enviará al grupo de WhatsApp cuando un agente envíe una solicitud de cobro.</p>
+                        <h3 style="font-size:16px; color:#128C7E; margin-top:0;"><i class="fab fa-whatsapp"></i> Configuración de WhatsApp</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Habilita o deshabilita el envío por WhatsApp en todo el sistema y edita la plantilla de una forma amigable.</p>
                         
-                        <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 15px; border: 1px dashed #22c55e; color: #166534;">
-                            <i class="fas fa-info-circle"></i> <b>Usa estas variables exactamente como están escritas (con doble llave) para que el sistema las reemplace:</b><br>
-                            <span style="font-family:monospace; font-weight:700;">{{solicitud}}, {{cliente}}, {{telefono}}, {{razon_social}}, {{nit}}, {{servicios}}, {{total}}, {{link_pago}}, {{motivo}}</span>
+                        <div class="input-group" style="margin-bottom: 20px;">
+                            <label>Estado del Botón WhatsApp</label>
+                            <select id="conf-wa-estado" style="border-color: #25D366; max-width: 400px; padding: 10px;">
+                                <option value="true">🟢 HABILITADO (Mostrar botón al agente)</option>
+                                <option value="false">🔴 DESHABILITADO (Ocultar botón)</option>
+                            </select>
                         </div>
                         
-                        <textarea id="conf-plantilla-wa" rows="12" style="font-family: monospace; font-size: 12px; line-height: 1.5; resize: vertical; border: 2px solid #25D366;"></textarea>
+                        <label style="font-size: 12px; font-weight: 900; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display:block;">Plantilla del Mensaje</label>
+                        
+                        <div style="background: #f0fdf4; padding: 15px; border-radius: 6px; font-size: 12px; margin-bottom: 10px; border: 1px dashed #22c55e; color: #166534;">
+                            <i class="fas fa-info-circle"></i> <b>Variables disponibles (cópialas y pégalas en el cuadro de texto):</b><br>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{solicitud}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{cliente}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{telefono}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{razon_social}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{nit}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{servicios}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{total}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{link_pago}}</span>
+                                <span style="font-family:monospace; font-weight:700; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer;" title="Copiar">{{motivo}}</span>
+                            </div>
+                        </div>
+                        
+                        <textarea id="conf-plantilla-wa" rows="18" style="font-family: monospace; font-size: 13px; line-height: 1.5; resize: vertical; border: 2px solid #25D366; padding: 15px;"></textarea>
                         
                         <div style="text-align: right; margin-top: 15px;">
-                            <button class="btn btn-success" onclick="guardarPlantillaWA()"><i class="fas fa-save"></i> Guardar Plantilla de WhatsApp</button>
+                            <button class="btn btn-success" onclick="guardarConfiguracionWA()"><i class="fas fa-save"></i> Guardar Configuración WhatsApp</button>
                         </div>
                     </div>
 
@@ -601,11 +628,11 @@
         window.allDashboardData = []; window.datosDashboardActual = []; window.chartInstEstatus = null; window.chartInstAgentes = null; window.datosSeguimientos = []; window.totalAlertas = 0;
         
         window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; 
-        window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "" }; 
+        window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "", wa_habilitado: true }; 
         window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
         
         window.configPlantillas = { 
-            whatsapp: "*NUEVA SOLICITUD DE COBRO* 🛠️\n\n*Solicitud:* {{solicitud}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE LA SOLICITUD:*\n_{{motivo}}_" 
+            whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}" 
         };
 
         window.toggleMenuMobile = () => { document.getElementById('sidebar-menu').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); };
@@ -783,7 +810,6 @@
             const selectTemp = document.getElementById('cli-temperamento'); selectTemp.value = "Normal"; cambiarColorTemperamento(selectTemp); 
             const selectTipo = document.getElementById('gc-tipo'); if(selectTipo.options.length > 0) selectTipo.selectedIndex = 0;
             
-            // Re-aplicar configuración de NeoNet al limpiar
             const linkInput = document.getElementById('pago-link');
             if (linkInput) {
                 if (window.configSistema && window.configSistema.neonet_habilitado === false) {
@@ -804,10 +830,71 @@
             document.body.appendChild(overlay);
         };
 
+        window.renderBuzonPausados = () => {
+            const container = document.getElementById('buzon-pausados-container');
+            const lista = document.getElementById('lista-pausados');
+            if(!container || !lista) return;
+            
+            const misPausados = window.allDashboardData.filter(d => d.estatus === 'PAUSADO' && d.agente === window.userName);
+            
+            if(misPausados.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            lista.innerHTML = misPausados.map(d => `
+                <div style="background: white; border: 1px solid #f59e0b; padding: 10px 15px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div style="display: flex; justify-content: space-between; gap: 15px; align-items: center;">
+                        <span style="font-weight: 900; color: var(--primary); font-size: 13px;" onclick="retomarGestion('${d.id}')">${d.cliente?.contacto || 'Sin Nombre'}</span>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <span style="font-size: 10px; background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: 900;" onclick="retomarGestion('${d.id}')">${d.ticket}</span>
+                            <button class="btn btn-danger btn-icon" style="padding:2px; width:22px; height:22px; min-width:22px; border-radius:4px;" onclick="event.stopPropagation(); anularDesdeBuzon('${d.id}')" title="Anular Directamente"><i class="fas fa-times" style="font-size:11px;"></i></button>
+                        </div>
+                    </div>
+                    <div style="font-size: 11px; color: #475569; font-weight: 700;" onclick="retomarGestion('${d.id}')"><i class="fas fa-info-circle"></i> Motivo: ${d.motivo_pausa || 'Sin especificar'}</div>
+                </div>
+            `).join('');
+        };
+
+        window.anularDesdeBuzon = async (id) => {
+            const d = window.allDashboardData.find(x => x.id === id);
+            if(!d) return;
+
+            const motivo = prompt(`🚫 ANULAR SOLICITUD ${d.ticket}:\n¿Por qué deseas cancelar esta gestión de forma definitiva?`);
+            if(!motivo || motivo.trim() === "") {
+                return mostrarToast("Operación cancelada. Debes ingresar un motivo.", "warning");
+            }
+
+            try {
+                const nombreAgente = document.getElementById('uName').innerText;
+                let historialActualizado = [...(d.historial_respuestas || [])];
+                historialActualizado.push({
+                    tipo: 'agente', fecha: new Date().toISOString(), agente: nombreAgente,
+                    mensaje: `🚫 SOLICITUD ANULADA DIRECTAMENTE DESDE EL BUZÓN.\nMotivo: ${motivo.trim()}`, enviado_por_correo: false
+                });
+
+                await updateDoc(doc(db, "Cobros", id), { estatus: "ANULADO", historial_respuestas: historialActualizado, motivo_anulacion: motivo.trim() });
+                mostrarToast("Solicitud anulada correctamente.", "success");
+                
+                // Si la que anulaste era la que tenías abierta en los campos, limpia la pantalla
+                if (window.currentTicketEditing === d.ticket) {
+                    limpiarGestorCobro();
+                }
+            } catch(e) {
+                mostrarToast("Error al anular la solicitud.", "error");
+            }
+        };
+
         window.procesarCobro = async (metodo) => {
             const total = parseFloat(document.getElementById('total-cobro').innerText);
-            if (metodo !== 'Guardar' && !document.getElementById('check-confirmar').checked) return mostrarToast("Debes confirmar los datos.", 'warning');
-            if(serviciosTemporales.length === 0) return mostrarToast("Agrega un servicio.", 'warning');
+            
+            if (metodo !== 'Pausa' && metodo !== 'Anular' && !document.getElementById('check-confirmar').checked) {
+                return mostrarToast("Debes confirmar los datos.", 'warning');
+            }
+            if (metodo !== 'Anular' && serviciosTemporales.length === 0) {
+                return mostrarToast("Agrega un servicio.", 'warning');
+            }
 
             const correoCliente = document.getElementById('cli-correo').value;
             if (metodo === 'Correo' && (!correoCliente || correoCliente.trim() === '')) {
@@ -815,9 +902,14 @@
             }
 
             let motivoWa = "";
+            let motivoPausa = "";
+            let motivoAnulacion = "";
             let waWindow = null;
 
             if (metodo === 'WhatsApp') {
+                if (window.configSistema && window.configSistema.wa_habilitado === false) {
+                    return mostrarToast("El envío por WhatsApp está deshabilitado.", "warning");
+                }
                 motivoWa = prompt("🚨 MOTIVO DE WHATSAPP OBLIGATORIO:\nPor favor, ingresa la razón por la cual estás requiriendo este cobro por el grupo de WhatsApp (Ej: Cliente sin correo, Urgencia, etc.):");
                 if (!motivoWa || motivoWa.trim() === "") {
                     return mostrarToast("Operación cancelada. El motivo es obligatorio.", "warning");
@@ -825,24 +917,39 @@
                 waWindow = window.open('about:blank', '_blank');
             }
 
+            if (metodo === 'Pausa') {
+                motivoPausa = prompt("⏸️ MOTIVO DE LA PAUSA:\nIngresa la razón por la que estás pausando esta gestión (Ej: Esperando NIT, Cliente devolverá llamada, Consulta con líder):");
+                if (!motivoPausa || motivoPausa.trim() === "") {
+                    return mostrarToast("Operación cancelada. Debes ingresar un motivo para pausar.", "warning");
+                }
+            }
+
+            if (metodo === 'Anular') {
+                motivoAnulacion = prompt("🚫 MOTIVO DE ANULACIÓN:\nIngresa la razón por la que el cliente canceló el servicio o ya no procedió la gestión:");
+                if (!motivoAnulacion || motivoAnulacion.trim() === "") {
+                    return mostrarToast("Operación cancelada. Debes ingresar un motivo para anular.", "warning");
+                }
+            }
+
             const esNuevoTicket = !window.currentTicketEditing;
             const ticketId = window.currentTicketEditing || "ST-" + Date.now().toString().slice(-6); 
             const nombreAgente = document.getElementById('uName').innerText; 
             const clienteNombre = document.getElementById('cli-contacto').value || "Cliente";
             
-            // Lógica de NeoNet Habilitado/Deshabilitado y Generación de HTML Dinámico
             let linkNeoNet = document.getElementById('pago-link').value || "";
             let htmlPagoDinamico = "";
 
             if (window.configSistema && window.configSistema.neonet_habilitado === false) {
-                // Modo Apagado
-                linkNeoNet = window.configSistema.neonet_mensaje_alterno || "Pagos con tarjeta temporalmente inhabilitados. Solicite una alternativa.";
+                linkNeoNet = window.configSistema.neonet_mensaje_alterno || "Pagos con tarjeta deshabilitados temporalmente. Por favor realiza una transferencia o deposito a nuestra cuenta bancaria.";
                 htmlPagoDinamico = `<div style="background-color: #fef2f2; border: 1px solid #f87171; border-radius: 8px; padding: 15px; text-align: center; color: #991b1b; font-weight: bold; margin: 15px 0;">⚠️ ${linkNeoNet}</div>`;
             } else {
-                // Modo Encendido (Botón normal)
                 htmlPagoDinamico = `<div style="text-align: center; margin: 20px 0;"><a href="${linkNeoNet}" target="_blank" style="background-color: #059669; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">💳 CLICK PARA PROCEDER AL PAGO EN LÍNEA</a></div>`;
             }
             
+            let estatusFinal = "ENVIADO";
+            if (metodo === 'Pausa') estatusFinal = "PAUSADO";
+            if (metodo === 'Anular') estatusFinal = "ANULADO";
+
             const datos = { 
                 ticket: ticketId, 
                 fecha: new Date(), 
@@ -867,11 +974,14 @@
                     nombre: document.getElementById('fac-nombre').value 
                 }, 
                 pago_link: linkNeoNet, 
-                estatus: (metodo === 'Guardar') ? "BORRADOR" : "ENVIADO", 
+                estatus: estatusFinal, 
                 metodoEnvio: metodo, 
-                alerta_sla_creada: false,
-                motivo_whatsapp: motivoWa.trim()
+                alerta_sla_creada: false
             };
+
+            if (metodo === 'WhatsApp') datos.motivo_whatsapp = motivoWa.trim();
+            if (metodo === 'Pausa') datos.motivo_pausa = motivoPausa.trim();
+            if (metodo === 'Anular') datos.motivo_anulacion = motivoAnulacion.trim();
 
             let histToSave = [];
             if (esNuevoTicket) {
@@ -887,11 +997,22 @@
                 if (dExt && dExt.historial_respuestas) histToSave = dExt.historial_respuestas;
             }
             
+            if (metodo === 'Anular') {
+                histToSave.push({
+                    tipo: 'agente',
+                    fecha: new Date().toISOString(),
+                    agente: nombreAgente,
+                    mensaje: `🚫 SOLICITUD ANULADA DESDE LA PANTALLA DE GESTIÓN.\nMotivo: ${motivoAnulacion.trim()}`,
+                    enviado_por_correo: false
+                });
+            }
+
             datos.historial_respuestas = histToSave;
 
             try {
                 await setDoc(doc(db, "Cobros", ticketId), datos, { merge: true });
-                if (esNuevoTicket && metodo !== 'Guardar') { window.mostrarPopupTicket(ticketId); }
+                
+                if (esNuevoTicket && metodo !== 'Pausa' && metodo !== 'Anular') { window.mostrarPopupTicket(ticketId); }
                 
                 if (metodo === 'Correo') { 
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
@@ -913,7 +1034,7 @@
                         "total": total.toString(), 
                         "agente": nombreAgente, 
                         "link": linkNeoNet, 
-                        "html_pago_dinamico": htmlPagoDinamico, // AQUÍ ENVIAMOS EL BOTÓN O EL CUADRO DE TEXTO
+                        "html_pago_dinamico": htmlPagoDinamico,
                         "detalle_servicios": `<ul>${resumenServicios}</ul>`, 
                         "mensaje": "Envío de cobro inicial", 
                         "firma_texto": window.userFirma, 
@@ -927,11 +1048,15 @@
                     } catch (netErr) { alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com.`); }
                 } 
                 else if (metodo === 'WhatsApp') { 
-                    const rServ = serviciosTemporales.map(s => `• *${s.tipo}* (${s.producto || ''} ${s.marca || ''}): ${s.detalle} - Q${s.precio.toFixed(2)}`).join('\n'); 
+                    const rServ = serviciosTemporales.map(s => {
+                        let equipoInfo = [s.producto, s.marca].filter(Boolean).join(' ');
+                        let eqText = equipoInfo ? ` (${equipoInfo})` : '';
+                        return `* ${s.tipo}${eqText}: ${s.detalle} - Q${s.precio.toFixed(2)}`;
+                    }).join('\n'); 
                     
                     let msgRaw = window.configPlantillas?.whatsapp || "";
                     if (!msgRaw) {
-                        msgRaw = "*NUEVA SOLICITUD DE COBRO* 🛠️\n\n*Solicitud:* {{solicitud}} \n-------------------------- \n*CLIENTE:* {{cliente}} \n*TEL:* {{telefono}} \n-------------------------- \n*FACTURACIÓN:* \n*Razón Social:* {{razon_social}} \n*NIT:* {{nit}} \n-------------------------- \n*DETALLE DE SERVICIOS:* \n{{servicios}} \n\n*TOTAL: Q {{total}}* \n-------------------------- \n*LINK DE PAGO:* {{link_pago}}\n\n*🚨 MOTIVO DE LA SOLICITUD:*\n_{{motivo}}_";
+                        msgRaw = "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}";
                     }
 
                     msgRaw = msgRaw.replace(/\{\{solicitud\}\}/g, ticketId)
@@ -948,11 +1073,15 @@
                     if (waWindow) { waWindow.location.href = linkOficial; } else { window.open(linkOficial, '_blank'); }
                     
                     mostrarToast("Selecciona el grupo en WhatsApp para enviar.", 'success'); 
-                } else { 
-                    mostrarToast("Borrador guardado exitosamente.", 'success'); 
+                } else if (metodo === 'Pausa') { 
+                    mostrarToast("Gestión pausada exitosamente. Pantalla liberada.", 'success'); 
+                } else if (metodo === 'Anular') {
+                    mostrarToast("Gestión anulada correctamente.", 'success');
                 }
                 
-                limpiarGestorCobro(); showSec('sec-3', document.getElementById('nav-3'));
+                limpiarGestorCobro(); 
+                if (metodo !== 'Pausa' && metodo !== 'Anular') { showSec('sec-3', document.getElementById('nav-3')); }
+                
             } catch (e) { 
                 if (waWindow) waWindow.close();
                 mostrarToast("Error al guardar en Firebase.", 'error'); 
@@ -969,6 +1098,7 @@
             document.getElementById('cli-obs-tec').value = d.cliente.obs_tec || ""; document.getElementById('fac-nit').value = d.facturacion?.nit || ""; 
             document.getElementById('fac-nombre').value = d.facturacion?.nombre || ""; document.getElementById('pago-link').value = d.pago_link || ""; 
             serviciosTemporales = d.servicios || []; renderServicios(); showSec('sec-2', document.getElementById('nav-2')); 
+            mostrarToast("Gestión recuperada del buzón.", "info");
         };
 
         window.tomarSeguimiento = async (id, agenteAnterior) => {
@@ -1118,6 +1248,8 @@
             }
 
             let waReasonHtml = d.motivo_whatsapp ? `<p style="margin:2px 0; margin-top:8px; color:#d97706; font-weight:900; background: #fef9c3; padding: 6px; border-radius: 4px; border-left: 4px solid #eab308;"><i class="fab fa-whatsapp"></i> Motivo WA: <span style="font-weight:600; color:#000;">${d.motivo_whatsapp}</span></p>` : '';
+            
+            let cancelReasonHtml = d.motivo_anulacion ? `<p style="margin:2px 0; margin-top:8px; color:var(--danger); font-weight:900; background: #fef2f2; padding: 6px; border-radius: 4px; border-left: 4px solid var(--danger);"><i class="fas fa-ban"></i> Razón Anulación: <span style="font-weight:600; color:#000;">${d.motivo_anulacion}</span></p>` : '';
 
             const agStr = (d.agente || '').toLowerCase().trim();
             const nomStr = (window.userName || '').toLowerCase().trim();
@@ -1177,6 +1309,7 @@
                             <p style="margin:2px 0; color:var(--warning);"><b>Obs. Técnico:</b> ${d.cliente?.obs_tec || 'Ninguna'}</p>
                             <p style="margin:2px 0; color:var(--danger);"><b>Obs. Internas:</b> ${d.prioridad?.observaciones_internas || 'Ninguna'}</p>
                             ${waReasonHtml}
+                            ${cancelReasonHtml}
                         </div>
                     </div>
                     <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:14px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;"><i class="fas fa-file-invoice"></i> Facturación y Servicios</h4>
@@ -1342,6 +1475,7 @@
                 const motivo = prompt("🚨 ATENCIÓN: El estatus ANULADO requiere un motivo de forma obligatoria.\n\nPor favor ingrese el motivo por el cual anula esta solicitud:");
                 if (!motivo || motivo.trim() === "") { return mostrarToast("Operación cancelada. Debe ingresar un motivo para anular.", "warning"); }
                 historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: usuarioActual, mensaje: `🚫 SOLICITUD ANULADA. \nMotivo: ${motivo.trim()}`, enviado_por_correo: false });
+                actualizaciones.motivo_anulacion = motivo.trim();
             }
 
             try { 
@@ -1402,14 +1536,16 @@
             }
         };
 
-        window.guardarPlantillaWA = async () => {
+        window.guardarConfiguracionWA = async () => {
             if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            const estado = document.getElementById('conf-wa-estado').value === 'true';
             const plantilla = document.getElementById('conf-plantilla-wa').value.trim();
             if (!plantilla) return mostrarToast("La plantilla no puede estar vacía.", "warning");
             try { 
                 await setDoc(doc(db, "Configuracion", "Plantillas"), { whatsapp: plantilla }, { merge: true }); 
-                mostrarToast("Plantilla de WhatsApp actualizada.", "success"); 
-            } catch(e) { mostrarToast("Error al guardar plantilla.", "error"); }
+                await setDoc(doc(db, "Configuracion", "General"), { wa_habilitado: estado }, { merge: true }); 
+                mostrarToast("Configuración de WhatsApp actualizada.", "success"); 
+            } catch(e) { mostrarToast("Error al guardar configuración.", "error"); }
         };
 
         window.cargarEdicion = (tipo, id) => {
@@ -1515,7 +1651,7 @@
                 if (d.estatus === 'ERROR EN ENVÍO') { t_alert = 'ATRASO'; cAtraso++; }
                 else if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } 
                 else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } 
-                else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } 
+                else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "PAUSADO" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } 
                 d.temp_alerta = t_alert; 
             });
             document.getElementById('pill-count-atraso').innerText = cAtraso; document.getElementById('pill-count-comp').innerText = cComp; document.getElementById('pill-count-resp').innerText = cResp;
@@ -1565,7 +1701,7 @@
             }
             
             data.forEach(d => {
-                const bc = d.estatus === "BORRADOR" ? "status-borrador" : d.estatus === "ERROR EN ENVÍO" ? "status-error" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : d.estatus === "ANULADO" ? "status-anulado" : d.estatus === "RECIBIDO" ? "status-respuesta" : "status-recibido";
+                const bc = d.estatus === "PAUSADO" ? "status-pausado" : d.estatus === "ERROR EN ENVÍO" ? "status-error" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : d.estatus === "ANULADO" ? "status-anulado" : d.estatus === "RECIBIDO" ? "status-respuesta" : "status-recibido";
                 let icT = ''; if (d.prioridad?.temperamento === 'Molesto') icT = '<i class="fas fa-fire" style="color:var(--danger); margin-left:4px;" title="Molesto"></i>'; else if (d.prioridad?.temperamento === 'Escalado') icT = '<i class="fas fa-bomb" style="color:#1e293b; margin-left:4px;" title="Escalado"></i>'; else if (d.prioridad?.temperamento === 'Acelerado') icT = '<i class="fas fa-bolt" style="color:var(--warning); margin-left:4px;" title="Acelerado"></i>';
                 let icA = ""; let rC = ""; 
                 if (d.estatus === 'ERROR EN ENVÍO') { icA = '<i class="fas fa-times-circle" style="color:#991b1b; font-size: 16px;" title="Error en Envío"></i>'; rC = "row-alert"; }
@@ -1596,11 +1732,13 @@
                 const usrStrBtn = (window.userId || '').toLowerCase().trim();
                 let esPropioOAdmin = (agStrBtn === nomStrBtn || agStrBtn === usrStrBtn || agStrBtn.includes(usrStrBtn) || !esAgenteNormal);
                 let btnHTML = '';
-                if (esPropioOAdmin && d.estatus === "BORRADOR") {
-                    btnHTML = `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Editar"><i class="fas fa-edit"></i></button>`;
+                
+                if (esPropioOAdmin && d.estatus === "PAUSADO") {
+                    btnHTML = `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Retomar Pausado"><i class="fas fa-edit"></i></button>`;
                 } else {
                     btnHTML = `<button class="btn btn-outline" style="padding:5px; width:28px; height:28px;" onclick="window.abrirVisor('${d.id}')" title="Ver Gestión"><i class="fas fa-eye"></i></button>`;
                 }
+                
                 if (esPropioOAdmin && d.nueva_respuesta_cliente) { 
                     btnHTML += ` <button class="btn btn-success" style="padding:5px 8px; font-size:10px; margin-left:5px;" onclick="window.marcarRevisado('${d.id}')" title="Marcar como Revisado"><i class="fas fa-check-double"></i></button>`; 
                 }
@@ -1610,7 +1748,15 @@
                     btnHTML += ` <button class="btn btn-danger" style="padding:5px; width:28px; height:28px; margin-left:5px;" onclick="window.eliminarTicket('${d.id}', '${d.ticket}')" title="Eliminar Solicitud"><i class="fas fa-trash"></i></button>`;
                 }
 
-                let motivoTabla = d.motivo_whatsapp ? `<div style="margin-top:5px; font-size:10px; color:#d97706; font-weight:800; white-space:normal; max-width:180px; line-height:1.2;"><i class="fab fa-whatsapp"></i> Razón: ${d.motivo_whatsapp}</div>` : '';
+                let motivoTabla = "";
+                if (d.estatus === "PAUSADO" && d.motivo_pausa) {
+                    motivoTabla = `<div style="margin-top:5px; font-size:10px; color:#d97706; font-weight:800; white-space:normal; max-width:180px; line-height:1.2;"><i class="fas fa-pause-circle"></i> Motivo: ${d.motivo_pausa}</div>`;
+                } else if (d.estatus === "ANULADO" && d.motivo_anulacion) {
+                    motivoTabla = `<div style="margin-top:5px; font-size:10px; color:var(--danger); font-weight:800; white-space:normal; max-width:180px; line-height:1.2;"><i class="fas fa-ban"></i> Motivo: ${d.motivo_anulacion}</div>`;
+                } else if (d.motivo_whatsapp) {
+                    motivoTabla = `<div style="margin-top:5px; font-size:10px; color:#d97706; font-weight:800; white-space:normal; max-width:180px; line-height:1.2;"><i class="fab fa-whatsapp"></i> Razón: ${d.motivo_whatsapp}</div>`;
+                }
+                
                 const estatusFinal = `<span class="badge ${bc}">${d.estatus}</span> <span style="margin-left:5px;">${icA}</span>${motivoTabla}`;
                 const nombreCli = d.cliente?.contacto || 'N/A'; const nitCli = d.cliente?.nit || 'C/F';
 
@@ -1693,6 +1839,15 @@
                     if (neoEstado) neoEstado.value = window.configSistema.neonet_habilitado === false ? 'false' : 'true';
                     if (neoMsg) neoMsg.value = window.configSistema.neonet_mensaje_alterno || '';
 
+                    // Ajustes de WhatsApp
+                    const waEstado = document.getElementById('conf-wa-estado');
+                    if (waEstado) waEstado.value = window.configSistema.wa_habilitado === false ? 'false' : 'true';
+                    
+                    const btnWa = document.getElementById('btn-enviar-wa');
+                    if (btnWa) {
+                        btnWa.style.display = window.configSistema.wa_habilitado === false ? 'none' : 'inline-flex';
+                    }
+
                     // Ajustar input de gestión de cobro si está abierto
                     const linkInput = document.getElementById('pago-link');
                     if (linkInput) {
@@ -1706,7 +1861,7 @@
                         }
                     }
                 } else {
-                    window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "" };
+                    window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "", wa_habilitado: true };
                 }
             });
 
@@ -1872,7 +2027,7 @@
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
                             
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; 
-                            if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "BORRADOR" && d.estatus !== "ERROR EN ENVÍO" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
+                            if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "PAUSADO" && d.estatus !== "ERROR EN ENVÍO" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
                                 updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); 
                                 window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `La solicitud superó el SLA de ${slaLimite} horas.`); 
                             } 
@@ -1900,6 +2055,7 @@
                 }
 
                 renderSeguimientosTable(window.filtroActualSeguimiento);
+                window.renderBuzonPausados();
                 
                 const comboAgentes = document.getElementById('filtro-agente'); const agenteActual = comboAgentes.value; const agentesUnicos = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort(); comboAgentes.innerHTML = '<option value="TODOS">Todos</option>'; agentesUnicos.forEach(ag => comboAgentes.innerHTML += `<option value="${ag}">${ag}</option>`); if(agentesUnicos.includes(agenteActual)) comboAgentes.value = agenteActual; window.aplicarFiltrosDashboard();
                 
@@ -1913,13 +2069,13 @@
 
         function actualizarVistaDashboard(docs) {
             let tM = 0; let b = 0; let e = 0; let c = 0; let validTickets = 0;
-            const cE = { 'BORRADOR': 0, 'ENVIADO': 0, 'RECIBIDO': 0, 'COMPROBANTE RECIBIDO': 0, 'COMPLETADO': 0, 'ANULADO': 0, 'ERROR EN ENVÍO': 0 }; 
+            const cE = { 'PAUSADO': 0, 'ENVIADO': 0, 'RECIBIDO': 0, 'COMPROBANTE RECIBIDO': 0, 'COMPLETADO': 0, 'ANULADO': 0, 'ERROR EN ENVÍO': 0 }; 
             const rA = {};
             
             docs.forEach(d => { 
                 if(cE[d.estatus] !== undefined) cE[d.estatus]++; 
                 
-                if(d.estatus === "BORRADOR") {
+                if(d.estatus === "PAUSADO") {
                     b++; 
                 } else {
                     validTickets++; 
@@ -1939,7 +2095,7 @@
             document.getElementById('kpi-espera').innerText = e; 
             document.getElementById('kpi-completados').innerText = c;
             
-            const ctxE = document.getElementById('chartEstatus').getContext('2d'); if(window.chartInstEstatus) window.chartInstEstatus.destroy(); window.chartInstEstatus = new Chart(ctxE, { type: 'doughnut', data: { labels: ['Borrador', 'Enviado', 'Error', 'Recibido', 'Comprob.', 'Completado', 'Anulado'], datasets: [{ data: [cE['BORRADOR'], cE['ENVIADO'], cE['ERROR EN ENVÍO'], cE['RECIBIDO'], cE['COMPROBANTE RECIBIDO'], cE['COMPLETADO'], cE['ANULADO']], backgroundColor: ['#475569', '#0077A3', '#991b1b', '#8b5cf6', '#d97706', '#059669', '#dc2626'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } } });
+            const ctxE = document.getElementById('chartEstatus').getContext('2d'); if(window.chartInstEstatus) window.chartInstEstatus.destroy(); window.chartInstEstatus = new Chart(ctxE, { type: 'doughnut', data: { labels: ['Pausado', 'Enviado', 'Error', 'Recibido', 'Comprob.', 'Completado', 'Anulado'], datasets: [{ data: [cE['PAUSADO'], cE['ENVIADO'], cE['ERROR EN ENVÍO'], cE['RECIBIDO'], cE['COMPROBANTE RECIBIDO'], cE['COMPLETADO'], cE['ANULADO']], backgroundColor: ['#475569', '#0077A3', '#991b1b', '#8b5cf6', '#d97706', '#059669', '#dc2626'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } } });
             const ctxA = document.getElementById('chartAgentes').getContext('2d'); if(window.chartInstAgentes) window.chartInstAgentes.destroy(); const aOrd = Object.keys(rA).sort((a,b) => rA[b] - rA[a]); window.chartInstAgentes = new Chart(ctxA, { type: 'bar', data: { labels: aOrd, datasets: [{ data: aOrd.map(ag => rA[ag]), backgroundColor: '#002244', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
         }
 
@@ -1977,6 +2133,7 @@
                     "RAZÓN SOCIAL (FACTURA)": d.facturacion?.nombre || 'C/F',
                     "NIT FACTURA": d.facturacion?.nit || 'C/F',
                     "MÉTODO ENVÍO": d.metodoEnvio || 'N/A',
+                    "MOTIVO PAUSA / ANULACIÓN": d.motivo_anulacion || d.motivo_pausa || 'N/A',
                     "LINK NEO-NET": d.pago_link || 'N/A',
                     "LINK COMPROBANTE": d.link_comprobante || d.comprobante || d.url_comprobante || d.adjunto || 'Sin comprobante adjunto'
                 };
