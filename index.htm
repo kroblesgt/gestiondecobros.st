@@ -99,6 +99,10 @@
         .checkbox-wrapper:hover { background: rgba(0, 119, 163, 0.1); }
         .checkbox-wrapper input { width: 18px; height: 18px; cursor: pointer; }
 
+        /* Ajustes para Dropdown Customizado (Filtro Múltiple) */
+        details.custom-dropdown > summary { list-style: none; }
+        details.custom-dropdown > summary::-webkit-details-marker { display: none; }
+
         .temp-Normal { border-color: var(--success) !important; color: var(--success); }
         .temp-Acelerado { border-color: var(--warning) !important; color: #d97706; background: #fffbeb;}
         .temp-Molesto { border-color: var(--danger) !important; color: var(--danger); background: #fef2f2;}
@@ -281,78 +285,92 @@
             </section>
 
             <section id="sec-3" style="display:none">
-                <div class="card" style="padding:0;">
-                    <div style="padding: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-                            <h2 style="font-weight:900; font-size: 20px; margin: 0; white-space: nowrap;"><i class="fas fa-list-ul"></i> Seguimiento</h2>
-                            <div style="flex: 1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                
-                                <div class="search-input-wrapper">
-                                    <i class="fas fa-search"></i>
-                                    <input type="text" id="buscador-tickets" class="search-input-dynamic" placeholder="Buscar solicitud, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)">
-                                </div>
-                                
-                                <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px; border-radius: 25px; font-weight: 900; border: 2px solid var(--border); background: white; color: var(--primary); outline: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-width: 160px;">
-                                    <option value="MIS_SOLICITUDES">👤 Mis Solicitudes</option>
-                                    <option value="EQUIPO">🌐 Ver Equipo</option>
-                                </select>
+                <div class="card" style="padding: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: white; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 15px;">
+                        
+                        <h2 style="font-weight: 900; font-size: 20px; margin: 0; color: var(--primary); display: flex; align-items: center; gap: 10px;">
+                            <div style="background: rgba(0,119,163,0.1); padding: 8px 12px; border-radius: 8px; color: var(--accent);">
+                                <i class="fas fa-list-ul"></i>
                             </div>
-                        </div>
-
-                        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <h4 style="margin: 0; color: var(--primary); font-weight: 900; font-size: 13px;"><i class="fas fa-filter"></i> Filtros Avanzados</h4>
-                                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; height:auto; color: var(--text-muted); border-color: var(--border);" onclick="limpiarFiltrosSeguimiento()"><i class="fas fa-eraser"></i> Limpiar</button>
+                            Seguimientos
+                        </h2>
+                        
+                        <div style="display: flex; gap: 12px; flex: 1; max-width: 600px; justify-content: flex-end;">
+                            <div class="search-input-wrapper" style="flex: 1; max-width: 350px; position: relative;">
+                                <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--accent);"></i>
+                                <input type="text" id="buscador-tickets" placeholder="Buscar solicitud, NIT o nombre..." onkeyup="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="width: 100%; border-radius: 8px; padding: 10px 15px 10px 38px; border: 2px solid var(--border); font-size: 13px; font-weight: 600; outline: none; transition: 0.2s; background: #f8fafc;">
                             </div>
-                            <div class="form-grid" style="margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                                <div class="input-group">
-                                    <label style="font-size:10px;">Desde</label>
-                                    <input type="date" id="seg-filtro-inicio" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
-                                </div>
-                                <div class="input-group">
-                                    <label style="font-size:10px;">Hasta</label>
-                                    <input type="date" id="seg-filtro-fin" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
-                                </div>
-                                <div class="input-group">
-                                    <label style="font-size:10px;">Estatus</label>
-                                    <select id="seg-filtro-estatus" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
-                                        <option value="TODOS">Todos</option>
-                                        <option value="PAUSADO">Pausados</option>
-                                        <option value="ENVIADO">Enviados</option>
-                                        <option value="ERROR EN ENVÍO">Error en Envío</option>
-                                        <option value="RECIBIDO">Recibidos (Respuestas)</option>
-                                        <option value="COMPROBANTE RECIBIDO">Comp. Recibido</option>
-                                        <option value="COMPLETADO">Completados</option>
-                                        <option value="ANULADO">Anulados</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <label style="font-size:10px;">Agente</label>
-                                    <select id="seg-filtro-agente" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding:8px; font-size:12px;">
-                                        <option value="TODOS">Todos</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="filter-pills" style="margin-top: 15px;">
-                            <div class="f-pill p-all active" onclick="aplicarFiltroSeguimientos('TODOS', this)">Todos</div>
-                            <div class="f-pill p-alert" onclick="aplicarFiltroSeguimientos('ATRASO', this)">Alertas <span class="badge" id="pill-count-atraso" style="background:var(--danger); color:white;">0</span></div>
-                            <div class="f-pill p-comp" onclick="aplicarFiltroSeguimientos('COMPROBANTE', this)">Pagos <span class="badge" id="pill-count-comp" style="background:var(--warning); color:white;">0</span></div>
-                            <div class="f-pill" style="background:#e0f2fe; color:var(--accent); border-color:var(--accent);" onclick="aplicarFiltroSeguimientos('NUEVA_RESPUESTA', this)">Resps. <span class="badge" id="pill-count-resp" style="background:var(--accent); color:white;">0</span></div>
+                            
+                            <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="padding: 10px 15px; border-radius: 8px; font-weight: 800; border: 2px solid var(--border); background: white; color: var(--primary); outline: none; cursor: pointer; font-size: 13px; min-width: 160px; transition: 0.2s;">
+                                <option value="MIS_SOLICITUDES">👤 Mis Solicitudes</option>
+                                <option value="EQUIPO">🌐 Ver Equipo</option>
+                            </select>
                         </div>
                     </div>
+
+                    <div style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+                        <div style="display: flex; flex-direction: column; flex: 1; min-width: 130px;">
+                            <label style="font-size: 10px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;"><i class="fas fa-calendar-alt"></i> Desde</label>
+                            <input type="date" id="seg-filtro-inicio" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding: 9px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: white;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; flex: 1; min-width: 130px;">
+                            <label style="font-size: 10px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;"><i class="fas fa-calendar-alt"></i> Hasta</label>
+                            <input type="date" id="seg-filtro-fin" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding: 9px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: white;">
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; flex: 1.5; min-width: 180px;">
+                            <label style="font-size: 10px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;"><i class="fas fa-tag"></i> Estatus (Múltiple)</label>
+                            <details class="custom-dropdown" id="det-filtro-estatus" style="position: relative;">
+                                <summary style="padding: 9px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+                                    <span id="txt-estatus-seleccionados" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; font-weight: 700;">Todos seleccionados</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--accent);"></i>
+                                </summary>
+                                <div style="position: absolute; top: 100%; left: 0; width: 100%; min-width: 200px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin-top: 5px; display: flex; flex-direction: column; gap: 5px; max-height: 250px; overflow-y: auto;">
+                                    <label class="checkbox-wrapper" style="padding: 6px; font-size: 12px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                        <input type="checkbox" value="TODOS" id="chk-estatus-todos" checked onchange="toggleTodosEstatus(this)"> <b style="color:var(--primary);">Seleccionar Todos</b>
+                                    </label>
+                                    <hr style="margin: 2px 0; border: none; border-top: 1px solid #e2e8f0;">
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="PAUSADO" checked onchange="actualizarEstatusSelect()"> Pausados</label>
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="ENVIADO" checked onchange="actualizarEstatusSelect()"> Enviados</label>
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="ERROR EN ENVÍO" checked onchange="actualizarEstatusSelect()"> Error en Envío</label>
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="RECIBIDO" checked onchange="actualizarEstatusSelect()"> Recibidos (Respuestas)</label>
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="COMPROBANTE RECIBIDO" checked onchange="actualizarEstatusSelect()"> Comp. Recibido</label>
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="COMPLETADO" checked onchange="actualizarEstatusSelect()"> Completados</label>
+                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="ANULADO" checked onchange="actualizarEstatusSelect()"> Anulados</label>
+                                </div>
+                            </details>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; flex: 1.5; min-width: 160px;">
+                            <label style="font-size: 10px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;"><i class="fas fa-user-tie"></i> Agente</label>
+                            <select id="seg-filtro-agente" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null)" style="padding: 9px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: white;">
+                                <option value="TODOS">Todos los agentes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline" style="padding: 9px 15px; font-size: 12px; border-color: var(--border); color: var(--text-muted); background: white; height: auto;" onclick="limpiarFiltrosSeguimiento()" title="Restablecer Filtros"><i class="fas fa-eraser"></i> Limpiar</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-pills" style="padding: 12px 20px; display: flex; gap: 8px; flex-wrap: wrap; background: white; border-bottom: 3px solid var(--border);">
+                        <div class="f-pill p-all active" onclick="aplicarFiltroSeguimientos('TODOS', this)">Todos</div>
+                        <div class="f-pill p-alert" onclick="aplicarFiltroSeguimientos('ATRASO', this)">Alertas <span class="badge" id="pill-count-atraso" style="background:var(--danger); color:white;">0</span></div>
+                        <div class="f-pill p-comp" onclick="aplicarFiltroSeguimientos('COMPROBANTE', this)">Pagos <span class="badge" id="pill-count-comp" style="background:var(--warning); color:white;">0</span></div>
+                        <div class="f-pill" style="background:#e0f2fe; color:var(--accent); border-color:var(--accent);" onclick="aplicarFiltroSeguimientos('NUEVA_RESPUESTA', this)">Resps. <span class="badge" id="pill-count-resp" style="background:var(--accent); color:white;">0</span></div>
+                    </div>
+
                     <div class="table-responsive">
-                        <table style="min-width: 1000px;">
+                        <table style="min-width: 1000px; margin-top: 0; border-top: none;">
                             <thead>
                                 <tr>
-                                    <th>Solicitud</th>
+                                    <th style="padding-left: 20px;">Solicitud / Equipo</th>
                                     <th>Fecha / Agente</th>
                                     <th>Cliente</th>
                                     <th>Estatus / SLA</th>
                                     <th style="width:25%;">Último Mensaje</th>
                                     <th style="text-align:center;">Comprobantes</th>
-                                    <th style="text-align:right;">Acción</th>
+                                    <th style="text-align:right; padding-right: 20px;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-seguimientos"></tbody>
@@ -662,7 +680,14 @@
         };
 
         window.toggleNotifications = () => { document.getElementById('notif-panel').classList.toggle('show'); };
-        document.addEventListener('click', function(event) { const panel = document.getElementById('notif-panel'); const campana = document.getElementById('bell-icon-container'); if (!panel.contains(event.target) && !campana.contains(event.target)) { panel.classList.remove('show'); } });
+        document.addEventListener('click', function(event) { 
+            const panel = document.getElementById('notif-panel'); 
+            const campana = document.getElementById('bell-icon-container'); 
+            if (panel && campana && !panel.contains(event.target) && !campana.contains(event.target)) { panel.classList.remove('show'); } 
+            
+            const detailsEstatus = document.getElementById('det-filtro-estatus');
+            if (detailsEstatus && !detailsEstatus.contains(event.target)) { detailsEstatus.removeAttribute('open'); }
+        });
 
         window.solicitarPermisosPush = () => {
             if ("Notification" in window && Notification.permission === "default") {
@@ -685,7 +710,7 @@
 
             if (window.totalAlertas !== undefined && nuevoTotal > window.totalAlertas) {
                 try {
-                    const alertaSonora = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3');
+                    const alertaSonora = new Audio('https://cdn-icons-mp3.flaticon.com/512/1067/1067566.mp3');
                     alertaSonora.volume = 0.25;
                     alertaSonora.play().catch(e => console.log("El navegador requiere interacción previa para sonido."));
                 } catch(e) {}
@@ -1019,7 +1044,8 @@
                 if (esNuevoTicket && metodo !== 'Pausa' && metodo !== 'Anular') { window.mostrarPopupTicket(ticketId); }
                 
                 if (metodo === 'Correo') { 
-                    const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${s.marca || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
+                    // ---> CORRECCIÓN MODELO EN CORREO
+                    const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${[s.marca, s.modelo].filter(Boolean).join(' ') || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
                     
                     const payloadPA = { 
                         "tipo_accion": "NUEVO_COBRO",
@@ -1052,8 +1078,9 @@
                     } catch (netErr) { alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com.`); }
                 } 
                 else if (metodo === 'WhatsApp') { 
+                    // ---> CORRECCIÓN MODELO EN WHATSAPP
                     const rServ = serviciosTemporales.map(s => {
-                        let equipoInfo = [s.producto, s.marca].filter(Boolean).join(' ');
+                        let equipoInfo = [s.producto, s.marca, s.modelo].filter(Boolean).join(' ');
                         let eqText = equipoInfo ? ` (${equipoInfo})` : '';
                         return `* ${s.tipo}${eqText}: ${s.detalle} - Q${s.precio.toFixed(2)}`;
                     }).join('\n'); 
@@ -1190,9 +1217,10 @@
 
             if (chatHTML === ``) { chatHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; font-weight:600; padding:15px;">No hay interacción aún.</div>`; }
 
+            // ---> CORRECCIÓN MODELO EN EL VISOR MODAL
             let servList = "";
             if(d.servicios && d.servicios.length > 0) { 
-                servList = d.servicios.map(s => `<li style="margin-bottom:4px;"><b>${s.tipo}</b>: ${s.producto||''} ${s.marca||''} (${s.detalle}) - <b>Q${parseFloat(s.precio||0).toFixed(2)}</b></li>`).join(''); 
+                servList = d.servicios.map(s => `<li style="margin-bottom:4px;"><b>${s.tipo}</b>: ${s.producto||''} ${s.marca||''} <span style="color:var(--accent); font-weight:900;">${s.modelo||''}</span> (${s.detalle}) - <b>Q${parseFloat(s.precio||0).toFixed(2)}</b></li>`).join(''); 
             } else { 
                 servList = "<li>No hay servicios adjuntos</li>"; 
             }
@@ -1621,11 +1649,49 @@
             }
         };
 
+        /* LÓGICA DE FILTRO MÚLTIPLE DE ESTATUS (INICIO) */
+        window.actualizarTextoEstatus = () => {
+            const checks = document.querySelectorAll('.chk-est-item');
+            const seleccionados = Array.from(checks).filter(c => c.checked).map(c => c.value);
+            const txt = document.getElementById('txt-estatus-seleccionados');
+            if (seleccionados.length === checks.length) {
+                txt.innerText = "Todos seleccionados";
+            } else if (seleccionados.length === 0) {
+                txt.innerText = "Ningún estatus";
+            } else if (seleccionados.length === 1) {
+                txt.innerText = seleccionados[0];
+            } else {
+                txt.innerText = `${seleccionados.length} seleccionados`;
+            }
+        };
+
+        window.toggleTodosEstatus = (chk) => {
+            document.querySelectorAll('.chk-est-item').forEach(c => c.checked = chk.checked);
+            window.actualizarTextoEstatus();
+            window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null);
+        };
+
+        window.actualizarEstatusSelect = () => {
+            const checks = document.querySelectorAll('.chk-est-item');
+            const todosChecked = Array.from(checks).every(c => c.checked);
+            const chkTodos = document.getElementById('chk-estatus-todos');
+            if(chkTodos) chkTodos.checked = todosChecked;
+            window.actualizarTextoEstatus();
+            window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null);
+        };
+        /* LÓGICA DE FILTRO MÚLTIPLE DE ESTATUS (FIN) */
+
         window.limpiarFiltrosSeguimiento = () => {
             document.getElementById('seg-filtro-inicio').value = '';
             document.getElementById('seg-filtro-fin').value = '';
-            document.getElementById('seg-filtro-estatus').value = 'TODOS';
             document.getElementById('seg-filtro-agente').value = 'TODOS';
+            
+            // Restablecer checkboxes múltiples
+            const chkTodos = document.getElementById('chk-estatus-todos');
+            if(chkTodos) chkTodos.checked = true;
+            document.querySelectorAll('.chk-est-item').forEach(c => c.checked = true);
+            window.actualizarTextoEstatus();
+
             window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null);
             mostrarToast("Filtros limpiados.", "success");
         };
@@ -1680,13 +1746,29 @@
 
             const fInicio = document.getElementById('seg-filtro-inicio') ? document.getElementById('seg-filtro-inicio').value : '';
             const fFin = document.getElementById('seg-filtro-fin') ? document.getElementById('seg-filtro-fin').value : '';
-            const fEstatus = document.getElementById('seg-filtro-estatus') ? document.getElementById('seg-filtro-estatus').value : 'TODOS';
             const fAgente = document.getElementById('seg-filtro-agente') ? document.getElementById('seg-filtro-agente').value : 'TODOS';
+
+            // Leer estatus múltiples
+            let estatusSeleccionados = [];
+            const chkItems = document.querySelectorAll('.chk-est-item');
+            if (chkItems.length > 0) {
+                estatusSeleccionados = Array.from(chkItems).filter(c => c.checked).map(c => c.value);
+                if (estatusSeleccionados.length === chkItems.length || estatusSeleccionados.length === 0) {
+                    estatusSeleccionados = ["TODOS"]; 
+                }
+            } else {
+                estatusSeleccionados = ["TODOS"];
+            }
 
             data = data.filter(d => {
                 let pasa = true;
-                if (fEstatus !== "TODOS" && d.estatus !== fEstatus) pasa = false;
+                
+                if (!estatusSeleccionados.includes("TODOS")) {
+                    if (!estatusSeleccionados.includes(d.estatus)) pasa = false;
+                }
+                
                 if (fAgente !== "TODOS" && d.agente !== fAgente) pasa = false;
+                
                 if (fInicio || fFin) { 
                     const fT = new Date(d.fechaFormateada || 0); 
                     fT.setHours(0,0,0,0); 
@@ -1768,8 +1850,17 @@
                 const estatusFinal = `<span class="badge ${bc}">${d.estatus}</span> <span style="margin-left:5px;">${icA}</span>${motivoTabla}`;
                 const nombreCli = d.cliente?.contacto || 'N/A'; const nitCli = d.cliente?.nit || 'C/F';
 
+                // ---> CORRECCIÓN MODELO EN LA TABLA PRINCIPAL
+                let equiposStr = '';
+                if (d.servicios && d.servicios.length > 0) {
+                    let eqNombres = d.servicios.map(s => [s.producto, s.marca, s.modelo].filter(Boolean).join(' ')).filter(Boolean);
+                    if (eqNombres.length > 0) {
+                        equiposStr = `<br><span style="font-size:9px; color:var(--text-muted); font-weight:700; background:#f1f5f9; padding:2px 4px; border-radius:4px; margin-top:4px; display:inline-block;"><i class="fas fa-toolbox"></i> ${eqNombres.join(', ')}</span>`;
+                    }
+                }
+
                 tb.innerHTML += `<tr class="${rC}">
-                    <td style="color:var(--primary); font-weight:900; font-size:11px;">${d.ticket}</td>
+                    <td style="color:var(--primary); font-weight:900; font-size:11px;">${d.ticket}${equiposStr}</td>
                     <td style="font-size:11px;">${fechaFmt}<br><span style="font-weight:800; color:var(--text-muted); margin-top:4px; display:inline-block;">Agente: ${d.agente || 'N/A'}</span></td>
                     <td style="font-size:11px;"><span style="font-weight:800; color:#000;">${nombreCli}</span> ${icT}<br><span style="font-size:10px; color:var(--accent); font-weight:900;">NIT: ${nitCli}</span></td>
                     <td>${estatusFinal}</td>
