@@ -62,8 +62,10 @@
         .search-input-wrapper:focus-within i { color: var(--primary); transform: scale(1.15); }
 
         .btn { padding: 12px 20px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; text-transform: uppercase; transition: 0.2s; }
-        .btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .btn:active { transform: translateY(0); }
+        .btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn:active:not(:disabled) { transform: translateY(0); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
         .btn-primary { background: var(--primary); color: white; }
         .btn-accent { background: var(--accent); color: white; }
         .btn-success { background: var(--success); color: white; }
@@ -80,7 +82,6 @@
         
         .badge { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
         
-        /* Clases de estatus dinámicos */
         .status-cat-EXITO { background: var(--success); color: white; }
         .status-cat-ESPERA { background: var(--accent); color: white; }
         .status-cat-ERROR { background: #991b1b; color: white; }
@@ -363,6 +364,15 @@
                             <tbody id="lista-seguimientos"></tbody>
                         </table>
                     </div>
+                    
+                    <div id="paginacion-seguimientos" style="display:flex; justify-content:space-between; align-items: center; padding: 15px 20px; background: white; border-top: 1px solid var(--border);">
+                        <div style="font-size:12px; color:var(--text-muted); font-weight: 700;">Mostrando <span id="pag-info" style="color:var(--primary); font-weight:900;">0 a 0 de 0</span></div>
+                        <div style="display:flex; gap:10px;">
+                            <button id="btn-pag-ant" class="btn btn-outline" style="padding: 8px 15px; font-size: 12px;" onclick="cambiarPaginaSeg(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
+                            <button id="btn-pag-sig" class="btn btn-outline" style="padding: 8px 15px; font-size: 12px;" onclick="cambiarPaginaSeg(1)">Siguiente <i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
@@ -656,6 +666,10 @@
         window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; 
         window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "", wa_habilitado: true }; 
         
+        // --- VARIABLES DE PAGINACIÓN DE SEGUIMIENTOS ---
+        window.pagActualSeg = 1; 
+        window.limitePagSeg = 30; // Muestra 30 tickets por página
+        
         // --- BASE DE DATOS LOCAL POR DEFECTO PARA ESTATUS Y CATEGORÍAS ---
         window.configCatalogos = { 
             tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"], 
@@ -768,6 +782,7 @@
             document.getElementById('uName').innerText = window.userName; document.getElementById('uRole').innerText = window.userRol;
             let perms = "ALL"; if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') { const rolSnap = await getDoc(doc(db, "Roles", window.userRol)); if (rolSnap.exists()) perms = rolSnap.data().permisos || ""; else perms = ""; }
             document.getElementById('login-view').style.display = 'none'; document.getElementById('app-view').style.display = 'block';
+            
             if (window.userRol === 'AGENTE' || (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR' && window.userRol !== 'LIDER' && window.userRol !== 'LÍDER')) { 
                 document.getElementById('panel-enviar-aviso').style.display = 'none'; 
                 document.getElementById('sec-6-grid').style.gridTemplateColumns = '1fr'; 
@@ -782,6 +797,14 @@
             const permisosArray = perms.split(','); document.querySelectorAll('.nav-item').forEach(item => { const id = item.id.replace('nav-', ''); if(perms === "ALL" || permisosArray.includes(id)) item.style.display = 'flex'; else item.style.display = 'none'; });
             const primerMenuPermitido = document.querySelector('.nav-item[style*="display: flex"]'); if (primerMenuPermitido) primerMenuPermitido.click();
             
+            // FILTRO DE 8 DÍAS POR DEFECTO AL ENTRAR
+            const inputInicio = document.getElementById('seg-filtro-inicio');
+            if(inputInicio && !inputInicio.value) {
+                const date8DaysAgo = new Date();
+                date8DaysAgo.setDate(date8DaysAgo.getDate() - 8);
+                inputInicio.value = date8DaysAgo.toISOString().split('T')[0];
+            }
+
             window.solicitarPermisosPush();
             iniciarEscuchas(); 
         }
@@ -1297,7 +1320,6 @@
                 selectorAgenteHTML = `<select id="v-nuevo-agente" style="padding:4px; font-size:11px; font-weight:700; border:1px solid var(--border); border-radius:4px; max-width: 120px;">${opcionesAgentes}</select>`; 
             }
 
-            // Mapeo Dinámico de Estatus en Visor
             let catalogEstatus = window.configCatalogos?.estatus_tickets || [];
             let mapComp = window.configCatalogos?.estatus_comportamiento || {};
             
@@ -1605,7 +1627,6 @@
             }
         };
 
-        // --- FUNCIONES DEL NUEVO MOTOR DE ESTATUS ---
         window.agregarEstatus = async () => {
             if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
             const nuevo = document.getElementById('nuevo-estatus-sis').value.trim().toUpperCase();
@@ -1621,7 +1642,6 @@
                     actualTickets.push(nuevo);
                 }
                 
-                // Guardar/Actualizar su comportamiento lógico
                 actualComp[nuevo] = comportamiento;
 
                 await setDoc(doc(db, "Configuracion", "Catalogos"), { 
@@ -1637,7 +1657,6 @@
         window.eliminarEstatus = async (estatus) => {
             if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
             
-            // Los 6 estatus que mantienen el ciclo de vida del sistema y compatibilidad
             const protegidos = ["ENVIADO", "RECIBIDO", "ERROR EN ENVÍO", "COMPROBANTE RECIBIDO", "COMPLETADO", "PAUSADO", "ANULADO"];
             
             if (protegidos.includes(estatus)) {
@@ -1741,7 +1760,12 @@
             }
         };
 
-        /* LÓGICA DE FILTRO MÚLTIPLE DE ESTATUS */
+        // --- FUNCIONES DE PAGINACIÓN ---
+        window.cambiarPaginaSeg = (dir) => {
+            window.pagActualSeg += dir;
+            renderSeguimientosTable(window.filtroActualSeguimiento);
+        };
+
         window.actualizarTextoEstatus = () => {
             const checks = document.querySelectorAll('.chk-est-item');
             const seleccionados = Array.from(checks).filter(c => c.checked).map(c => c.value);
@@ -1776,18 +1800,20 @@
             document.getElementById('seg-filtro-inicio').value = '';
             document.getElementById('seg-filtro-fin').value = '';
             document.getElementById('seg-filtro-agente').value = 'TODOS';
+            document.getElementById('buscador-tickets').value = '';
             
             const chkTodos = document.getElementById('chk-estatus-todos');
             if(chkTodos) chkTodos.checked = true;
             document.querySelectorAll('.chk-est-item').forEach(c => c.checked = true);
             window.actualizarTextoEstatus();
 
-            window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null);
+            window.aplicarFiltroSeguimientos('TODOS', document.querySelector('.p-all'));
             mostrarToast("Filtros limpiados.", "success");
         };
 
         window.aplicarFiltroSeguimientos = (tipo, btnElement) => { 
             window.filtroActualSeguimiento = tipo;
+            window.pagActualSeg = 1; // Volvemos a la página 1 cada vez que se filtra
             if (btnElement) { document.querySelectorAll('.f-pill').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); }
             renderSeguimientosTable(tipo); 
         };
@@ -1810,12 +1836,11 @@
             const tb = document.getElementById('lista-seguimientos'); tb.innerHTML = ""; let data = window.datosSeguimientos; let cAtraso = 0; let cComp = 0; let cResp = 0; const now = new Date();
             const slaLimite = window.configSistema?.sla_horas || 24; 
             
-            // MAPEO LÓGICO DE ALERTAS BASADO EN CATEGORÍA
             const mapComp = window.configCatalogos?.estatus_comportamiento || {};
 
             data.forEach(d => {
                 const hPasadas = Math.abs(now - (d.fechaFormateada || now)) / 36e5; let t_alert = 'NADA';
-                const cat = mapComp[d.estatus] || "ESPERA"; // Por defecto todo es ESPERA si no existe
+                const cat = mapComp[d.estatus] || "ESPERA"; 
 
                 if (cat === "ERROR") { t_alert = 'ATRASO'; cAtraso++; }
                 else if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } 
@@ -1884,12 +1909,26 @@
                     return ag === nom || ag === usr || ag.includes(usr);
                 });
             }
+
+            // --- LÓGICA DE PAGINACIÓN ---
+            const totalRows = data.length;
+            const totalPages = Math.ceil(totalRows / window.limitePagSeg) || 1;
             
-            data.forEach(d => {
+            if (window.pagActualSeg > totalPages) window.pagActualSeg = totalPages;
+            if (window.pagActualSeg < 1) window.pagActualSeg = 1;
+            
+            const startIdx = (window.pagActualSeg - 1) * window.limitePagSeg;
+            const endIdx = startIdx + window.limitePagSeg;
+            const dataRender = data.slice(startIdx, endIdx);
+
+            document.getElementById('pag-info').innerText = totalRows > 0 ? `${startIdx + 1} a ${Math.min(endIdx, totalRows)} de ${totalRows}` : "0 a 0 de 0";
+            document.getElementById('btn-pag-ant').disabled = window.pagActualSeg === 1;
+            document.getElementById('btn-pag-sig').disabled = window.pagActualSeg === totalPages;
+            
+            dataRender.forEach(d => {
                 const catInfo = mapComp[d.estatus] || "ESPERA";
-                let bc = `status-cat-${catInfo}`; // Usa las clases dinámicas de CSS que agregamos arriba
+                let bc = `status-cat-${catInfo}`; 
                 
-                // Mantenemos colores hardcoded para los base clásicos por si acaso
                 if (d.estatus === "PAUSADO") bc = "status-pausado";
                 else if (d.estatus === "ERROR EN ENVÍO") bc = "status-error";
                 else if (d.estatus === "ENVIADO") bc = "status-enviado";
@@ -1975,7 +2014,7 @@
                     <td style="white-space:nowrap; text-align:right;">${btnHTML}</td>
                 </tr>`;
             });
-            if (data.length === 0) tb.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted); font-weight:700;"><i class="fas fa-search" style="font-size: 24px; color: var(--border); margin-bottom:10px; display:block;"></i>No se encontraron solicitudes.</td></tr>`;
+            if (dataRender.length === 0) tb.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted); font-weight:700;"><i class="fas fa-search" style="font-size: 24px; color: var(--border); margin-bottom:10px; display:block;"></i>No se encontraron solicitudes con estos filtros.</td></tr>`;
         }
 
         window.renderTablaAvisos = () => {
@@ -2276,7 +2315,6 @@
                             
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; 
                             
-                            // AQUI SE EVALUA SLA EN BASE AL MOTOR DE COMPORTAMIENTO
                             const mapaCat = window.configCatalogos?.estatus_comportamiento || {};
                             const catAct = mapaCat[d.estatus] || "ESPERA";
                             
@@ -2361,7 +2399,7 @@
                 if(cmp === "EXITO") return '#059669';
                 if(cmp === "ERROR") return '#991b1b';
                 if(cmp === "INACTIVO") return '#475569';
-                return '#0077A3'; // Default para ESPERA
+                return '#0077A3'; 
             });
 
             const ctxE = document.getElementById('chartEstatus').getContext('2d'); 
