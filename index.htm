@@ -79,13 +79,12 @@
         tr:hover td { background: #f8fafc; }
         
         .badge { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-        .status-enviado { background: var(--accent); color: white; }
-        .status-recibido { background: var(--warning); color: white; }
-        .status-respuesta { background: #8b5cf6; color: white; }
-        .status-completado { background: var(--success); color: white; }
-        .status-anulado { background: var(--danger); color: white; }
-        .status-pausado { background: var(--draft); color: white; }
-        .status-error { background: #991b1b; color: white; } 
+        
+        /* Clases de estatus dinámicos */
+        .status-cat-EXITO { background: var(--success); color: white; }
+        .status-cat-ESPERA { background: var(--accent); color: white; }
+        .status-cat-ERROR { background: #991b1b; color: white; }
+        .status-cat-INACTIVO { background: var(--draft); color: white; }
 
         .ticket-nuevo { background-color: #f0fdf4 !important; border-left: 4px solid var(--success); animation: resplandor 2s infinite alternate; }
         @keyframes resplandor { from { box-shadow: inset 5px 0 0 var(--success); } to { box-shadow: inset 5px 0 15px rgba(5,150,105,0.4); } }
@@ -99,7 +98,6 @@
         .checkbox-wrapper:hover { background: rgba(0, 119, 163, 0.1); }
         .checkbox-wrapper input { width: 18px; height: 18px; cursor: pointer; }
 
-        /* Ajustes para Dropdown Customizado (Filtro Múltiple) */
         details.custom-dropdown > summary { list-style: none; }
         details.custom-dropdown > summary::-webkit-details-marker { display: none; }
 
@@ -326,19 +324,8 @@
                                     <span id="txt-estatus-seleccionados" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; font-weight: 700;">Todos seleccionados</span>
                                     <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--accent);"></i>
                                 </summary>
-                                <div style="position: absolute; top: 100%; left: 0; width: 100%; min-width: 200px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin-top: 5px; display: flex; flex-direction: column; gap: 5px; max-height: 250px; overflow-y: auto;">
-                                    <label class="checkbox-wrapper" style="padding: 6px; font-size: 12px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">
-                                        <input type="checkbox" value="TODOS" id="chk-estatus-todos" checked onchange="toggleTodosEstatus(this)"> <b style="color:var(--primary);">Seleccionar Todos</b>
-                                    </label>
-                                    <hr style="margin: 2px 0; border: none; border-top: 1px solid #e2e8f0;">
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="PAUSADO" checked onchange="actualizarEstatusSelect()"> Pausados</label>
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="ENVIADO" checked onchange="actualizarEstatusSelect()"> Enviados</label>
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="ERROR EN ENVÍO" checked onchange="actualizarEstatusSelect()"> Error en Envío</label>
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="RECIBIDO" checked onchange="actualizarEstatusSelect()"> Recibidos (Respuestas)</label>
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="COMPROBANTE RECIBIDO" checked onchange="actualizarEstatusSelect()"> Comp. Recibido</label>
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="COMPLETADO" checked onchange="actualizarEstatusSelect()"> Completados</label>
-                                    <label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="ANULADO" checked onchange="actualizarEstatusSelect()"> Anulados</label>
-                                </div>
+                                <div id="contenedor-chk-estatus" style="position: absolute; top: 100%; left: 0; width: 100%; min-width: 200px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin-top: 5px; display: flex; flex-direction: column; gap: 5px; max-height: 250px; overflow-y: auto;">
+                                    </div>
                             </details>
                         </div>
                         
@@ -394,15 +381,7 @@
                         <div class="input-group"><label>Hasta</label><input type="date" id="filtro-fin"></div>
                         <div class="input-group"><label>Estatus</label>
                             <select id="filtro-estatus">
-                                <option value="TODOS">Todos</option>
-                                <option value="PAUSADO">Pausados</option>
-                                <option value="ENVIADO">Enviados</option>
-                                <option value="ERROR EN ENVÍO">Error en Envío</option>
-                                <option value="RECIBIDO">Recibidos (Respuestas)</option>
-                                <option value="COMPROBANTE RECIBIDO">Comp. Recibido</option>
-                                <option value="COMPLETADO">Completados</option>
-                                <option value="ANULADO">Anulados</option>
-                            </select>
+                                </select>
                         </div>
                         <div class="input-group"><label>Agente</label><select id="filtro-agente"><option value="TODOS">Todos</option></select></div>
                     </div>
@@ -413,7 +392,7 @@
                 </div>
 
                 <div class="kpi-grid">
-                    <div class="kpi-card"><i class="fas fa-file-invoice"></i><div><div class="value" id="kpi-tickets">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">SOLICITUDES</div></div></div>
+                    <div class="kpi-card"><i class="fas fa-file-invoice"></i><div><div class="value" id="kpi-tickets">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">SOLICITUDES ACTIVAS</div></div></div>
                     <div class="kpi-card"><i class="fas fa-coins" style="color:var(--success); background:rgba(5,150,105,0.1);"></i><div><div class="value" id="kpi-monto">Q 0.00</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">MONTO (Q)</div></div></div>
                     <div class="kpi-card"><i class="fas fa-clock" style="color:var(--warning); background:rgba(217,119,6,0.1);"></i><div><div class="value" id="kpi-espera">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">EN ESPERA</div></div></div>
                     <div class="kpi-card"><i class="fas fa-check-circle" style="color:var(--accent); background:rgba(0,163,224,0.1);"></i><div><div class="value" id="kpi-completados">0</div><div style="font-size:11px; color:var(--text-muted); font-weight:900;">COMPLETADAS</div></div></div>
@@ -538,18 +517,18 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                     
                     <div class="card" style="border-top: 5px solid #3b82f6; margin-bottom: 0;">
-                        <h3 style="font-size:16px; color:#3b82f6; margin-top:0;"><i class="fas fa-credit-card"></i> Configuración de Pagos (NeoNet)</h3>
+                        <h3 style="font-size:16px; color:#3b82f6; margin-top:0;"><i class="fas fa-credit-card"></i> Pagos (NeoNet)</h3>
                         <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Habilita o deshabilita el enlace de NeoNet globalmente en el sistema.</p>
                         
                         <div class="input-group" style="margin-bottom: 10px;">
                             <label>Estado de NeoNet</label>
                             <select id="conf-neonet-estado" style="border-color: #3b82f6;">
-                                <option value="true">🟢 HABILITADO (Funcionamiento Normal)</option>
-                                <option value="false">🔴 DESHABILITADO (Fallas o Mantenimiento)</option>
+                                <option value="true">🟢 HABILITADO (Normal)</option>
+                                <option value="false">🔴 DESHABILITADO (Mantenimiento)</option>
                             </select>
                         </div>
                         <div class="input-group">
-                            <label>Mensaje Alternativo (Si NeoNet está deshabilitado)</label>
+                            <label>Mensaje Alternativo</label>
                             <textarea id="conf-neonet-msg" rows="3" placeholder="Ej: Por favor realizar transferencia a la cuenta monetaria XXXXX..."></textarea>
                         </div>
                         
@@ -560,7 +539,7 @@
 
                     <div class="card" style="border-top: 5px solid var(--warning); margin-bottom: 0;">
                         <h3 style="font-size:16px; color:var(--warning); margin-top:0;"><i class="fas fa-clock"></i> Reglas Operativas (SLA)</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define después de cuántas horas de inactividad una solicitud debe marcarse como ATRASADA (Rojo).</p>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Define después de cuántas horas de inactividad una solicitud activa se marca ATRASADA.</p>
                         <div class="input-group">
                             <label>Límite de Horas SLA *</label>
                             <input type="number" id="conf-sla" placeholder="Ej: 24" min="1">
@@ -571,14 +550,39 @@
                     </div>
 
                     <div class="card" style="border-top: 5px solid var(--accent); margin-bottom: 0;">
-                        <h3 style="font-size:16px; color:var(--accent); margin-top:0;"><i class="fas fa-tags"></i> Catálogo: Tipos de Servicio</h3>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Agrega o elimina los servicios que aparecen en el listado desplegable de los agentes.</p>
+                        <h3 style="font-size:16px; color:var(--accent); margin-top:0;"><i class="fas fa-tags"></i> Tipos de Servicio</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Agrega o elimina los servicios del gestor de cobros.</p>
                         
                         <div style="display:flex; gap:10px; margin-bottom: 15px;">
                             <input type="text" id="nuevo-tipo-servicio" placeholder="Ej: Garantía Extendida" style="flex:1;">
                             <button class="btn btn-accent" onclick="agregarTipoServicio()"><i class="fas fa-plus"></i></button>
                         </div>
                         <div id="lista-tipos-servicio" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 5px; background: #f8fafc;">
+                        </div>
+                    </div>
+
+                    <div class="card" style="border-top: 5px solid #8b5cf6; margin-bottom: 0;">
+                        <h3 style="font-size:16px; color:#8b5cf6; margin-top:0;"><i class="fas fa-flag"></i> Estatus de Seguimientos</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Personaliza las fases y cómo afectan las métricas. <i>(6 estatus base protegidos).</i></p>
+                        
+                        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                            <div class="input-group">
+                                <label>Nombre del Nuevo Estatus</label>
+                                <input type="text" id="nuevo-estatus-sis" placeholder="Ej: EN TALLER" style="text-transform: uppercase;">
+                            </div>
+                            <div class="input-group">
+                                <label>Categoría / Comportamiento Lógico</label>
+                                <select id="nuevo-estatus-comportamiento" style="border-color: #8b5cf6; font-weight: 700;">
+                                    <option value="ESPERA">⏳ Activo: Suma a métrica "En Espera"</option>
+                                    <option value="EXITO">✅ Éxito: Suma a métrica "Completadas"</option>
+                                    <option value="ERROR">🚨 Alerta: Marca rojo y cuenta como error</option>
+                                    <option value="INACTIVO">⏸️ Inactivo: Pausa SLA y métricas activas</option>
+                                </select>
+                            </div>
+                            <button class="btn" style="background:#8b5cf6; color:white; width: 100%;" onclick="agregarEstatus()"><i class="fas fa-plus"></i> Guardar Nuevo Estatus</button>
+                        </div>
+                        
+                        <div id="lista-estatus-sistema" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 5px; background: white;">
                             </div>
                     </div>
 
@@ -651,7 +655,21 @@
         
         window.notifSistema = []; window.notifTickets = []; window.filtroActualSeguimiento = 'TODOS'; 
         window.configSistema = { sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "", wa_habilitado: true }; 
-        window.configCatalogos = { tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"] }; 
+        
+        // --- BASE DE DATOS LOCAL POR DEFECTO PARA ESTATUS Y CATEGORÍAS ---
+        window.configCatalogos = { 
+            tipos_servicio: ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"], 
+            estatus_tickets: ["ENVIADO", "RECIBIDO", "ERROR EN ENVÍO", "COMPROBANTE RECIBIDO", "COMPLETADO", "PAUSADO", "ANULADO"],
+            estatus_comportamiento: {
+                "ENVIADO": "ESPERA", 
+                "RECIBIDO": "ESPERA", 
+                "ERROR EN ENVÍO": "ERROR", 
+                "COMPROBANTE RECIBIDO": "ESPERA", 
+                "COMPLETADO": "EXITO", 
+                "PAUSADO": "INACTIVO", 
+                "ANULADO": "INACTIVO"
+            }
+        }; 
         
         window.configPlantillas = { 
             whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\n--------------------------\nCLIENTE: {{cliente}}\nTEL: {{telefono}}\nCORREO: {{correo}}\nDIRECCIÓN: {{direccion}}\n--------------------------\nPRIORIDAD: {{temperamento}}\nOBS: {{obs_internas}}\n--------------------------\nFACTURACIÓN:\nRazón Social: {{razon_social}}\nNIT: {{nit}}\n--------------------------\nDETALLE DE SERVICIOS:\n{{servicios}}\n\nTOTAL: Q {{total}}\n--------------------------\nLINK DE PAGO: {{link_pago}}\n\n🚨 MOTIVO DE LA SOLICITUD:\n{{motivo}}" 
@@ -906,7 +924,6 @@
                 await updateDoc(doc(db, "Cobros", id), { estatus: "ANULADO", historial_respuestas: historialActualizado, motivo_anulacion: motivo.trim() });
                 mostrarToast("Solicitud anulada correctamente.", "success");
                 
-                // Si la que anulaste era la que tenías abierta en los campos, limpia la pantalla
                 if (window.currentTicketEditing === d.ticket) {
                     limpiarGestorCobro();
                 }
@@ -1044,7 +1061,6 @@
                 if (esNuevoTicket && metodo !== 'Pausa' && metodo !== 'Anular') { window.mostrarPopupTicket(ticketId); }
                 
                 if (metodo === 'Correo') { 
-                    // ---> CORRECCIÓN MODELO EN CORREO
                     const resumenServicios = serviciosTemporales.map(s => `<li><b>${s.tipo} (${[s.marca, s.modelo].filter(Boolean).join(' ') || 'N/A'}):</b> ${s.detalle} - Q${s.precio.toFixed(2)}</li>`).join('');
                     
                     const payloadPA = { 
@@ -1078,7 +1094,6 @@
                     } catch (netErr) { alert(`❌ ERROR DE RED O NAVEGADOR:\n\nNo se pudo contactar a Make.com.`); }
                 } 
                 else if (metodo === 'WhatsApp') { 
-                    // ---> CORRECCIÓN MODELO EN WHATSAPP
                     const rServ = serviciosTemporales.map(s => {
                         let equipoInfo = [s.producto, s.marca, s.modelo].filter(Boolean).join(' ');
                         let eqText = equipoInfo ? ` (${equipoInfo})` : '';
@@ -1217,7 +1232,6 @@
 
             if (chatHTML === ``) { chatHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; font-weight:600; padding:15px;">No hay interacción aún.</div>`; }
 
-            // ---> CORRECCIÓN MODELO EN EL VISOR MODAL
             let servList = "";
             if(d.servicios && d.servicios.length > 0) { 
                 servList = d.servicios.map(s => `<li style="margin-bottom:4px;"><b>${s.tipo}</b>: ${s.producto||''} ${s.marca||''} <span style="color:var(--accent); font-weight:900;">${s.modelo||''}</span> (${s.detalle}) - <b>Q${parseFloat(s.precio||0).toFixed(2)}</b></li>`).join(''); 
@@ -1283,8 +1297,25 @@
                 selectorAgenteHTML = `<select id="v-nuevo-agente" style="padding:4px; font-size:11px; font-weight:700; border:1px solid var(--border); border-radius:4px; max-width: 120px;">${opcionesAgentes}</select>`; 
             }
 
-            let waReasonHtml = d.motivo_whatsapp ? `<p style="margin:2px 0; margin-top:8px; color:#d97706; font-weight:900; background: #fef9c3; padding: 6px; border-radius: 4px; border-left: 4px solid #eab308;"><i class="fab fa-whatsapp"></i> Motivo WA: <span style="font-weight:600; color:#000;">${d.motivo_whatsapp}</span></p>` : '';
+            // Mapeo Dinámico de Estatus en Visor
+            let catalogEstatus = window.configCatalogos?.estatus_tickets || [];
+            let mapComp = window.configCatalogos?.estatus_comportamiento || {};
             
+            let opcionesEstatus = catalogEstatus.map(e => {
+                let compLabel = "";
+                if (mapComp[e] === "EXITO") compLabel = "✅";
+                else if (mapComp[e] === "ESPERA") compLabel = "⏳";
+                else if (mapComp[e] === "ERROR") compLabel = "🚨";
+                else if (mapComp[e] === "INACTIVO") compLabel = "⏸️";
+                
+                return `<option value="${e}" ${d.estatus === e ? 'selected' : ''}>${compLabel} ${e}</option>`;
+            }).join('');
+
+            if (!catalogEstatus.includes(d.estatus)) {
+                opcionesEstatus += `<option value="${d.estatus}" selected>${d.estatus} (Desactivado)</option>`;
+            }
+
+            let waReasonHtml = d.motivo_whatsapp ? `<p style="margin:2px 0; margin-top:8px; color:#d97706; font-weight:900; background: #fef9c3; padding: 6px; border-radius: 4px; border-left: 4px solid #eab308;"><i class="fab fa-whatsapp"></i> Motivo WA: <span style="font-weight:600; color:#000;">${d.motivo_whatsapp}</span></p>` : '';
             let cancelReasonHtml = d.motivo_anulacion ? `<p style="margin:2px 0; margin-top:8px; color:var(--danger); font-weight:900; background: #fef2f2; padding: 6px; border-radius: 4px; border-left: 4px solid var(--danger);"><i class="fas fa-ban"></i> Razón Anulación: <span style="font-weight:600; color:#000;">${d.motivo_anulacion}</span></p>` : '';
 
             const agStr = (d.agente || '').toLowerCase().trim();
@@ -1316,13 +1347,8 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:5px; flex:1;">
                         <label style="font-size:11px; font-weight:900; white-space:nowrap; margin-left:10px;">Estatus:</label>
-                        <select id="v-nuevo-estatus" style="padding:6px; font-size:12px; flex:1;">
-                            <option value="ENVIADO" ${d.estatus === 'ENVIADO' ? 'selected' : ''}>ENVIADO</option>
-                            <option value="ERROR EN ENVÍO" ${d.estatus === 'ERROR EN ENVÍO' ? 'selected' : ''}>ERROR EN ENVÍO</option>
-                            <option value="RECIBIDO" ${d.estatus === 'RECIBIDO' ? 'selected' : ''}>RECIBIDO</option>
-                            <option value="COMPROBANTE RECIBIDO" ${d.estatus === 'COMPROBANTE RECIBIDO' ? 'selected' : ''}>COMPROBANTE RECIBIDO</option>
-                            <option value="COMPLETADO" ${d.estatus === 'COMPLETADO' ? 'selected' : ''}>COMPLETADO</option>
-                            <option value="ANULADO" ${d.estatus === 'ANULADO' ? 'selected' : ''}>ANULADO</option>
+                        <select id="v-nuevo-estatus" style="padding:6px; font-size:12px; flex:1; font-weight:700;">
+                            ${opcionesEstatus}
                         </select>
                     </div>
                     <button class="btn btn-success" style="padding:6px 15px;" onclick="guardarEstatus('${id}')">Aplicar Cambios</button>
@@ -1507,7 +1533,9 @@
                 historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: 'SISTEMA', mensaje: `🔄 Solicitud reasignada de ${d.agente || 'N/A'} a ${nuevoAgente} por ${usuarioActual}.`, enviado_por_correo: false });
             }
 
-            if (nuevo === 'ANULADO' && d.estatus !== 'ANULADO') {
+            const categoriaNueva = window.configCatalogos?.estatus_comportamiento?.[nuevo] || "ESPERA";
+
+            if (categoriaNueva === 'INACTIVO' && d.estatus !== nuevo && nuevo === 'ANULADO') {
                 const motivo = prompt("🚨 ATENCIÓN: El estatus ANULADO requiere un motivo de forma obligatoria.\n\nPor favor ingrese el motivo por el cual anula esta solicitud:");
                 if (!motivo || motivo.trim() === "") { return mostrarToast("Operación cancelada. Debe ingresar un motivo para anular.", "warning"); }
                 historialExtra.push({ tipo: 'agente', fecha: new Date().toISOString(), agente: usuarioActual, mensaje: `🚫 SOLICITUD ANULADA. \nMotivo: ${motivo.trim()}`, enviado_por_correo: false });
@@ -1517,8 +1545,13 @@
             try { 
                 if (historialExtra.length > 0) { actualizaciones.historial_respuestas = [...(d.historial_respuestas || []), ...historialExtra]; }
                 await updateDoc(doc(db, "Cobros", id), actualizaciones); 
-                if (nuevo === 'COMPROBANTE RECIBIDO' && d.estatus !== 'COMPROBANTE RECIBIDO') { window.crearNotificacionSistema(d.ticket, d.campaña, (actualizaciones.agente || d.agente), 'COMPROBANTE', `Comprobante recibido para la solicitud ${d.ticket}`); }
-                mostrarToast(`Cambios aplicados correctamente.`, 'success'); abrirVisor(id);
+                
+                if (nuevo === 'COMPROBANTE RECIBIDO' && d.estatus !== 'COMPROBANTE RECIBIDO') { 
+                    window.crearNotificacionSistema(d.ticket, d.campaña, (actualizaciones.agente || d.agente), 'COMPROBANTE', `Comprobante recibido para la solicitud ${d.ticket}`); 
+                }
+                
+                mostrarToast(`Cambios aplicados correctamente.`, 'success'); 
+                abrirVisor(id);
             } catch (error) { mostrarToast("Error al aplicar cambios.", 'error'); }
         };
 
@@ -1568,6 +1601,65 @@
                     if(actual.length === 0) actual = ["Otro"]; 
                     await setDoc(doc(db, "Configuracion", "Catalogos"), { tipos_servicio: actual }, { merge: true });
                     mostrarToast("Servicio eliminado del catálogo.", "success");
+                } catch(e) { mostrarToast("Error al eliminar.", "error"); }
+            }
+        };
+
+        // --- FUNCIONES DEL NUEVO MOTOR DE ESTATUS ---
+        window.agregarEstatus = async () => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            const nuevo = document.getElementById('nuevo-estatus-sis').value.trim().toUpperCase();
+            const comportamiento = document.getElementById('nuevo-estatus-comportamiento').value;
+            
+            if (!nuevo) return mostrarToast("Escribe un estatus válido.", "warning");
+            
+            try {
+                let actualTickets = window.configCatalogos?.estatus_tickets || ["ENVIADO", "RECIBIDO", "ERROR EN ENVÍO", "COMPROBANTE RECIBIDO", "COMPLETADO", "PAUSADO", "ANULADO"];
+                let actualComp = window.configCatalogos?.estatus_comportamiento || { "ENVIADO":"ESPERA", "RECIBIDO":"ESPERA", "ERROR EN ENVÍO":"ERROR", "COMPROBANTE RECIBIDO":"ESPERA", "COMPLETADO":"EXITO", "PAUSADO":"INACTIVO", "ANULADO":"INACTIVO" };
+
+                if (!actualTickets.includes(nuevo)) {
+                    actualTickets.push(nuevo);
+                }
+                
+                // Guardar/Actualizar su comportamiento lógico
+                actualComp[nuevo] = comportamiento;
+
+                await setDoc(doc(db, "Configuracion", "Catalogos"), { 
+                    estatus_tickets: actualTickets, 
+                    estatus_comportamiento: actualComp 
+                }, { merge: true });
+                
+                document.getElementById('nuevo-estatus-sis').value = "";
+                mostrarToast("Estatus configurado exitosamente.", "success");
+            } catch(e) { mostrarToast("Error al guardar en catálogo.", "error"); }
+        };
+
+        window.eliminarEstatus = async (estatus) => {
+            if (window.userRol !== 'ADMIN' && window.userRol !== 'ADMINISTRADOR') return mostrarToast("No tienes permisos.", "error");
+            
+            // Los 6 estatus que mantienen el ciclo de vida del sistema y compatibilidad
+            const protegidos = ["ENVIADO", "RECIBIDO", "ERROR EN ENVÍO", "COMPROBANTE RECIBIDO", "COMPLETADO", "PAUSADO", "ANULADO"];
+            
+            if (protegidos.includes(estatus)) {
+                return mostrarToast("No puedes eliminar un estatus protegido/núcleo del sistema.", "error");
+            }
+
+            if(confirm(`⚠️ CUIDADO: Estás a punto de eliminar el estatus "${estatus}".\n\nLas solicitudes que ya tengan este estatus lo conservarán, pero no se podrá seleccionar para nuevas gestiones.\n\n¿Estás seguro?`)) {
+                try {
+                    let actualTickets = window.configCatalogos?.estatus_tickets || [];
+                    let actualComp = window.configCatalogos?.estatus_comportamiento || {};
+                    
+                    actualTickets = actualTickets.filter(t => t !== estatus);
+                    delete actualComp[estatus];
+
+                    if(actualTickets.length === 0) actualTickets = protegidos; 
+                    
+                    await setDoc(doc(db, "Configuracion", "Catalogos"), { 
+                        estatus_tickets: actualTickets,
+                        estatus_comportamiento: actualComp
+                    }, { merge: true });
+                    
+                    mostrarToast("Estatus eliminado.", "success");
                 } catch(e) { mostrarToast("Error al eliminar.", "error"); }
             }
         };
@@ -1649,7 +1741,7 @@
             }
         };
 
-        /* LÓGICA DE FILTRO MÚLTIPLE DE ESTATUS (INICIO) */
+        /* LÓGICA DE FILTRO MÚLTIPLE DE ESTATUS */
         window.actualizarTextoEstatus = () => {
             const checks = document.querySelectorAll('.chk-est-item');
             const seleccionados = Array.from(checks).filter(c => c.checked).map(c => c.value);
@@ -1679,14 +1771,12 @@
             window.actualizarTextoEstatus();
             window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null);
         };
-        /* LÓGICA DE FILTRO MÚLTIPLE DE ESTATUS (FIN) */
 
         window.limpiarFiltrosSeguimiento = () => {
             document.getElementById('seg-filtro-inicio').value = '';
             document.getElementById('seg-filtro-fin').value = '';
             document.getElementById('seg-filtro-agente').value = 'TODOS';
             
-            // Restablecer checkboxes múltiples
             const chkTodos = document.getElementById('chk-estatus-todos');
             if(chkTodos) chkTodos.checked = true;
             document.querySelectorAll('.chk-est-item').forEach(c => c.checked = true);
@@ -1720,12 +1810,18 @@
             const tb = document.getElementById('lista-seguimientos'); tb.innerHTML = ""; let data = window.datosSeguimientos; let cAtraso = 0; let cComp = 0; let cResp = 0; const now = new Date();
             const slaLimite = window.configSistema?.sla_horas || 24; 
             
+            // MAPEO LÓGICO DE ALERTAS BASADO EN CATEGORÍA
+            const mapComp = window.configCatalogos?.estatus_comportamiento || {};
+
             data.forEach(d => {
                 const hPasadas = Math.abs(now - (d.fechaFormateada || now)) / 36e5; let t_alert = 'NADA';
-                if (d.estatus === 'ERROR EN ENVÍO') { t_alert = 'ATRASO'; cAtraso++; }
+                const cat = mapComp[d.estatus] || "ESPERA"; // Por defecto todo es ESPERA si no existe
+
+                if (cat === "ERROR") { t_alert = 'ATRASO'; cAtraso++; }
                 else if (d.nueva_respuesta_cliente) { t_alert = 'NUEVA_RESPUESTA'; cResp++; } 
-                else if(d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } 
-                else if(d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "PAUSADO" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } 
+                else if (d.estatus === 'COMPROBANTE RECIBIDO') { t_alert = 'COMPROBANTE'; cComp++; } 
+                else if (cat !== "EXITO" && cat !== "INACTIVO" && hPasadas > slaLimite) { t_alert = 'ATRASO'; cAtraso++; } 
+                
                 d.temp_alerta = t_alert; 
             });
             document.getElementById('pill-count-atraso').innerText = cAtraso; document.getElementById('pill-count-comp').innerText = cComp; document.getElementById('pill-count-resp').innerText = cResp;
@@ -1748,7 +1844,6 @@
             const fFin = document.getElementById('seg-filtro-fin') ? document.getElementById('seg-filtro-fin').value : '';
             const fAgente = document.getElementById('seg-filtro-agente') ? document.getElementById('seg-filtro-agente').value : 'TODOS';
 
-            // Leer estatus múltiples
             let estatusSeleccionados = [];
             const chkItems = document.querySelectorAll('.chk-est-item');
             if (chkItems.length > 0) {
@@ -1791,10 +1886,22 @@
             }
             
             data.forEach(d => {
-                const bc = d.estatus === "PAUSADO" ? "status-pausado" : d.estatus === "ERROR EN ENVÍO" ? "status-error" : d.estatus === "ENVIADO" ? "status-enviado" : d.estatus === "COMPLETADO" ? "status-completado" : d.estatus === "ANULADO" ? "status-anulado" : d.estatus === "RECIBIDO" ? "status-respuesta" : "status-recibido";
+                const catInfo = mapComp[d.estatus] || "ESPERA";
+                let bc = `status-cat-${catInfo}`; // Usa las clases dinámicas de CSS que agregamos arriba
+                
+                // Mantenemos colores hardcoded para los base clásicos por si acaso
+                if (d.estatus === "PAUSADO") bc = "status-pausado";
+                else if (d.estatus === "ERROR EN ENVÍO") bc = "status-error";
+                else if (d.estatus === "ENVIADO") bc = "status-enviado";
+                else if (d.estatus === "COMPLETADO") bc = "status-completado";
+                else if (d.estatus === "ANULADO") bc = "status-anulado";
+                else if (d.estatus === "RECIBIDO") bc = "status-respuesta";
+                else if (d.estatus === "COMPROBANTE RECIBIDO") bc = "status-recibido";
+
                 let icT = ''; if (d.prioridad?.temperamento === 'Molesto') icT = '<i class="fas fa-fire" style="color:var(--danger); margin-left:4px;" title="Molesto"></i>'; else if (d.prioridad?.temperamento === 'Escalado') icT = '<i class="fas fa-bomb" style="color:#1e293b; margin-left:4px;" title="Escalado"></i>'; else if (d.prioridad?.temperamento === 'Acelerado') icT = '<i class="fas fa-bolt" style="color:var(--warning); margin-left:4px;" title="Acelerado"></i>';
                 let icA = ""; let rC = ""; 
-                if (d.estatus === 'ERROR EN ENVÍO') { icA = '<i class="fas fa-times-circle" style="color:#991b1b; font-size: 16px;" title="Error en Envío"></i>'; rC = "row-alert"; }
+                
+                if (catInfo === "ERROR") { icA = '<i class="fas fa-times-circle" style="color:#991b1b; font-size: 16px;" title="Alerta de Sistema"></i>'; rC = "row-alert"; }
                 else if (d.temp_alerta === "ATRASO") { icA = '<i class="fas fa-exclamation-triangle" style="color:var(--danger); font-size: 16px;"></i>'; rC = "row-alert"; } 
                 else if (d.temp_alerta === "COMPROBANTE") { icA = '<i class="fas fa-file-invoice-dollar" style="color:var(--warning); font-size: 16px;"></i>'; rC = "row-comp"; } 
                 else if (d.temp_alerta === "NUEVA_RESPUESTA") { icA = '<i class="fas fa-bell" style="color:var(--success); font-size: 14px;"></i>'; rC = "ticket-nuevo"; }
@@ -1823,8 +1930,8 @@
                 let esPropioOAdmin = (agStrBtn === nomStrBtn || agStrBtn === usrStrBtn || agStrBtn.includes(usrStrBtn) || !esAgenteNormal);
                 let btnHTML = '';
                 
-                if (esPropioOAdmin && d.estatus === "PAUSADO") {
-                    btnHTML = `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Retomar Pausado"><i class="fas fa-edit"></i></button>`;
+                if (esPropioOAdmin && catInfo === "INACTIVO" && d.estatus !== 'ANULADO') {
+                    btnHTML = `<button class="btn btn-warning" style="padding:5px; width:28px; height:28px; color:#000;" onclick="window.retomarGestion('${d.id}')" title="Retomar Inactivo"><i class="fas fa-edit"></i></button>`;
                 } else {
                     btnHTML = `<button class="btn btn-outline" style="padding:5px; width:28px; height:28px;" onclick="window.abrirVisor('${d.id}')" title="Ver Gestión"><i class="fas fa-eye"></i></button>`;
                 }
@@ -1850,7 +1957,6 @@
                 const estatusFinal = `<span class="badge ${bc}">${d.estatus}</span> <span style="margin-left:5px;">${icA}</span>${motivoTabla}`;
                 const nombreCli = d.cliente?.contacto || 'N/A'; const nitCli = d.cliente?.nit || 'C/F';
 
-                // ---> CORRECCIÓN MODELO EN LA TABLA PRINCIPAL
                 let equiposStr = '';
                 if (d.servicios && d.servicios.length > 0) {
                     let eqNombres = d.servicios.map(s => [s.producto, s.marca, s.modelo].filter(Boolean).join(' ')).filter(Boolean);
@@ -1932,13 +2038,11 @@
                     const inputSLA = document.getElementById('conf-sla');
                     if (inputSLA) inputSLA.value = window.configSistema.sla_horas || 24;
 
-                    // Ajustes de NeoNet
                     const neoEstado = document.getElementById('conf-neonet-estado');
                     const neoMsg = document.getElementById('conf-neonet-msg');
                     if (neoEstado) neoEstado.value = window.configSistema.neonet_habilitado === false ? 'false' : 'true';
                     if (neoMsg) neoMsg.value = window.configSistema.neonet_mensaje_alterno || '';
 
-                    // Ajustes de WhatsApp
                     const waEstado = document.getElementById('conf-wa-estado');
                     if (waEstado) waEstado.value = window.configSistema.wa_habilitado === false ? 'false' : 'true';
                     
@@ -1947,7 +2051,6 @@
                         btnWa.style.display = window.configSistema.wa_habilitado === false ? 'none' : 'inline-flex';
                     }
 
-                    // Ajustar input de gestión de cobro si está abierto
                     const linkInput = document.getElementById('pago-link');
                     if (linkInput) {
                         if (window.configSistema.neonet_habilitado === false) {
@@ -1966,8 +2069,16 @@
 
             onSnapshot(doc(db, "Configuracion", "Catalogos"), docSnap => {
                 let tipos = ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"]; 
-                if (docSnap.exists() && docSnap.data().tipos_servicio) { tipos = docSnap.data().tipos_servicio; }
-                window.configCatalogos = { tipos_servicio: tipos };
+                let estatusSis = ["ENVIADO", "RECIBIDO", "ERROR EN ENVÍO", "COMPROBANTE RECIBIDO", "COMPLETADO", "PAUSADO", "ANULADO"];
+                let estatusComp = { "ENVIADO":"ESPERA", "RECIBIDO":"ESPERA", "ERROR EN ENVÍO":"ERROR", "COMPROBANTE RECIBIDO":"ESPERA", "COMPLETADO":"EXITO", "PAUSADO":"INACTIVO", "ANULADO":"INACTIVO" };
+
+                if (docSnap.exists()) {
+                    if (docSnap.data().tipos_servicio) tipos = docSnap.data().tipos_servicio;
+                    if (docSnap.data().estatus_tickets) estatusSis = docSnap.data().estatus_tickets;
+                    if (docSnap.data().estatus_comportamiento) estatusComp = docSnap.data().estatus_comportamiento;
+                }
+                
+                window.configCatalogos = { tipos_servicio: tipos, estatus_tickets: estatusSis, estatus_comportamiento: estatusComp };
 
                 const selCobro = document.getElementById('gc-tipo');
                 if(selCobro) {
@@ -1983,6 +2094,55 @@
                             <span style="font-weight:700; font-size: 13px; color: var(--text-muted);"><i class="fas fa-tag" style="color:var(--accent); margin-right:5px;"></i> ${t}</span> 
                             <button class="btn btn-danger btn-icon" style="padding:4px; width:28px; height:28px;" onclick="eliminarTipoServicio('${t}')"><i class="fas fa-trash" style="font-size:12px;"></i></button>
                         </div>`).join('');
+                }
+
+                const listEstatus = document.getElementById('lista-estatus-sistema');
+                if(listEstatus) {
+                    const compLabels = { "ESPERA":"⏳ En Espera (Activo)", "EXITO":"✅ Completado (Éxito)", "ERROR":"🚨 Error (Alerta)", "INACTIVO":"⏸️ Inactivo (Pausado/Cancelado)" };
+                    listEstatus.innerHTML = estatusSis.map(t => {
+                        const cInfo = estatusComp[t] || "ESPERA";
+                        return `
+                        <div style="display:flex; justify-content:space-between; padding:8px 12px; border-bottom:1px solid #e2e8f0; align-items:center;">
+                            <div style="display:flex; flex-direction:column;">
+                                <span style="font-weight:900; font-size: 13px; color: var(--primary);"><i class="fas fa-flag" style="color:#8b5cf6; margin-right:5px;"></i> ${t}</span> 
+                                <span style="font-size:10px; color:var(--text-muted); margin-top:2px; font-weight:700;">${compLabels[cInfo] || '⏳ En Espera'}</span>
+                            </div>
+                            <button class="btn btn-danger btn-icon" style="padding:4px; width:28px; height:28px;" onclick="eliminarEstatus('${t}')"><i class="fas fa-trash" style="font-size:12px;"></i></button>
+                        </div>`
+                    }).join('');
+                }
+
+                const selDashEstatus = document.getElementById('filtro-estatus');
+                if (selDashEstatus) {
+                    const valActual = selDashEstatus.value;
+                    selDashEstatus.innerHTML = '<option value="TODOS">Todos</option>' + estatusSis.map(t => `<option value="${t}">${t}</option>`).join('');
+                    if (estatusSis.includes(valActual)) selDashEstatus.value = valActual;
+                    else selDashEstatus.value = "TODOS";
+                }
+
+                const contChkEstatus = document.getElementById('contenedor-chk-estatus');
+                if (contChkEstatus) {
+                    const currentChecked = Array.from(document.querySelectorAll('.chk-est-item')).filter(c => c.checked).map(c => c.value);
+                    
+                    let chkHtml = `
+                        <label class="checkbox-wrapper" style="padding: 6px; font-size: 12px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">
+                            <input type="checkbox" value="TODOS" id="chk-estatus-todos" onchange="toggleTodosEstatus(this)"> <b style="color:var(--primary);">Seleccionar Todos</b>
+                        </label>
+                        <hr style="margin: 2px 0; border: none; border-top: 1px solid #e2e8f0;">
+                    `;
+                    
+                    estatusSis.forEach(t => {
+                        const isChecked = (currentChecked.length === 0 || currentChecked.includes("TODOS") || currentChecked.includes(t)) ? 'checked' : '';
+                        chkHtml += `<label class="checkbox-wrapper" style="padding: 4px; font-size: 12px;"><input type="checkbox" class="chk-est-item" value="${t}" ${isChecked} onchange="actualizarEstatusSelect()"> ${t}</label>`;
+                    });
+                    
+                    contChkEstatus.innerHTML = chkHtml;
+                    window.actualizarEstatusSelect();
+                }
+
+                if(window.allDashboardData && window.allDashboardData.length > 0) {
+                    window.aplicarFiltrosDashboard();
+                    renderSeguimientosTable(window.filtroActualSeguimiento);
                 }
             });
 
@@ -2044,34 +2204,27 @@
                             
                             let txt = d.ultimo_mensaje_cliente || ""; 
                             
-                            // 0. Decodificar si Power Automate lo envió "escapado" (ej: &lt;html&gt;)
                             if (txt.includes("&lt;html") || txt.includes("&lt;body") || txt.includes("&lt;div")) {
                                 const txtArea = document.createElement("textarea");
                                 txtArea.innerHTML = txt;
                                 txt = txtArea.value; 
                             }
 
-                            // 1. Motor DOMParser avanzado para devorar el HTML crudo de Outlook
                             if (txt.includes("<html") || txt.includes("<body") || txt.includes("<div") || txt.includes("<p") || /<[a-z][\s\S]*>/i.test(txt)) {
                                 const parser = new DOMParser();
                                 const htmlDoc = parser.parseFromString(txt, 'text/html');
                                 
-                                // Destruir toda la basura oculta de Outlook (CSS, Metadatos, XML)
                                 const basura = htmlDoc.querySelectorAll('style, head, script, meta, link, title, xml, [style*="display: none"]');
                                 basura.forEach(el => el.remove());
 
-                                // Traducir etiquetas visuales a saltos de línea reales
                                 htmlDoc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
                                 htmlDoc.querySelectorAll('p, div, li, tr').forEach(el => el.append('\n'));
 
-                                // Extraer solo el texto humano puro
                                 txt = htmlDoc.body.textContent || "";
                             }
 
-                            // Limpiar espacios múltiples y saltos de línea excesivos
                             txt = txt.replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
 
-                            // 2. Procesar línea por línea con protección de cabeceras iniciales
                             let lineas = txt.split(/\r?\n/);
                             let lineasLimpias = [];
                             let dentroDelMensajeReal = false;
@@ -2080,11 +2233,9 @@
                                 let lTrim = linea.trim();
                                 
                                 if (!dentroDelMensajeReal) {
-                                    // Ignorar líneas de guiones divisorios de la parte superior o vacías
                                     if (/^_{3,}/.test(lTrim) || /^-{3,}/.test(lTrim) || lTrim === "") {
                                         continue;
                                     }
-                                    // Ignorar cabeceras de reenvío automático
                                     if (/^(De|From|Para|To|Enviado|Sent|Fecha|Date|Asunto|Subject|CC|CCO|MIME|Reply-To):\s*/i.test(lTrim)) {
                                         continue;
                                     }
@@ -2092,7 +2243,6 @@
                                 }
                                 
                                 if (dentroDelMensajeReal) {
-                                    // Romper si detectamos el historial viejo abajo del mensaje
                                     if (/^---\s*Original Message\s*---/i.test(lTrim) || 
                                         /^\s*De:\s*SISTEMA/i.test(lTrim) ||
                                         /^\s*De:\s*ST\s*Portal\s*CRM/i.test(lTrim) || 
@@ -2107,7 +2257,6 @@
                             
                             txt = lineasLimpias.join("\n").trim();
                             
-                            // 3. Cortes secundarios de seguridad
                             const separadores_correo = [ 
                                 /\r?\nEl\s[\s\S]*?escribió:/i,  
                                 />El\s[\s\S]*?escribió:/i, 
@@ -2126,7 +2275,12 @@
                             let fechaTick = now; if (d.fecha) { if (typeof d.fecha.toDate === 'function') fechaTick = d.fecha.toDate(); else fechaTick = new Date(d.fecha); } d.fechaFormateada = fechaTick;
                             
                             const hPasadas = Math.abs(now - fechaTick) / 36e5; 
-                            if (d.estatus !== "COMPLETADO" && d.estatus !== "ANULADO" && d.estatus !== "PAUSADO" && d.estatus !== "ERROR EN ENVÍO" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
+                            
+                            // AQUI SE EVALUA SLA EN BASE AL MOTOR DE COMPORTAMIENTO
+                            const mapaCat = window.configCatalogos?.estatus_comportamiento || {};
+                            const catAct = mapaCat[d.estatus] || "ESPERA";
+                            
+                            if (catAct !== "EXITO" && catAct !== "INACTIVO" && hPasadas > slaLimite && !d.alerta_sla_creada) { 
                                 updateDoc(doc(db, "Cobros", d.id), { alerta_sla_creada: true }); 
                                 window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, 'ATRASO', `La solicitud superó el SLA de ${slaLimite} horas.`); 
                             } 
@@ -2167,25 +2321,30 @@
         window.limpiarFiltrosDashboard = () => { document.getElementById('filtro-inicio').value = ''; document.getElementById('filtro-fin').value = ''; document.getElementById('filtro-estatus').value = 'TODOS'; document.getElementById('filtro-agente').value = 'TODOS'; window.aplicarFiltrosDashboard(); mostrarToast("Limpiados.", "success"); };
 
         function actualizarVistaDashboard(docs) {
-            let tM = 0; let b = 0; let e = 0; let c = 0; let validTickets = 0;
-            const cE = { 'PAUSADO': 0, 'ENVIADO': 0, 'RECIBIDO': 0, 'COMPROBANTE RECIBIDO': 0, 'COMPLETADO': 0, 'ANULADO': 0, 'ERROR EN ENVÍO': 0 }; 
+            let tM = 0; let e = 0; let c = 0; let validTickets = 0;
             const rA = {};
+            const mapComp = window.configCatalogos?.estatus_comportamiento || {};
+            const labelsEstatus = window.configCatalogos?.estatus_tickets || [];
+            
+            const cE = {};
+            labelsEstatus.forEach(est => cE[est] = 0);
+            cE['Otros'] = 0;
             
             docs.forEach(d => { 
                 if(cE[d.estatus] !== undefined) cE[d.estatus]++; 
+                else cE['Otros']++;
                 
-                if(d.estatus === "PAUSADO") {
-                    b++; 
-                } else {
+                const cat = mapComp[d.estatus] || "ESPERA";
+
+                if(cat !== "INACTIVO") {
                     validTickets++; 
-                    if(d.estatus === "ENVIADO" || d.estatus === "COMPROBANTE RECIBIDO" || d.estatus === "RECIBIDO") e++; 
-                    if(d.estatus === "COMPLETADO") c++; 
-                    if(d.estatus !== 'ANULADO') { 
-                        tM += d.total || 0; 
-                        const nA = d.agente || 'Desconocido'; 
-                        if(!rA[nA]) rA[nA] = 0; 
-                        rA[nA] += (d.total || 0); 
-                    }
+                    if(cat === "ESPERA") e++; 
+                    if(cat === "EXITO") c++; 
+                    
+                    tM += d.total || 0; 
+                    const nA = d.agente || 'Desconocido'; 
+                    if(!rA[nA]) rA[nA] = 0; 
+                    rA[nA] += (d.total || 0); 
                 }
             });
             
@@ -2194,7 +2353,25 @@
             document.getElementById('kpi-espera').innerText = e; 
             document.getElementById('kpi-completados').innerText = c;
             
-            const ctxE = document.getElementById('chartEstatus').getContext('2d'); if(window.chartInstEstatus) window.chartInstEstatus.destroy(); window.chartInstEstatus = new Chart(ctxE, { type: 'doughnut', data: { labels: ['Pausado', 'Enviado', 'Error', 'Recibido', 'Comprob.', 'Completado', 'Anulado'], datasets: [{ data: [cE['PAUSADO'], cE['ENVIADO'], cE['ERROR EN ENVÍO'], cE['RECIBIDO'], cE['COMPROBANTE RECIBIDO'], cE['COMPLETADO'], cE['ANULADO']], backgroundColor: ['#475569', '#0077A3', '#991b1b', '#8b5cf6', '#d97706', '#059669', '#dc2626'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } } });
+            const labelsChart = Object.keys(cE).filter(k => cE[k] > 0 || labelsEstatus.includes(k));
+            const dataVals = labelsChart.map(l => cE[l] || 0);
+            
+            const bgColors = labelsChart.map(l => {
+                const cmp = mapComp[l] || "ESPERA";
+                if(cmp === "EXITO") return '#059669';
+                if(cmp === "ERROR") return '#991b1b';
+                if(cmp === "INACTIVO") return '#475569';
+                return '#0077A3'; // Default para ESPERA
+            });
+
+            const ctxE = document.getElementById('chartEstatus').getContext('2d'); 
+            if(window.chartInstEstatus) window.chartInstEstatus.destroy(); 
+            window.chartInstEstatus = new Chart(ctxE, { 
+                type: 'doughnut', 
+                data: { labels: labelsChart, datasets: [{ data: dataVals, backgroundColor: bgColors, borderWidth: 0 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } } } } 
+            });
+            
             const ctxA = document.getElementById('chartAgentes').getContext('2d'); if(window.chartInstAgentes) window.chartInstAgentes.destroy(); const aOrd = Object.keys(rA).sort((a,b) => rA[b] - rA[a]); window.chartInstAgentes = new Chart(ctxA, { type: 'bar', data: { labels: aOrd, datasets: [{ data: aOrd.map(ag => rA[ag]), backgroundColor: '#002244', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}} } });
         }
 
