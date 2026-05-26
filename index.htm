@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Cobros ST - Call Center</title>
+    <title>Cobertura ST - Call Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -206,7 +206,7 @@
         <header>
             <div style="display:flex; align-items:center; gap:15px;">
                 <button id="btn-menu-mobile" onclick="toggleMenuMobile()"><i class="fas fa-bars"></i></button>
-                <div style="font-weight:900; color:var(--primary); font-size: 18px;"><i class="fas fa-tools"></i> <span class="header-title-text">Gestión de Cobros ST - Call Center</span></div>
+                <div style="font-weight:900; color:var(--primary); font-size: 18px;"><i class="fas fa-tools"></i> <span class="header-title-text">Cobertura ST - Call Center</span></div>
             </div>
             <div style="display:flex; align-items:center; gap:15px;">
                 <div class="bell-container" id="bell-icon-container" onclick="toggleNotifications()"><i class="fas fa-bell" style="font-size: 18px; color: var(--primary);"></i><div class="bell-badge" id="bell-badge" style="display:none;">0</div></div>
@@ -277,11 +277,24 @@
                 </div>
 
                 <div class="card">
-                    <h3 class="module-header" style="font-size:18px;">3. Facturación</h3>
+                    <h3 class="module-header" style="font-size:18px;">3. Facturación y Método de Pago</h3>
                     <div class="form-grid">
                         <div class="input-group"><label>NIT Fact.</label><input type="text" id="fac-nit"></div>
                         <div class="input-group"><label>Razón Social</label><input type="text" id="fac-nombre"></div>
-                        <div class="input-group"><label>Link NeoNet</label><input type="text" id="pago-link"></div>
+                    </div>
+                    <div class="form-grid" style="margin-top: 15px;">
+                        <div class="input-group">
+                            <label>Opciones a Mostrar al Cliente *</label>
+                            <select id="pago-metodo" onchange="toggleLinkPago()" style="border-color: var(--accent); color: var(--primary); font-weight: 900;">
+                                <option value="AMBOS">💳 Tarjeta + 🏦 Transferencia (Ambas)</option>
+                                <option value="NEONET">💳 Solo Tarjeta (NeoLink)</option>
+                                <option value="TRANSFERENCIA">🏦 Solo Transferencia (Banco)</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="grupo-link-pago">
+                            <label>Link NeoNet</label>
+                            <input type="text" id="pago-link">
+                        </div>
                     </div>
                 </div>
 
@@ -859,6 +872,24 @@
 
         window.addEventListener('DOMContentLoaded', async () => { const guardado = localStorage.getItem('st_session_crm'); if (guardado) { const sesion = JSON.parse(guardado); window.userId = sesion.userId; window.userName = sesion.userName; window.userRol = sesion.userRol; window.userCamp = sesion.userCamp; window.userFirma = sesion.userFirma; window.userFirmaImg = sesion.userFirmaImg; await completarLoginUI(); } });
 
+        window.toggleLinkPago = () => {
+            const met = document.getElementById('pago-metodo').value;
+            const inputLink = document.getElementById('pago-link');
+            if (met === 'TRANSFERENCIA') {
+                inputLink.disabled = true;
+                inputLink.value = '';
+                inputLink.placeholder = 'No aplica para transferencia';
+            } else {
+                if (window.configSistema && window.configSistema.neonet_habilitado === false) {
+                    inputLink.disabled = true;
+                    inputLink.placeholder = "Deshabilitado por sistema";
+                } else {
+                    inputLink.disabled = false;
+                    inputLink.placeholder = "Ej: https://neonet...";
+                }
+            }
+        };
+
         window.cambioTipoServicio = () => { 
             const t = document.getElementById('gc-tipo').value; 
             document.getElementById('lbl-falla').innerText = (t === "Diagnóstico") ? "Falla Reportada *" : "Servicio a Realizar *"; 
@@ -910,16 +941,8 @@
             const selectTemp = document.getElementById('cli-temperamento'); selectTemp.value = "Normal"; cambiarColorTemperamento(selectTemp); 
             const selectTipo = document.getElementById('gc-tipo'); if(selectTipo.options.length > 0) selectTipo.selectedIndex = 0;
             
-            const linkInput = document.getElementById('pago-link');
-            if (linkInput) {
-                if (window.configSistema && window.configSistema.neonet_habilitado === false) {
-                    linkInput.disabled = true;
-                    linkInput.placeholder = "Deshabilitado por sistema";
-                } else {
-                    linkInput.disabled = false;
-                    linkInput.placeholder = "";
-                }
-            }
+            document.getElementById('pago-metodo').value = "AMBOS";
+            window.toggleLinkPago();
             
             window.cambioTipoServicio(); 
         };
@@ -1036,13 +1059,33 @@
             const clienteNombre = document.getElementById('cli-contacto').value || "Cliente";
             
             let linkNeoNet = document.getElementById('pago-link').value || "";
+            const metodoPagoSel = document.getElementById('pago-metodo').value;
             let htmlPagoDinamico = "";
+            let waLinkText = linkNeoNet;
 
-            if (window.configSistema && window.configSistema.neonet_habilitado === false) {
-                linkNeoNet = window.configSistema.neonet_mensaje_alterno || "Pagos con tarjeta deshabilitados temporalmente. Por favor realiza una transferencia o deposito a nuestra cuenta bancaria.";
-                htmlPagoDinamico = `<div style="background-color: #fef2f2; border: 1px solid #f87171; border-radius: 8px; padding: 15px; text-align: center; color: #991b1b; font-weight: bold; margin: 15px 0;">⚠️ ${linkNeoNet}</div>`;
+            const btnNeoNetHTML = `<div style="text-align: center; margin: 15px 0;"><a href="${linkNeoNet}" target="_blank" style="background-color: #059669; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">💳 CLICK PARA PROCEDER AL PAGO EN LÍNEA</a></div>`;
+            const cajaTransferenciaHTML = `<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: center; color: #1e293b; font-size: 13px;">
+                <p style="margin: 0 0 5px 0;"><b>Banco:</b> Banco Industrial</p>
+                <p style="margin: 0 0 5px 0;"><b>Tipo:</b> Monetaria</p>
+                <p style="margin: 0 0 5px 0;"><b>Cuenta:</b> 099-000577-9</p>
+                <p style="margin: 0;"><b>A nombre de:</b> DISTELSA SERVICIO TECNICO</p>
+            </div>`;
+
+            if (window.configSistema && window.configSistema.neonet_habilitado === false && metodoPagoSel !== 'TRANSFERENCIA') {
+                const msgAlt = window.configSistema.neonet_mensaje_alterno || "Pagos con tarjeta deshabilitados temporalmente. Por favor realiza transferencia o depósito.";
+                htmlPagoDinamico = `<div style="background-color: #fef2f2; border: 1px solid #f87171; border-radius: 8px; padding: 15px; text-align: center; color: #991b1b; font-weight: bold; margin: 15px 0;">⚠️ ${msgAlt}</div>`;
+                if (metodoPagoSel === 'AMBOS') htmlPagoDinamico += cajaTransferenciaHTML;
+                waLinkText = msgAlt;
             } else {
-                htmlPagoDinamico = `<div style="text-align: center; margin: 20px 0;"><a href="${linkNeoNet}" target="_blank" style="background-color: #059669; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">💳 CLICK PARA PROCEDER AL PAGO EN LÍNEA</a></div>`;
+                if (metodoPagoSel === 'AMBOS') {
+                    htmlPagoDinamico = `<div style="text-align:center; font-weight:bold; color:#002244; margin-bottom: 10px;">Opción 1: Pago rápido y seguro con tarjeta a través de NeoLink:</div>${btnNeoNetHTML}<div style="text-align:center; font-weight:bold; color:#002244; margin-top: 25px; margin-bottom: 10px;">Opción 2: Transferencia o depósito bancario:</div>${cajaTransferenciaHTML}`;
+                    waLinkText = `${linkNeoNet}\n\nO también puedes depositar a:\nBanco Industrial | Monetaria | 099-000577-9 a nombre de DISTELSA SERVICIO TECNICO`;
+                } else if (metodoPagoSel === 'NEONET') {
+                    htmlPagoDinamico = `<div style="text-align:center; font-weight:bold; color:#002244; margin-bottom: 10px;">Pago rápido y seguro con tarjeta a través de NeoLink:</div>${btnNeoNetHTML}`;
+                } else if (metodoPagoSel === 'TRANSFERENCIA') {
+                    htmlPagoDinamico = `<div style="text-align:center; font-weight:bold; color:#002244; margin-bottom: 10px;">Transferencia o depósito bancario:</div>${cajaTransferenciaHTML}`;
+                    waLinkText = `Banco Industrial | Monetaria | 099-000577-9 a nombre de DISTELSA SERVICIO TECNICO`;
+                }
             }
             
             let estatusFinal = "ENVIADO";
@@ -1169,7 +1212,7 @@
                                    .replace(/\{\{nit\}\}/g, datos.facturacion.nit || 'C/F')
                                    .replace(/\{\{servicios\}\}/g, rServ)
                                    .replace(/\{\{total\}\}/g, total.toFixed(2))
-                                   .replace(/\{\{link_pago\}\}/g, linkNeoNet)
+                                   .replace(/\{\{link_pago\}\}/g, waLinkText)
                                    .replace(/\{\{motivo\}\}/g, motivoWa.trim());
 
                     const linkOficial = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgRaw)}`;
@@ -1548,7 +1591,7 @@
                         "total": d.total.toString(), 
                         "agente": nombreAgenteActual, 
                         "link": d.pago_link || "", 
-                        "html_pago_dinamico": "", // Para una respuesta normal no mandamos botón
+                        "html_pago_dinamico": "", 
                         "detalle_servicios": "Ver histórico de la solicitud", 
                         "mensaje": msg, 
                         "firma_texto": window.userFirma, 
@@ -2200,8 +2243,11 @@
                             linkInput.value = "";
                             linkInput.placeholder = "Deshabilitado por sistema";
                         } else {
-                            linkInput.disabled = false;
-                            linkInput.placeholder = "Ej: https://neonet...";
+                            const met = document.getElementById('pago-metodo')?.value;
+                            if (met !== 'TRANSFERENCIA') {
+                                linkInput.disabled = false;
+                                linkInput.placeholder = "Ej: https://neonet...";
+                            }
                         }
                     }
                 } else {
@@ -2507,6 +2553,11 @@
             const dataVals = labelsChart.map(l => cE[l] || 0);
             
             const bgColors = labelsChart.map(l => {
+                const colorPersonalizado = window.configCatalogos?.estatus_colores?.[l];
+                if (colorPersonalizado) {
+                    return colorPersonalizado;
+                }
+                
                 const cmp = mapComp[l] || "ESPERA";
                 if(cmp === "EXITO") return '#059669';
                 if(cmp === "ERROR") return '#991b1b';
