@@ -218,6 +218,9 @@ function htmlPago(d, general) {
     return h;
   }
   if (metodo === "TRANSFERENCIA") return titulo("Pago por transferencia:") + caja;
+  // Sin enlace de NeoLink no se muestra la opción de tarjeta vacía.
+  if (!link && metodo === "AMBOS") return titulo("Pago por transferencia:") + caja;
+  if (!link) return titulo("Pago con tarjeta:") + `<p style="text-align:center; color:#475569;">En breve le compartiremos el enlace para pagar con tarjeta.</p>`;
   if (metodo === "NEONET") return titulo("Pago con tarjeta (NeoLink):") + btn;
   return titulo("Opción 1: Pago con tarjeta (NeoLink):") + btn + titulo("Opción 2: Transferencia:", " margin-top:25px;") + caja;
 }
