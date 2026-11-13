@@ -472,6 +472,11 @@ exports.recibirRespuestaCliente = onRequest({ secrets: [MAKE_TOKEN], cors: false
     if (!match) { res.json({ ok: true, resultado: "sin-ticket" }); return; }
     const ticket = match[0].toUpperCase();
 
+    // Con el Mailhook en copia, Make también recibe los correos que envía Soporte ST
+    // (cobros y respuestas del agente). Esos no son respuestas del cliente: se ignoran.
+    const soporte = (SOPORTE_CORREO.value() || "soportest@distelsa.com.gt").toLowerCase();
+    if (String(body.remitente || "").toLowerCase().includes(soporte)) { res.json({ ok: true, resultado: "propio" }); return; }
+
     const marca = db.doc(`CorreosProcesados/${hashId(body.mensaje_id || `${body.ticket}|${body.remitente}|${body.mensaje || body.html}`)}`);
     try { await marca.create({ ticket, procesado: FieldValue.serverTimestamp() }); }
     catch (e) { if (e.code === 6 || /already exists/i.test(e.message)) { res.json({ ok: true, resultado: "repetido" }); return; } throw e; }
