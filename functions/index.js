@@ -40,9 +40,9 @@ setGlobalOptions({ region: "us-central1", maxInstances: 10 });
 
 const MAKE_WEBHOOK_ENVIO = defineSecret("MAKE_WEBHOOK_ENVIO");
 const SOPORTE_CORREO = defineString("SOPORTE_CORREO", { default: "soportest@distelsa.com.gt", description: "Buzón desde el que se envían los cobros" });
-// Dirección del Mailhook de Make ("Cobros ST - Respuestas"). Va en "Responder a" junto con Soporte ST:
-// el cliente responde a ambos, así la respuesta llega a Make sin reenvío (Distelsa bloquea el
-// reenvío externo) y también queda en el buzón de Soporte ST, en la misma conversación.
+// Dirección del Mailhook de Make ("Cobros ST - Respuestas"). Va en copia (CC) del correo de cobro:
+// con "Responder a todos" la respuesta llega a Make sin reenvío (Distelsa bloquea el reenvío
+// externo) y también queda en el buzón de Soporte ST, en la misma conversación.
 const MAKE_MAILHOOK = defineString("MAKE_MAILHOOK", { default: "k1l1n5lt3bv6c96dzgxlaypoqcfnys9a@hook.us2.make.com", description: "Mailhook de Make que recibe las respuestas de los clientes" });
 const MAKE_TOKEN = defineSecret("MAKE_TOKEN");
 
@@ -355,7 +355,10 @@ async function armarMime({ para, asunto, html, responderA }) {
   const mailhook = MAKE_MAILHOOK.value();
   const opciones = {
     from: { name: "Soporte ST", address: soporte }, to: para, subject: asunto, html,
-    replyTo: [{ name: "Soporte ST", address: soporte }, ...(mailhook ? [{ name: "Soporte ST - Respuestas", address: mailhook }] : [])],
+    replyTo: { name: "Soporte ST", address: soporte },
+    // Igual que el sistema anterior: el Mailhook va en copia. Con "Responder a todos" la respuesta
+    // del cliente llega directo a Make (sin reenvío, que Distelsa bloquea) y a Soporte ST.
+    ...(mailhook ? { cc: { name: "Soporte ST - Respuestas", address: mailhook } } : {}),
     messageId: `<${crypto.randomUUID()}@${(SOPORTE_CORREO.value() || "soportest@distelsa.com.gt").split("@")[1]}>`,
     text: htmlATexto(html, { wordwrap: 100, selectors: [{ selector: "img", format: "skip" }] }),
     textEncoding: "quoted-printable",
