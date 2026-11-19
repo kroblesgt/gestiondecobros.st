@@ -396,6 +396,49 @@
         .consumo-barra div { height: 100%; width: 0; background: var(--verde); transition: width .4s; }
 
         /* =============================================================
+           BANDEJA DE REVISIÓN Y PRODUCTIVIDAD
+           ============================================================= */
+        .turno-chip { display: none; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 20px; background: var(--superficie-2); border: 1px solid var(--linea); font-size: 13px; color: var(--texto-2); white-space: nowrap; }
+        .turno-chip b { color: var(--ink); font-weight: 600; }
+        .turno-chip.mio { background: var(--ink); border-color: var(--ink); color: #C9D5E2; }
+        .turno-chip.mio b { color: #fff; }
+        .rev-aviso { display: flex; gap: 12px; align-items: flex-start; background: var(--superficie); border: 1px solid var(--linea); border-left: 4px solid var(--azul); border-radius: var(--radio); padding: 14px 16px; margin-bottom: 16px; font-size: 14px; color: var(--texto-2); }
+        .rev-aviso i { color: var(--azul); margin-top: 3px; }
+        .rev-aviso b { color: var(--ink); }
+        .tabla-rev { min-width: 860px; }
+        .tabla-rev td { padding: 12px; vertical-align: middle; }
+        .tabla-rev tr.row-card td:first-child { box-shadow: inset 4px 0 0 var(--borde, var(--linea)); padding-left: 18px; }
+        .tabla-rev th:last-child, .tabla-rev td:last-child { position: sticky; right: 0; background: var(--superficie); box-shadow: -10px 0 10px -10px rgba(15,42,68,.25); text-align: right; white-space: nowrap; }
+        .tabla-rev th:last-child { background: var(--superficie-2); }
+        .ticket-copiar { cursor: pointer; border: 0; font: inherit; }
+        .espera { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--texto-2); }
+        .espera.tarde { color: var(--rojo); }
+        .rev-ultima { font-size: 12px; color: var(--texto-3); max-width: 220px; }
+        .rev-ultima b { color: var(--texto-2); font-weight: 600; }
+        .btn-rev { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radio-sm); border: 1px solid var(--linea-fuerte); background: var(--superficie); color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-rev:hover { border-color: var(--ink); }
+        .btn-rev.comp { border-color: #E3C27E; background: var(--ambar-suave); color: #7A4C06; }
+        .btn-rev.fin { border-color: #A9D7BF; background: var(--verde-suave); color: var(--verde); }
+        .registro-cliente { border: 1px dashed var(--linea-fuerte); border-radius: var(--radio); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+        .registro-cliente p { margin: 0; font-size: 13px; color: var(--texto-2); }
+        .registro-cliente .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+        .rango-rapido { display: flex; gap: 6px; flex-wrap: wrap; }
+        .tabla-prod td, .tabla-prod th { padding: 10px 12px; }
+        .tabla-prod td.num, .tabla-prod th.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .tabla-prod tfoot td { font-weight: 700; border-top: 2px solid var(--linea-fuerte); color: var(--ink); }
+        .modo-opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .modo-opcion { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--linea-fuerte); border-radius: var(--radio); padding: 14px; cursor: pointer; background: var(--superficie); }
+        .modo-opcion:has(input:checked) { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--superficie-2); }
+        .modo-opcion input { margin-top: 3px; width: auto; }
+        .modo-opcion b { display: block; color: var(--ink); }
+        .modo-opcion small { display: block; color: var(--texto-2); font-size: 13px; margin-top: 4px; line-height: 1.45; }
+        .turnos-tabla { min-width: 520px; }
+        .turnos-tabla th, .turnos-tabla td { padding: 8px 10px; text-align: center; }
+        .turnos-tabla th:first-child, .turnos-tabla td:first-child { text-align: left; }
+        .turnos-tabla input { width: 18px; height: 18px; cursor: pointer; }
+        @media (max-width: 760px) { .modo-opciones { grid-template-columns: 1fr; } .turno-chip { display: none !important; } }
+
+        /* =============================================================
            ADMINISTRACIÓN
            ============================================================= */
         .ajustes { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -544,6 +587,7 @@
                 <div class="nav-grupo" id="grupo-operacion">Operación</div>
                 <div class="nav-item" id="nav-2" onclick="showSec('sec-2', this)" tabindex="0"><i class="fas fa-file-invoice-dollar"></i> Nuevo cobro</div>
                 <div class="nav-item" id="nav-3" onclick="showSec('sec-3', this)" tabindex="0"><i class="fas fa-list-check"></i> Seguimientos</div>
+                <div class="nav-item" id="nav-8" onclick="showSec('sec-8', this)" tabindex="0"><i class="fas fa-inbox"></i> Bandeja de revisión</div>
                 <div class="nav-item" id="nav-4" onclick="showSec('sec-4', this)" tabindex="0"><i class="fas fa-chart-simple"></i> Dashboard</div>
                 <div class="nav-item" id="nav-5" onclick="showSec('sec-5', this)" tabindex="0"><i class="fas fa-users-viewfinder"></i> Monitor de agentes</div>
                 <div class="nav-item" id="nav-6" onclick="showSec('sec-6', this)" tabindex="0"><i class="fas fa-comment-dots"></i> Avisos</div>
@@ -563,6 +607,7 @@
                     <h1 id="titulo-seccion">Cobros ST</h1>
                 </div>
                 <div class="topbar-der">
+                    <div class="turno-chip" id="turno-chip" title="Persona de turno para revisar las respuestas de los clientes en Soporte ST"><i class="fas fa-inbox"></i> <span id="turno-chip-texto"></span></div>
                     <div class="bell-container" id="bell-icon-container" onclick="toggleNotifications()" role="button" tabindex="0" aria-label="Notificaciones"><i class="fas fa-bell"></i><div class="bell-badge" id="bell-badge" style="display:none;">0</div></div>
                     <div class="usuario-chip">
                         <span class="avatar" id="uAvatar">·</span>
@@ -726,6 +771,49 @@
                 </div>
             </section>
 
+            <!-- ================= BANDEJA DE REVISIÓN ================= -->
+            <section id="sec-8" style="display:none" data-titulo="Bandeja de revisión">
+                <div class="rev-aviso" id="rev-aviso"></div>
+
+                <div class="kpi-strip">
+                    <div class="kpi"><div class="lbl"><i class="fas fa-paper-plane"></i> Esperando respuesta</div><div class="value" id="rev-kpi-espera">0</div></div>
+                    <div class="kpi" style="--c: var(--rojo);"><div class="lbl"><i class="fas fa-clock"></i> <span id="rev-kpi-tarde-lbl">Más de 24 h sin respuesta</span></div><div class="value" id="rev-kpi-tarde">0</div></div>
+                    <div class="kpi" style="--c: var(--ambar);"><div class="lbl"><i class="fas fa-file-invoice-dollar"></i> Con comprobante por cerrar</div><div class="value" id="rev-kpi-comp">0</div></div>
+                    <div class="kpi" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-check-double"></i> Registradas hoy por ti</div><div class="value" id="rev-kpi-mias">0</div></div>
+                </div>
+
+                <div class="barra-filtros">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="rev-buscar" class="search-input-dynamic" placeholder="Buscar por solicitud, cliente, correo o agente" oninput="renderBandejaRevision()" aria-label="Buscar en la bandeja">
+                    </div>
+                    <select id="rev-canal" onchange="renderBandejaRevision()" style="width:auto;" aria-label="Canal de envío">
+                        <option value="Correo">Enviadas por correo</option>
+                        <option value="WhatsApp">Enviadas por WhatsApp</option>
+                        <option value="TODOS">Todos los canales</option>
+                    </select>
+                    <select id="rev-agente" onchange="renderBandejaRevision()" style="width:auto;" aria-label="Agente"><option value="TODOS">Todos los agentes</option></select>
+                </div>
+
+                <div class="barra-filtros">
+                    <div class="filter-pills" role="tablist" aria-label="Etapa">
+                        <button class="f-pill rev-pill active" data-etapa="ENVIADO" onclick="filtrarBandeja('ENVIADO', this)">Esperando respuesta <span class="badge" id="rev-n-enviado">0</span></button>
+                        <button class="f-pill rev-pill" data-etapa="RECIBIDO" onclick="filtrarBandeja('RECIBIDO', this)">Respondieron, sin comprobante <span class="badge" id="rev-n-recibido">0</span></button>
+                        <button class="f-pill rev-pill" data-etapa="COMPROBANTE RECIBIDO" onclick="filtrarBandeja('COMPROBANTE RECIBIDO', this)">Con comprobante <span class="badge" id="rev-n-comp">0</span></button>
+                    </div>
+                </div>
+
+                <div class="card tabla-card">
+                    <div class="table-responsive">
+                        <table class="tabla-rev">
+                            <thead><tr><th style="padding-left:18px;">Solicitud</th><th>Enviada</th><th>Cliente</th><th style="text-align:right;">Total</th><th>Última anotación</th><th>Registrar</th></tr></thead>
+                            <tbody id="lista-revision"></tbody>
+                        </table>
+                    </div>
+                    <div class="paginacion"><span class="muted" style="font-size:13px;">Toca el número de solicitud para copiarlo y buscarlo en Outlook.</span><span class="muted num" id="rev-info"></span></div>
+                </div>
+            </section>
+
             <!-- ================= DASHBOARD ================= -->
             <section id="sec-4" style="display:none" data-titulo="Dashboard">
                 <div class="card" style="padding:16px;">
@@ -741,6 +829,13 @@
                     </div>
                 </div>
 
+                <div class="rango-rapido" style="margin:-6px 0 14px;">
+                    <button class="f-pill" onclick="rangoDashboard('hoy')">Hoy</button>
+                    <button class="f-pill" onclick="rangoDashboard('semana')">Esta semana</button>
+                    <button class="f-pill" onclick="rangoDashboard('mes')">Este mes</button>
+                    <button class="f-pill" onclick="rangoDashboard('mes-anterior')">Mes anterior</button>
+                </div>
+
                 <div class="kpi-strip">
                     <div class="kpi"><div class="lbl"><i class="fas fa-folder-open"></i> Abiertas</div><div class="value" id="kpi-tickets">0</div></div>
                     <div class="kpi" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-coins"></i> Monto gestionado</div><div class="value" id="kpi-monto">Q 0.00</div></div>
@@ -753,7 +848,21 @@
                     <div class="card"><h3 class="card-titulo">Monto por agente (Q)</h3><div class="grafica"><canvas id="chartAgentes"></canvas></div></div>
                 </div>
 
-                <div id="card-consumo-make" class="card" style="display:none;">
+                <div class="card tabla-card" style="margin-top:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; gap:10px; flex-wrap:wrap; border-bottom:1px solid var(--linea);">
+                        <h3 class="card-titulo" style="margin:0;">Productividad del equipo</h3>
+                        <span class="muted" style="font-size:13px;" id="prod-rango"></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="tabla-prod">
+                            <thead><tr><th>Persona</th><th class="num">Cobros por correo</th><th class="num">Cobros por WhatsApp</th><th class="num">Respuestas por correo</th><th class="num">Anotaciones de revisión</th><th class="num">Completadas</th><th class="num" title="Mediana del tiempo entre el envío del cobro y el comprobante">Envío a comprobante</th></tr></thead>
+                            <tbody id="lista-productividad"></tbody>
+                            <tfoot id="pie-productividad"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="card-consumo-make" class="card" style="display:none; margin-top:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
                         <h3 class="card-titulo" style="margin:0;"><i class="fas fa-plug" style="color:var(--azul);"></i> Uso de Make este mes (estimado)</h3>
                         <span class="muted" style="font-size:13px;" id="consumo-make-detalle"></span>
@@ -795,6 +904,7 @@
                         <button data-panel="aj-avisos" onclick="abrirAjuste('aj-avisos')"><i class="fas fa-bullhorn"></i> Aviso y canales</button>
                         <button data-panel="aj-reglas" onclick="abrirAjuste('aj-reglas')"><i class="fas fa-scale-balanced"></i> Reglas de operación</button>
                         <button data-panel="aj-pagos" onclick="abrirAjuste('aj-pagos')"><i class="fas fa-credit-card"></i> Pagos</button>
+                        <button data-panel="aj-revision" onclick="abrirAjuste('aj-revision')"><i class="fas fa-inbox"></i> Respuestas y revisión</button>
                         <div class="sep"></div>
                         <button data-panel="aj-correo" onclick="abrirAjuste('aj-correo')"><i class="fas fa-envelope-open-text"></i> Correo al cliente</button>
                         <button data-panel="aj-wa" onclick="abrirAjuste('aj-wa')"><i class="fab fa-whatsapp"></i> Plantilla de WhatsApp</button>
@@ -808,6 +918,25 @@
                     </nav>
 
                     <div>
+                        <!-- Respuestas y revisión -->
+                        <div class="panel-ajuste" id="aj-revision">
+                            <div class="card">
+                                <h3 class="card-titulo">Cómo llegan las respuestas de los clientes</h3>
+                                <p class="card-sub">Los cobros siempre se envían desde Soporte ST por Make. Esto define qué pasa cuando el cliente contesta.</p>
+                                <div class="modo-opciones">
+                                    <label class="modo-opcion"><input type="radio" name="conf-modo" value="MANUAL"><span><b>Revisión manual</b><small>Make solo envía (≈2 créditos por correo). Las respuestas quedan en la carpeta "gestion de cobros" de Soporte ST y la persona de turno las registra en la Bandeja de revisión. Funciona con el plan gratuito.</small></span></label>
+                                    <label class="modo-opcion"><input type="radio" name="conf-modo" value="AUTOMATICO"><span><b>Automática con Make</b><small>Cada cobro lleva en copia el buzón de Make. La app cambia el estatus y guarda los comprobantes sola, si el cliente usa "Responder a todos". Necesita el plan Core y encender el escenario "Cobros ST - Respuestas".</small></span></label>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3 class="card-titulo">Turno de revisión</h3>
+                                <p class="card-sub">Quién revisa el correo de Soporte ST cada día. Su nombre aparece arriba para todo el equipo y recibe las alertas de solicitudes sin respuesta. Puede haber más de una persona por día.</p>
+                                <div class="table-responsive"><table class="turnos-tabla"><thead><tr><th>Persona</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr></thead><tbody id="tabla-turnos"></tbody></table></div>
+                                <p class="ayuda">Quien revisa necesita la pantalla "Bandeja de revisión" en su rol y tener asignadas las campañas que va a revisar.</p>
+                                <div class="panel-pie"><button class="btn btn-primary" onclick="guardarRevision()"><i class="fas fa-check"></i> Guardar respuestas y turno</button></div>
+                            </div>
+                        </div>
+
                         <!-- Aviso y canales -->
                         <div class="panel-ajuste" id="aj-avisos">
                             <div class="card">
@@ -1039,6 +1168,7 @@
                             <div class="permisos">
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="2"> Nuevo cobro</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="3"> Seguimientos</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="8"> Bandeja de revisión</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="4"> Dashboard</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="5"> Monitor</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="6"> Avisos</label>
@@ -1155,6 +1285,7 @@
         const CONFIG_DEFECTO = {
             sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "", wa_habilitado: true, correo_habilitado: true, precio_diagnostico: 175,
             aviso_global: { activo: false, tipo: "info", texto: "" }, sesion_minutos: 0, make_limite: 1000,
+            modo_respuestas: "MANUAL", revision_turnos: {},
             campos_obligatorios: { correo: false, nit: false, direccion: false, equipo: false },
             correo_textos: {}
         };
@@ -1178,6 +1309,10 @@
             motivos: { ...MOTIVOS_DEFECTO }, respuestas_rapidas: []
         };
         const correoHabilitado = () => window.configSistema?.correo_habilitado !== false;
+        // Respuestas de clientes: "MANUAL" (una persona las registra) o "AUTOMATICO" (Make las lee).
+        const modoManual = () => String(window.configSistema?.modo_respuestas || "MANUAL").toUpperCase() !== "AUTOMATICO";
+        const revisoresHoy = () => { const l = (window.configSistema?.revision_turnos || {})[String(new Date().getDay())]; return Array.isArray(l) ? l.filter(Boolean) : []; };
+        const tieneBandeja = () => esAdmin() || window.permisosUsuario === "ALL" || String(window.permisosUsuario || "").split(",").includes("8");
         const camposObligatorios = () => ({ ...CONFIG_DEFECTO.campos_obligatorios, ...(window.configSistema?.campos_obligatorios || {}) });
         window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
 
@@ -1205,6 +1340,7 @@
             document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
             const nav = el || document.getElementById(id.replace("sec-", "nav-")); if (nav) nav.classList.add("active");
             if (id === "sec-4" && window.allDashboardData.length > 0) window.aplicarFiltrosDashboard();
+            if (id === "sec-8") window.renderBandejaRevision();
             window.scrollTo(0, 0);
         };
         document.querySelectorAll(".nav-item").forEach(n => n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); n.click(); } }));
@@ -1354,7 +1490,7 @@
                 document.getElementById("panel-enviar-aviso").style.display = "block"; document.getElementById("sec-6-grid").style.gridTemplateColumns = ""; document.getElementById("titulo-historial-aviso").innerText = "Historial de avisos"; document.getElementById("filtro-avisos-container").style.display = "block";
                 document.getElementById("filtro-vista-equipo").value = "EQUIPO";
             }
-            const permisosArray = perms.split(",");
+            window.permisosUsuario = perms; const permisosArray = perms.split(",");
             document.querySelectorAll(".nav-item").forEach(item => { const id = item.id.replace("nav-", ""); item.style.display = (perms === "ALL" || permisosArray.includes(id)) ? "flex" : "none"; });
             // Oculta el título "Administración" si el rol no tiene ninguna de esas pantallas.
             const hayAdmin = ["nav-7", "nav-1", "nav-0", "nav-0-1"].some(i => document.getElementById(i).style.display === "flex");
@@ -1535,6 +1671,8 @@
                 } else {
                     datos.historial_respuestas = [...(existente?.historial_respuestas || [])];
                 }
+                // Quién envió y por qué canal (Dashboard → Productividad). El servidor lo confirma al enviar el correo.
+                if (esEnvio) { datos.enviado_por = window.userName; datos.enviado_en = ahora; datos.canal_envio = metodo; }
                 if (metodo === "WhatsApp") datos.motivo_whatsapp = motivoWa.trim();
                 if (metodo === "Pausa") datos.motivo_pausa = motivoPausa.trim();
                 if (metodo === "Anular") { datos.motivo_anulacion = motivoAnulacion.trim(); datos.historial_respuestas.push({ tipo: "agente", fecha: ahora.toISOString(), agente: window.userName, mensaje: `🚫 SOLICITUD ANULADA DESDE LA PANTALLA DE GESTIÓN.\nMotivo: ${motivoAnulacion.trim()}`, enviado_por_correo: false }); }
@@ -1633,7 +1771,7 @@
                 if (h.tipo === "cliente") return `<div class="bubble bubble-client"><div class="bubble-header"><span><i class="fas fa-user"></i> ${esc(d.cliente?.contacto || "Cliente")}</span><span class="time">${esc(fStr)}</span></div><div class="bubble-body">${textoConAdjuntos(h.mensaje)}</div></div>`;
                 if (h.agente === "SISTEMA") return `<div class="bubble bubble-agent sistema"><div class="bubble-header"><span class="time">${esc(fStr)}</span></div><div class="bubble-body">${esc(h.mensaje)}</div></div>`;
                 const porCorreo = h.enviado_por_correo;
-                return `<div class="bubble bubble-agent ${porCorreo ? "" : "nota"}"><div class="bubble-header"><span>${porCorreo ? '<i class="fas fa-envelope" title="Enviado por correo"></i>' : '<i class="fas fa-lock" title="Nota interna"></i>'} ${esc(h.agente)}${porCorreo ? "" : " · nota interna"}</span><span class="time">${esc(fStr)}</span></div><div class="bubble-body">${textoConAdjuntos(h.mensaje)}</div></div>`;
+                return `<div class="bubble bubble-agent ${porCorreo ? "" : "nota"}"><div class="bubble-header"><span>${porCorreo ? '<i class="fas fa-envelope" title="Enviado por correo"></i>' : '<i class="fas fa-lock" title="Nota interna"></i>'} ${esc(h.agente)}${porCorreo ? "" : (h.revision ? " · registro de revisión" : " · nota interna")}</span><span class="time">${esc(fStr)}</span></div><div class="bubble-body">${textoConAdjuntos(h.mensaje)}</div></div>`;
             }).join("");
             if (tieneMensajeCliente(d)) chatHTML += `<div class="bubble bubble-client nueva"><div class="bubble-header"><span style="color:var(--verde);"><i class="fas fa-envelope-open-text"></i> ${esc(d.cliente?.contacto || "Cliente")} · nuevo</span><span class="time">${esc(fmtFecha(d.ultima_actividad))}</span></div><div class="bubble-body">${textoConAdjuntos(d.ultimo_mensaje_cliente)}</div></div>`;
             if (!chatHTML) chatHTML = `<div class="vacio" style="margin:auto;"><i class="far fa-comments"></i>Todavía no hay mensajes en esta solicitud.</div>`;
@@ -1685,9 +1823,17 @@
                 else { const mD = link.match(/\/d\/([\w-]+)\//); if (mD) preview = `https://drive.google.com/uc?export=view&id=${mD[1]}`; }
                 return `<a class="adjunto-thumb" href="${esc(link)}" target="_blank" rel="noopener noreferrer" title="Abrir comprobante ${idx + 1}"><i class="fas fa-file-lines" style="font-size:18px;"></i>Archivo ${idx + 1}${preview ? `<img src="${esc(preview)}" alt="Comprobante ${idx + 1}" onerror="this.remove()">` : ""}</a>`;
             }).join("")}</div>` : `<p class="ayuda">El cliente aún no envía comprobante.</p>`;
-            const bloquePago = `<div class="bloque"><h4>Pago y facturación</h4>${dato("Forma de pago", esc(metodoTxt))}${linkPago ? dato("Enlace", `<a href="${esc(linkPago)}" target="_blank" rel="noopener noreferrer">Abrir NeoLink <i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i></a>`) : ""}${dato("Factura a", esc(d.facturacion?.nombre || "Consumidor final"))}${dato("NIT factura", esc(d.facturacion?.nit || "C/F"))}</div><div class="bloque"><h4>Comprobantes</h4>${adjuntos}</div>`;
+            const bloquePago = `<div class="bloque"><h4>Pago y facturación</h4>${dato("Forma de pago", esc(metodoTxt))}${linkPago ? dato("Enlace", `<a href="${esc(linkPago)}" target="_blank" rel="noopener noreferrer">Abrir enlace de pago <i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i></a>`) : ""}${dato("Factura a", esc(d.facturacion?.nombre || "Consumidor final"))}${dato("NIT factura", esc(d.facturacion?.nit || "C/F"))}</div><div class="bloque"><h4>Comprobantes</h4>${adjuntos}</div>`;
 
-            document.getElementById("v-cuerpo").innerHTML = `<div class="visor-chat"><div class="chat-area">${chatHTML}</div>${composer}</div><div class="visor-lateral">${asignacion}${bloqueCliente}${bloqueServicios}${bloquePago}</div>`;
+            // Revisión manual: el agente dueño o quien revisa registra lo que el cliente contestó en Soporte ST.
+            let bloqueRegistro = "";
+            if (modoManual() && (!esLectura || tieneBandeja()) && ["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) {
+                const bR = d.estatus === "COMPROBANTE RECIBIDO"
+                    ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
+                    : `<button class="btn-rev" onclick="registrarRespuesta(${js(id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> Respondió</button><button class="btn-rev comp" onclick="registrarRespuesta(${js(id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Envió comprobante</button>`;
+                bloqueRegistro = `<div class="registro-cliente"><p><b>¿El cliente contestó en Soporte ST?</b> Regístralo aquí; queda en el historial.</p><div class="acciones">${bR}</div></div>`;
+            }
+            document.getElementById("v-cuerpo").innerHTML = `<div class="visor-chat"><div class="chat-area">${chatHTML}</div>${composer}</div><div class="visor-lateral">${bloqueRegistro}${asignacion}${bloqueCliente}${bloqueServicios}${bloquePago}</div>`;
             const modal = document.getElementById("modal-visor");
             if (modal.style.display !== "flex") { modal.style.display = "flex"; document.body.style.overflow = "hidden"; }
             const cb = document.querySelector("#v-cuerpo .chat-area"); if (cb && scrollAlFinal) cb.scrollTop = cb.scrollHeight;
@@ -1721,6 +1867,11 @@
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             const nE = document.getElementById("v-nuevo-estatus").value;
             const act = { estatus: nE, actualizado_por: window.userName, fecha_actualizacion: new Date(), ultima_actividad: new Date(), alerta_sla_creada: false };
+            if (nE !== d.estatus) {
+                if (nE === "RECIBIDO" && !d.primera_respuesta_en) act.primera_respuesta_en = new Date();
+                if (nE === "COMPROBANTE RECIBIDO" && !d.comprobante_en) act.comprobante_en = new Date();
+                if (motorDe(nE) === "EXITO" && !d.completado_en) act.completado_en = new Date();
+            }
             const hE = []; const sA = document.getElementById("v-nuevo-agente");
             if (sA && sA.value !== d.agente) { act.agente = sA.value; hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: "SISTEMA", mensaje: `🔄 Reasignada de ${d.agente || "N/A"} a ${sA.value} por ${window.userName}.`, enviado_por_correo: false }); }
             if (nE === "ANULADO" && d.estatus !== "ANULADO") {
@@ -2211,7 +2362,7 @@
             const d = window.consumoMake; const usados = d.creditos_estimados || 0; const lim = window.configSistema?.make_limite || d.limite || 1000; const pct = Math.min(100, Math.round(usados * 100 / lim));
             document.getElementById("card-consumo-make").style.display = "block";
             document.getElementById("consumo-make-texto").innerText = `${usados.toLocaleString("es-GT")} de ${lim.toLocaleString("es-GT")} créditos (${pct} %)` + (pct >= 85 ? " · cerca del límite" : "");
-            document.getElementById("consumo-make-detalle").innerText = `${d.envio || 0} envíos · ${d.respuesta || 0} respuestas · ${d.comprobante || 0} comprobantes`;
+            document.getElementById("consumo-make-detalle").innerText = modoManual() && !d.respuesta ? `${d.envio || 0} correos enviados` : `${d.envio || 0} envíos · ${d.respuesta || 0} respuestas · ${d.comprobante || 0} comprobantes`;
             const barra = document.getElementById("consumo-make-barra"); barra.style.width = pct + "%"; barra.style.background = pct >= 85 ? "var(--rojo)" : (pct >= 60 ? "var(--ambar)" : "var(--verde)");
         }
 
@@ -2297,6 +2448,11 @@
                 const lI = document.getElementById("pago-link");
                 if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Pagos con tarjeta deshabilitados"; } else window.toggleLinkPago();
                 if (document.getElementById("gc-tipo")?.value === "Diagnóstico" && !window.currentTicketEditing) document.getElementById("gc-precio").value = cfg.precio_diagnostico ?? 175;
+
+                // Respuestas y revisión
+                const pRev = document.getElementById("aj-revision");
+                if (pRev && !pRev.dataset.sucio) { const m = modoManual() ? "MANUAL" : "AUTOMATICO"; document.querySelectorAll('input[name="conf-modo"]').forEach(r => r.checked = r.value === m); }
+                renderTurnos(); pintarTurno(); window.renderBandejaRevision();
 
                 configurarInactividad(cfg.sesion_minutos || 0);
                 pintarConsumoMake();
@@ -2402,7 +2558,7 @@
                 tbM.innerHTML = filasM.join("") || `<tr><td colspan="5" class="vacio">No hay agentes.</td></tr>`;
                 const vA = cbA.value; cbA.innerHTML = opts.join(""); cbA.value = vA;
                 const lO = document.getElementById("contador-online"); if (lO) lO.innerText = `${oC} ${oC === 1 ? "conectado" : "conectados"} ahora`;
-                window.filtrarUsuarios(); renderCampanas();
+                window.filtrarUsuarios(); renderCampanas(); renderTurnos();
             }, errorEscucha("los usuarios"));
 
             // ---- Notificaciones: varias consultas acotadas, unidas por id ----
@@ -2452,7 +2608,8 @@
                 window.datosSeguimientos = docs; window.allDashboardData = docs;
                 const agentes = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort();
                 ["seg-filtro-agente", "filtro-agente"].forEach(idSel => { const sel = document.getElementById(idSel); if (!sel) return; const vA = sel.value; sel.innerHTML = '<option value="TODOS">Todos</option>' + agentes.map(ag => `<option value="${esc(ag)}">${esc(ag)}</option>`).join(""); sel.value = agentes.includes(vA) ? vA : "TODOS"; });
-                renderSeguimientosTable(window.filtroActualSeguimiento); window.renderBuzonPausados(); window.aplicarFiltrosDashboard(); window.renderTablaAvisos(); window.renderizarCampana();
+                const selRev = document.getElementById("rev-agente"); if (selRev) { const vA = selRev.value; selRev.innerHTML = '<option value="TODOS">Todos los agentes</option>' + agentes.map(ag => `<option value="${esc(ag)}">${esc(ag)}</option>`).join(""); selRev.value = agentes.includes(vA) ? vA : "TODOS"; }
+                renderSeguimientosTable(window.filtroActualSeguimiento); window.renderBuzonPausados(); window.aplicarFiltrosDashboard(); window.renderBandejaRevision(); window.renderTablaAvisos(); window.renderizarCampana();
                 if (window.visorAbiertoId) window.abrirVisor(window.visorAbiertoId);
             };
             const colCobros = collection(db, "Cobros");
@@ -2462,6 +2619,179 @@
 
             // Refresca indicadores de SLA aunque no cambie ningún dato.
             setInterval(() => renderSeguimientosTable(window.filtroActualSeguimiento), 5 * 60 * 1000);
+        }
+
+
+        // =====================================================================
+        // BANDEJA DE REVISIÓN (modo manual: una persona registra las respuestas)
+        // =====================================================================
+        const DIAS_TURNO = [["1", "Lun"], ["2", "Mar"], ["3", "Mié"], ["4", "Jue"], ["5", "Vie"], ["6", "Sáb"], ["0", "Dom"]];
+        const canalDe = (d) => d.canal_envio || d.metodoEnvio || "";
+        const enviadoEn = (d) => toDate(d.enviado_en) || toDate(d.correo_enviado_en) || d.fechaFormateada || null;
+        const duracion = (horas) => { if (horas < 1) return `${Math.max(1, Math.round(horas * 60))} min`; if (horas < 48) return `${Math.round(horas)} h`; return `${Math.floor(horas / 24)} d ${Math.round(horas % 24)} h`; };
+        const ultimaRevision = (d) => [...(d.historial_respuestas || [])].reverse().find(h => h.revision || (h.tipo === "agente" && h.agente !== "SISTEMA"));
+        const ACCION_REV = {
+            RESPONDIO: { titulo: "El cliente respondió", corto: "Respondió", texto: "📨 El cliente respondió por correo.", ayuda: "Resume lo que pidió o preguntó. Lo verá el agente de la solicitud.", boton: "Registrar respuesta" },
+            COMPROBANTE: { titulo: "El cliente envió su comprobante", corto: "Comprobante", texto: "🧾 El cliente envió su comprobante de pago.", ayuda: "Si guardaste el archivo en Drive o SharePoint, pega el enlace. Si no, anota el número de boleta o autorización.", boton: "Registrar comprobante" },
+            COMPLETAR: { titulo: "Pago verificado", corto: "Completada", texto: "✅ Pago verificado. Solicitud completada.", ayuda: "La solicitud pasa a COMPLETADO.", boton: "Completar solicitud" }
+        };
+
+        window.etapaBandeja = "ENVIADO";
+        window.filtrarBandeja = (etapa, btn) => { window.etapaBandeja = etapa; document.querySelectorAll(".rev-pill").forEach(b => b.classList.toggle("active", b === btn)); window.renderBandejaRevision(); };
+        window.copiarTicket = (t) => { if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => mostrarToast(`${t} copiado. Pégalo en el buscador de Outlook.`, "info")).catch(() => {}); };
+
+        function pintarTurno() {
+            const chip = document.getElementById("turno-chip"); if (!chip) return;
+            const lista = revisoresHoy();
+            if (!modoManual() || lista.length === 0) { chip.style.display = "none"; return; }
+            const mio = lista.includes(window.userName);
+            chip.classList.toggle("mio", mio); chip.style.display = "inline-flex";
+            document.getElementById("turno-chip-texto").innerHTML = mio ? (lista.length > 1 ? `Hoy revisas tú, con <b>${esc(lista.filter(n => n !== window.userName).join(", "))}</b>` : "<b>Hoy revisas tú</b> el correo") : `Revisa hoy: <b>${esc(lista.join(", "))}</b>`;
+        }
+
+        window.renderBandejaRevision = () => {
+            const tb = document.getElementById("lista-revision"); if (!tb) return;
+            const sla = window.configSistema?.sla_horas || 24; const ahora = new Date();
+            const lista = revisoresHoy();
+            const aviso = document.getElementById("rev-aviso");
+            const quien = lista.length ? `Hoy revisa: <b>${esc(lista.join(", "))}</b>.` : (esAdmin() ? `Nadie tiene turno hoy. Asígnalo en <a href="#" onclick="event.preventDefault(); showSec('sec-7'); abrirAjuste('aj-revision');">Ajustes → Respuestas y revisión</a>.` : "Nadie tiene turno hoy.");
+            aviso.innerHTML = modoManual()
+                ? `<i class="fas fa-inbox"></i><div><b>Revisión manual.</b> Abre la carpeta <b>gestion de cobros</b> de Soporte ST, busca el número de solicitud y registra aquí lo que contestó el cliente. ${quien}</div>`
+                : `<i class="fas fa-robot"></i><div><b>La lectura automática está encendida.</b> Las respuestas se registran solas. Usa esta bandeja para lo que no llegó, como clientes que usaron "Responder" en lugar de "Responder a todos". ${quien}</div>`;
+            document.getElementById("rev-kpi-tarde-lbl").innerText = `Más de ${sla} h sin respuesta`;
+
+            const canal = document.getElementById("rev-canal").value; const ag = document.getElementById("rev-agente").value;
+            const q = (document.getElementById("rev-buscar").value || "").toLowerCase().trim();
+            const base = window.allDashboardData.filter(d => {
+                if (!["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) return false;
+                if (canal !== "TODOS" && canalDe(d) !== canal) return false;
+                if (ag !== "TODOS" && d.agente !== ag) return false;
+                if (q && ![d.ticket, d.cliente?.contacto, d.cliente?.correo, d.cliente?.nit, d.agente, d.enviado_por].some(v => String(v || "").toLowerCase().includes(q))) return false;
+                return true;
+            });
+            const horas = (d) => (ahora - fechaActividad(d)) / 36e5;
+            const n = (e) => base.filter(d => d.estatus === e).length;
+            document.getElementById("rev-n-enviado").innerText = n("ENVIADO"); document.getElementById("rev-n-recibido").innerText = n("RECIBIDO"); document.getElementById("rev-n-comp").innerText = n("COMPROBANTE RECIBIDO");
+            document.getElementById("rev-kpi-espera").innerText = n("ENVIADO");
+            document.getElementById("rev-kpi-tarde").innerText = base.filter(d => d.estatus !== "COMPROBANTE RECIBIDO" && horas(d) > sla).length;
+            document.getElementById("rev-kpi-comp").innerText = n("COMPROBANTE RECIBIDO");
+            const hoy = new Date().toDateString(); let mias = 0;
+            window.allDashboardData.forEach(d => (d.historial_respuestas || []).forEach(h => { if (h.revision && h.agente === window.userName && toDate(h.fecha)?.toDateString() === hoy) mias++; }));
+            document.getElementById("rev-kpi-mias").innerText = mias;
+
+            const filas = base.filter(d => d.estatus === window.etapaBandeja).sort((a, b) => (enviadoEn(a) || 0) - (enviadoEn(b) || 0));
+            document.getElementById("rev-info").innerText = filas.length ? `${filas.length} ${filas.length === 1 ? "solicitud" : "solicitudes"}, la más antigua primero` : "";
+            const vacio = { ENVIADO: "No hay cobros esperando respuesta.", RECIBIDO: "No hay clientes pendientes de enviar comprobante.", "COMPROBANTE RECIBIDO": "No hay comprobantes por verificar." }[window.etapaBandeja];
+            tb.innerHTML = filas.length === 0 ? `<tr><td colspan="6" class="vacio"><i class="fas fa-inbox"></i>${vacio}</td></tr>` : filas.map(d => {
+                const h = horas(d); const tarde = d.estatus !== "COMPROBANTE RECIBIDO" && h > sla;
+                const env = enviadoEn(d); const c = canalDe(d);
+                const ico = c === "WhatsApp" ? '<i class="fab fa-whatsapp" title="Enviado por WhatsApp"></i>' : '<i class="fas fa-envelope" title="Enviado por correo"></i>';
+                const u = ultimaRevision(d);
+                const ultima = u ? `<div class="rev-ultima"><b>${esc(u.revision ? ACCION_REV[u.revision]?.corto || "Nota" : "Nota")}</b> · ${esc(u.agente)}, ${esc(fmtFecha(u.fecha))}<br>${esc(String(u.mensaje || "").split("\n").slice(u.revision ? 1 : 0).join(" ").slice(0, 90))}</div>` : '<span class="muted">—</span>';
+                const ver = `<button class="btn-action-sm" title="Abrir solicitud" aria-label="Abrir solicitud" onclick="abrirVisor(${js(d.id)})"><i class="fas fa-eye"></i></button>`;
+                const botones = d.estatus === "COMPROBANTE RECIBIDO"
+                    ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
+                    : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
+                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td><button class="ticket ticket-copiar" title="Copiar para buscar en Outlook" onclick="copiarTicket(${js(d.ticket)})">${esc(d.ticket)}</button></td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
+            }).join("");
+        };
+
+        // Ventana para registrar lo que contestó el cliente.
+        window.registrarRespuesta = async (id, accion) => {
+            const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
+            const a = ACCION_REV[accion]; if (!a) return;
+            const datos = await new Promise((resolve) => {
+                const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
+                const campoRef = accion === "COMPROBANTE" ? `<div class="input-group" style="margin-top:12px;"><label for="rev-ref">Enlace del comprobante o número de boleta (opcional)</label><input type="text" id="rev-ref" maxlength="500" placeholder="https://… o No. 123456"></div>` : "";
+                ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rev-titulo" style="max-width:520px;"><div class="modal-head"><h3 id="rev-titulo">${esc(a.titulo)} · ${esc(d.ticket)}</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)} · agente ${esc(d.agente || "sin asignar")}</p><div class="input-group"><label for="rev-nota">${accion === "COMPLETAR" ? "Nota (opcional)" : "Qué dijo el cliente (opcional)"}</label><textarea id="rev-nota" rows="3" maxlength="1500"></textarea><p class="ayuda">${esc(a.ayuda)}</p></div>${campoRef}</div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn ${accion === "COMPLETAR" ? "btn-success" : "btn-primary"}" data-r="1">${esc(a.boton)}</button></div></div>`;
+                document.body.appendChild(ov);
+                const cerrar = (v) => { document.removeEventListener("keydown", tecla); ov.remove(); resolve(v); };
+                const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
+                document.addEventListener("keydown", tecla);
+                ov.addEventListener("click", (e) => { const b = e.target.closest("[data-r]"); if (e.target === ov || (b && b.dataset.r === "0")) cerrar(null); else if (b) cerrar({ nota: ov.querySelector("#rev-nota").value.trim(), ref: (ov.querySelector("#rev-ref")?.value || "").trim() }); });
+                setTimeout(() => ov.querySelector("#rev-nota").focus(), 30);
+            });
+            if (!datos) return;
+            const ahora = new Date();
+            let mensaje = a.texto; if (datos.nota) mensaje += `\n${datos.nota}`; if (datos.ref) mensaje += `\nComprobante: ${datos.ref}`;
+            const act = {
+                historial_respuestas: [...(d.historial_respuestas || []), { tipo: "agente", fecha: ahora.toISOString(), agente: window.userName, mensaje, enviado_por_correo: false, revision: accion }],
+                ultima_actividad: ahora, alerta_sla_creada: false, revisado_por: window.userName, revisado_en: ahora, actualizado_por: window.userName, fecha_actualizacion: ahora
+            };
+            if (accion === "RESPONDIO") { if (d.estatus === "ENVIADO") act.estatus = "RECIBIDO"; if (!d.primera_respuesta_en) act.primera_respuesta_en = ahora; }
+            if (accion === "COMPROBANTE") {
+                act.estatus = "COMPROBANTE RECIBIDO"; if (!d.comprobante_en) act.comprobante_en = ahora; if (!d.primera_respuesta_en) act.primera_respuesta_en = ahora;
+                const url = safeUrl(datos.ref);
+                if (url) act.comprobantes = [...new Set([...comprobantesDe(d), url])]; else if (datos.ref) act.comprobante_referencia = datos.ref;
+            }
+            if (accion === "COMPLETAR") { act.estatus = "COMPLETADO"; act.completado_en = ahora; act.nueva_respuesta_cliente = false; }
+            try {
+                await updateDoc(doc(db, "Cobros", id), act);
+                if (accion !== "COMPLETAR" && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, accion === "COMPROBANTE" ? "COMPROBANTE" : "NUEVA_RESPUESTA", accion === "COMPROBANTE" ? `${window.userName} registró el comprobante de ${d.ticket}.` : `${d.cliente?.contacto || "El cliente"} respondió. Lo registró ${window.userName}.`);
+                mostrarToast(`${d.ticket}: ${a.corto.toLowerCase()} registrado.`, "success");
+            } catch (e) { console.error(e); mostrarToast("No se pudo registrar. Revisa tu conexión e intenta de nuevo.", "error"); }
+        };
+
+        // ---- Ajustes → Respuestas y revisión ----
+        function renderTurnos() {
+            const tb = document.getElementById("tabla-turnos"); if (!tb || !esAdmin()) return;
+            if (document.getElementById("aj-revision")?.dataset.sucio) return;
+            const turnos = window.configSistema?.revision_turnos || {};
+            const nombres = [...new Set(Object.values(window.adminData.usuarios).map(u => u.nombre).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+            tb.innerHTML = nombres.length === 0 ? `<tr><td colspan="8" class="vacio">No hay usuarios.</td></tr>` : nombres.map(nm => `<tr><td>${esc(nm)}</td>${DIAS_TURNO.map(([dia, et]) => `<td><input type="checkbox" class="chk-turno" data-dia="${dia}" data-nombre="${esc(nm)}" aria-label="${esc(nm)} revisa el ${esc(et)}" ${(turnos[dia] || []).includes(nm) ? "checked" : ""}></td>`).join("")}</tr>`).join("");
+        }
+        window.guardarRevision = async () => {
+            if (!soloAdmin()) return;
+            const modo = document.querySelector('input[name="conf-modo"]:checked')?.value || "MANUAL";
+            if (modo === "AUTOMATICO" && modoManual()) {
+                const ok = await window.confirmar({ titulo: "Encender la lectura automática", texto: "Cada cobro llevará en copia el buzón de Make y gastará más créditos (unos 1,050 al mes con el volumen actual).\n\nAntes de guardar, confirma que ya tienen el plan Core de Make y que el escenario \"Cobros ST - Respuestas\" está encendido.", boton: "Ya está listo, encender", claseBoton: "btn-primary" });
+                if (!ok) return;
+            }
+            const turnos = {}; DIAS_TURNO.forEach(([dia]) => turnos[dia] = []);
+            document.querySelectorAll(".chk-turno:checked").forEach(c => turnos[c.dataset.dia].push(c.dataset.nombre));
+            await guardarGeneral({ modo_respuestas: modo, revision_turnos: turnos }, "Respuestas y turno guardados.", "aj-revision");
+        };
+
+        // =====================================================================
+        // PRODUCTIVIDAD (Dashboard)
+        // =====================================================================
+        window.rangoDashboard = (r) => {
+            const hoy = new Date(); let ini = new Date(hoy), fin = new Date(hoy);
+            if (r === "semana") { const dia = (hoy.getDay() + 6) % 7; ini.setDate(hoy.getDate() - dia); }
+            if (r === "mes") ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            if (r === "mes-anterior") { ini = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0); }
+            const f = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            document.getElementById("filtro-inicio").value = f(ini); document.getElementById("filtro-fin").value = f(fin);
+            window.aplicarFiltrosDashboard();
+        };
+        function pintarProductividad() {
+            const tb = document.getElementById("lista-productividad"); if (!tb) return;
+            const fI = document.getElementById("filtro-inicio").value; const fF = document.getElementById("filtro-fin").value; const fA = document.getElementById("filtro-agente").value || "TODOS";
+            const dI = fI ? new Date(fI + "T00:00:00") : null; const dF = fF ? new Date(fF + "T23:59:59.999") : null;
+            const enRango = (f) => !!f && (!dI || f >= dI) && (!dF || f <= dF);
+            document.getElementById("prod-rango").innerText = dI || dF ? `${dI ? dI.toLocaleDateString() : "inicio"} a ${dF ? dF.toLocaleDateString() : "hoy"}` : "Todo el historial";
+            const filas = {}; const fila = (n) => (filas[n] = filas[n] || { correo: 0, wa: 0, resp: 0, rev: 0, comp: 0, tiempos: [] });
+            window.allDashboardData.forEach(d => {
+                const c = canalDe(d); const env = enviadoEn(d);
+                if ((c === "Correo" || c === "WhatsApp") && enRango(env)) {
+                    const f = fila(d.enviado_por || d.agente || "Sin agente"); if (c === "Correo") f.correo++; else f.wa++;
+                    const ce = toDate(d.comprobante_en); if (ce && ce > env) f.tiempos.push((ce - env) / 36e5);
+                }
+                (d.historial_respuestas || []).forEach(h => {
+                    if (h.tipo !== "agente" || h.agente === "SISTEMA" || !enRango(toDate(h.fecha))) return;
+                    if (h.enviado_por_correo) fila(h.agente).resp++;
+                    if (h.revision) fila(h.agente).rev++;
+                });
+                if (motorDe(d.estatus) === "EXITO" && enRango(toDate(d.completado_en) || toDate(d.fecha_actualizacion))) fila(d.agente || "Sin agente").comp++;
+            });
+            const mediana = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+            let nombres = Object.keys(filas); if (fA !== "TODOS") nombres = nombres.filter(n => n === fA);
+            nombres.sort((a, b) => (filas[b].correo + filas[b].wa + filas[b].rev) - (filas[a].correo + filas[a].wa + filas[a].rev) || a.localeCompare(b));
+            const cel = (v) => `<td class="num">${v ? v.toLocaleString("es-GT") : '<span class="muted">0</span>'}</td>`;
+            const tiempo = (a) => { const m = mediana(a); return m === null ? '<span class="muted">—</span>' : esc(duracion(m)); };
+            tb.innerHTML = nombres.length === 0 ? `<tr><td colspan="7" class="vacio">Sin actividad en este periodo.</td></tr>` : nombres.map(n => { const f = filas[n]; return `<tr><td><b>${esc(n)}</b></td>${cel(f.correo)}${cel(f.wa)}${cel(f.resp)}${cel(f.rev)}${cel(f.comp)}<td class="num">${tiempo(f.tiempos)}</td></tr>`; }).join("");
+            const t = nombres.reduce((acc, n) => { const f = filas[n]; ["correo", "wa", "resp", "rev", "comp"].forEach(k => acc[k] += f[k]); acc.tiempos.push(...f.tiempos); return acc; }, { correo: 0, wa: 0, resp: 0, rev: 0, comp: 0, tiempos: [] });
+            document.getElementById("pie-productividad").innerHTML = nombres.length > 1 ? `<tr><td>Total</td>${cel(t.correo)}${cel(t.wa)}${cel(t.resp)}${cel(t.rev)}${cel(t.comp)}<td class="num">${tiempo(t.tiempos)}</td></tr>` : "";
         }
 
         // =====================================================================
@@ -2498,6 +2828,7 @@
             document.getElementById("kpi-tickets").innerText = abiertas;
             document.getElementById("kpi-monto").innerText = "Q " + monto.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.getElementById("kpi-espera").innerText = espera; document.getElementById("kpi-completados").innerText = completadas;
+            pintarProductividad();
 
             const etiquetas = Object.keys(cE).filter(k => cE[k] > 0); const valores = etiquetas.map(l => cE[l]);
             const BASE = { "ENVIADO": "#0B6E99", "RECIBIDO": "#5BA8C9", "COMPROBANTE RECIBIDO": "#B26F0B", "COMPLETADO": "#1E8A5A", "PAUSADO": "#E0B04B", "ANULADO": "#9AA6B2", "ERROR EN ENVÍO": "#BF3A30" };
