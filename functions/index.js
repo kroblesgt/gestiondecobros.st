@@ -8,10 +8,13 @@
  *              "Send a MIME message". Las respuestas del agente llevan In-Reply-To/References
  *              del último correo del cliente: quedan en la misma conversación.
  *
- *   RESPUESTAS Regla de Outlook en Soporte ST: mueve la respuesta a Cobros ST/Entrada y la
- *              REDIRIGE al Mailhook del escenario "Cobros ST - Respuestas" (instantáneo, sin copias
- *              en el buzón). Make sube los comprobantes a Google Drive y entrega todo en
- *              recibirRespuestaCliente.
+ *   RESPUESTAS Dos modos, se elige en Ajustes → Respuestas y revisión (Configuracion/General.modo_respuestas):
+ *              MANUAL (por defecto)  Make solo envía. Las respuestas quedan en Soporte ST y una persona
+ *                                    de turno las registra en la app (Bandeja de revisión).
+ *              AUTOMATICO            El Mailhook de Make va en copia (CC). Con "Responder a todos" la
+ *                                    respuesta llega al escenario "Cobros ST - Respuestas", que sube
+ *                                    comprobantes a Drive y la entrega en recibirRespuestaCliente.
+ *                                    Gasta más créditos: necesita el plan Core de Make.
  *
  *  gestionarUsuario        (callable)   Crear / editar / eliminar / importar usuarios en Firebase Auth.
  *  enviarCorreoCobro       (callable)   Envía cobro o respuesta del agente vía Make.
@@ -218,11 +221,11 @@ function htmlPago(d, general) {
     return h;
   }
   if (metodo === "TRANSFERENCIA") return titulo("Pago por transferencia:") + caja;
-  // Sin enlace de NeoLink no se muestra la opción de tarjeta vacía.
+  // Sin enlace de pago no se muestra la opción de tarjeta vacía.
   if (!link && metodo === "AMBOS") return titulo("Pago por transferencia:") + caja;
   if (!link) return titulo("Pago con tarjeta:") + `<p style="text-align:center; color:#475569;">En breve le compartiremos el enlace para pagar con tarjeta.</p>`;
-  if (metodo === "NEONET") return titulo("Pago con tarjeta (NeoLink):") + btn;
-  return titulo("Opción 1: Pago con tarjeta (NeoLink):") + btn + titulo("Opción 2: Transferencia:", " margin-top:25px;") + caja;
+  if (metodo === "NEONET") return titulo("Pago con tarjeta:") + btn;
+  return titulo("Opción 1: Pago con tarjeta:") + btn + titulo("Opción 2: Transferencia:", " margin-top:25px;") + caja;
 }
 
 function htmlFirma(agente, perfil) {
@@ -303,7 +306,9 @@ const hashId = (s) => crypto.createHash("sha256").update(String(s)).digest("hex"
 const ZONA = "America/Guatemala";
 
 // Créditos que gasta Make en cada evento (estimación para el contador del Dashboard).
-const CREDITOS = { envio: 2, respuesta: 2, comprobante: 3 };
+// "copia": en modo automático, la copia (CC) de cada correo que regresa al Mailhook.
+const CREDITOS = { envio: 2, copia: 1, respuesta: 2, comprobante: 3 };
+const modoAutomatico = (general) => String(general?.modo_respuestas || "").toUpperCase() === "AUTOMATICO";
 const LIMITE_MENSUAL = 1000;
 
 function iguales(a, b) {
@@ -352,15 +357,16 @@ async function llamarMake(secreto, payload, etiqueta) {
 // El correo se arma completo (MIME) aquí y Make solo lo entrega a Outlook con "Send a MIME message".
 // Así se pueden poner los encabezados In-Reply-To / References: la respuesta del agente queda
 // en la MISMA conversación que el correo del cliente, usando solo el permiso de enviar.
-async function armarMime({ para, asunto, html, responderA }) {
+async function armarMime({ para, asunto, html, responderA, copiaMake = false }) {
   const idValido = /^<[^<>\s]+@[^<>\s]+>$/.test(String(responderA || "")) ? responderA : "";
   const soporte = SOPORTE_CORREO.value() || "soportest@distelsa.com.gt";
-  const mailhook = MAKE_MAILHOOK.value();
+  // Solo en modo automático: el Mailhook va en copia para que Make lea la respuesta del cliente.
+  const mailhook = copiaMake ? MAKE_MAILHOOK.value() : "";
   const opciones = {
     from: { name: "Soporte ST", address: soporte }, to: para, subject: asunto, html,
     replyTo: { name: "Soporte ST", address: soporte },
-    // Igual que el sistema anterior: el Mailhook va en copia. Con "Responder a todos" la respuesta
-    // del cliente llega directo a Make (sin reenvío, que Distelsa bloquea) y a Soporte ST.
+    // Modo automático: igual que el sistema anterior, el Mailhook va en copia. Con "Responder a todos"
+    // la respuesta del cliente llega directo a Make (sin reenvío, que Distelsa bloquea) y a Soporte ST.
     ...(mailhook ? { cc: { name: "Soporte ST - Respuestas", address: mailhook } } : {}),
     messageId: `<${crypto.randomUUID()}@${(SOPORTE_CORREO.value() || "soportest@distelsa.com.gt").split("@")[1]}>`,
     text: htmlATexto(html, { wordwrap: 100, selectors: [{ selector: "img", format: "skip" }] }),
@@ -391,13 +397,19 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
   if (general.correo_habilitado === false) throw new HttpsError("failed-precondition", "El envío por correo está pausado por el administrador.");
   const agente = t.nombre || t.loginId;
   const ticket = d.ticket || ticketId;
+  const copiaMake = modoAutomatico(general);
+  const contarEnvio = async () => { await contarConsumo("envio"); if (copiaMake) await contarConsumo("copia"); };
 
   if (tipo === "NUEVO_COBRO") {
     const asunto = asuntoCobro(ticket);
-    const mime = await armarMime({ para: correo, asunto, html: htmlNuevoCobro({ ...d, ticket }, general, agente, perfil) });
+    const mime = await armarMime({ para: correo, asunto, html: htmlNuevoCobro({ ...d, ticket }, general, agente, perfil), copiaMake });
     await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
-    await ref.update({ correo_enviado_en: FieldValue.serverTimestamp() });
-    await contarConsumo("envio");
+    // Registro de quién envió (para el Dashboard de productividad).
+    await ref.update({
+      correo_enviado_en: FieldValue.serverTimestamp(), enviado_en: FieldValue.serverTimestamp(),
+      enviado_por: agente, enviado_por_id: t.loginId, canal_envio: "Correo", envios_correo: FieldValue.increment(1),
+    });
+    await contarEnvio();
     logger.info("Cobro enviado a Make", { ticket, por: t.loginId });
     return { ok: true };
   }
@@ -413,9 +425,9 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
     ? `<div style="font-family:Arial,Helvetica,sans-serif; font-size:14px; color:#1e293b;">${escBr(mensaje)}${htmlFirma(agente, perfil)}</div>`
     : htmlRespuesta({ ...d, ticket }, agente, mensaje, perfil, general);
   const asunto = "RE: " + asuntoCobro(ticket);
-  const mime = await armarMime({ para: correo, asunto, html, responderA });
+  const mime = await armarMime({ para: correo, asunto, html, responderA, copiaMake });
   await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
-  await contarConsumo("envio");
+  await contarEnvio();
   await db.runTransaction(async (tx) => {
     const actual = (await tx.get(ref)).data() || {};
     const hist = [...(actual.historial_respuestas || [])];
@@ -502,6 +514,7 @@ exports.recibirRespuestaCliente = onRequest({ secrets: [MAKE_TOKEN], cors: false
       if (!texto && comprobantes.length === 0) { await marca.set({ estado: "vacio" }, { merge: true }); res.json({ ok: true, resultado: "vacio" }); return; }
 
       const cambios = { ultima_actividad: FieldValue.serverTimestamp(), alerta_sla_creada: false, nueva_respuesta_cliente: true };
+      if (!d.primera_respuesta_en) cambios.primera_respuesta_en = FieldValue.serverTimestamp();
       // Message-ID del correo del cliente: permite que el agente responda en la misma conversación.
       const msgid = String(body.message_id || body.mensaje_id || "").trim();
       if (/^<?[^<>\s]+@[^<>\s]+>?$/.test(msgid) && msgid.length < 400 && !/-adj-/.test(msgid)) cambios.ultimo_correo_cliente_msgid = msgid.startsWith("<") ? msgid : `<${msgid}>`;
@@ -515,6 +528,7 @@ exports.recibirRespuestaCliente = onRequest({ secrets: [MAKE_TOKEN], cors: false
         const previos = typeof d.comprobantes === "string" ? d.comprobantes.split(",").map((s) => s.trim()).filter(Boolean) : (Array.isArray(d.comprobantes) ? d.comprobantes : []);
         cambios.comprobantes = [...new Set([...previos, ...comprobantes])];
         if (motor !== "EXITO" && motor !== "INACTIVO") cambios.estatus = "COMPROBANTE RECIBIDO";
+        if (!d.comprobante_en) cambios.comprobante_en = FieldValue.serverTimestamp();
       } else if (d.estatus === "ENVIADO") {
         cambios.estatus = "RECIBIDO";
       }
@@ -540,6 +554,12 @@ exports.recibirRespuestaCliente = onRequest({ secrets: [MAKE_TOKEN], cors: false
 });
 
 // ================================================================== SLA
+// Configuracion/General.revision_turnos = { "0": [nombres] (domingo) … "6": [nombres] (sábado) }
+function revisoresDeHoy(general) {
+  const dia = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[new Intl.DateTimeFormat("en-US", { timeZone: ZONA, weekday: "short" }).format(new Date())];
+  const lista = (general.revision_turnos || {})[String(dia)];
+  return Array.isArray(lista) ? [...new Set(lista.map((x) => String(x || "").trim()).filter(Boolean))].slice(0, 10) : [];
+}
 // Corre en el servidor cada 15 min. Reemplaza la lógica que antes corría en
 // CADA navegador abierto y generaba alertas duplicadas.
 exports.revisarSLA = onSchedule({ schedule: "every 15 minutes", timeZone: "America/Guatemala" }, async () => {
@@ -547,6 +567,8 @@ exports.revisarSLA = onSchedule({ schedule: "every 15 minutes", timeZone: "Ameri
   const slaHoras = Number(generalSnap.data()?.sla_horas) || 24;
   const catalogos = catSnap.data() || {};
   const limite = Date.now() - slaHoras * 3600 * 1000;
+  // Persona(s) de turno para revisar respuestas hoy (Ajustes → Respuestas y revisión).
+  const revisores = revisoresDeHoy(generalSnap.data() || {});
 
   const pendientes = await db.collection("Cobros").where("alerta_sla_creada", "==", false).get();
   let lote = db.batch(); let ops = 0; let alertas = 0;
@@ -564,6 +586,18 @@ exports.revisarSLA = onSchedule({ schedule: "every 15 minutes", timeZone: "Ameri
       mensaje: `Sin actividad por más de ${slaHoras} h.`, fecha: new Date().toISOString(), leido: false,
     });
     ops += 2; alertas++;
+    // Si sigue esperando respuesta del cliente, avisa también a quien revisa el correo hoy.
+    if (["ENVIADO", "RECIBIDO"].includes(d.estatus)) {
+      for (const r of revisores) {
+        if (r === d.agente) continue;
+        lote.set(db.collection("Notificaciones").doc(), {
+          tipo: "SISTEMA", subtipo: "ATRASO", remitente: "SISTEMA CRM", destinatario: r,
+          "campaña": d["campaña"] || "", ticket: d.ticket || docSnap.id,
+          mensaje: `Revisa en Soporte ST si el cliente respondió (sin actividad por más de ${slaHoras} h).`, fecha: new Date().toISOString(), leido: false,
+        });
+        ops++;
+      }
+    }
     if (ops >= 400) { await lote.commit(); lote = db.batch(); ops = 0; }
   }
   if (ops > 0) await lote.commit();
