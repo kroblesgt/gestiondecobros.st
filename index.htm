@@ -1311,7 +1311,11 @@
         const correoHabilitado = () => window.configSistema?.correo_habilitado !== false;
         // Respuestas de clientes: "MANUAL" (una persona las registra) o "AUTOMATICO" (Make las lee).
         const modoManual = () => String(window.configSistema?.modo_respuestas || "MANUAL").toUpperCase() !== "AUTOMATICO";
-        const revisoresHoy = () => { const l = (window.configSistema?.revision_turnos || {})[String(new Date().getDay())]; return Array.isArray(l) ? l.filter(Boolean) : []; };
+        // Turno de hoy = turno fijo del día (Ajustes) + quienes tomaron el turno hoy desde la Bandeja (Configuracion/Turno).
+        const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+        window.turnoHoy = { fecha: "", revisores: [] };
+        const turnoTomadoHoy = () => window.turnoHoy?.fecha === hoyISO() ? (window.turnoHoy.revisores || []).map(r => r.nombre).filter(Boolean) : [];
+        const revisoresHoy = () => { const l = (window.configSistema?.revision_turnos || {})[String(new Date().getDay())]; return [...new Set([...(Array.isArray(l) ? l.filter(Boolean) : []), ...turnoTomadoHoy()])]; };
         const tieneBandeja = () => esAdmin() || window.permisosUsuario === "ALL" || String(window.permisosUsuario || "").split(",").includes("8");
         const camposObligatorios = () => ({ ...CONFIG_DEFECTO.campos_obligatorios, ...(window.configSistema?.campos_obligatorios || {}) });
         window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
@@ -2460,6 +2464,7 @@
                 if (window.visorAbiertoId) window.abrirVisor(window.visorAbiertoId);
             }, errorEscucha("la configuración"));
 
+            onSnapshot(doc(db, "Configuracion", "Turno"), s => { window.turnoHoy = s.exists() ? s.data() : { fecha: "", revisores: [] }; pintarTurno(); window.renderBandejaRevision(); }, () => {});
             onSnapshot(doc(db, "Configuracion", "Catalogos"), docSnap => {
                 const data = docSnap.exists() ? docSnap.data() : {};
                 const tipos = data.tipos_servicio || ["Diagnóstico", "Mantenimiento", "Instalación", "Presupuesto", "Otro"];
@@ -2638,6 +2643,15 @@
 
         window.etapaBandeja = "ENVIADO";
         window.filtrarBandeja = (etapa, btn) => { window.etapaBandeja = etapa; document.querySelectorAll(".rev-pill").forEach(b => b.classList.toggle("active", b === btn)); window.renderBandejaRevision(); };
+        // Cualquier usuario con la Bandeja puede tomar (o dejar) el turno del día. Queda a su nombre.
+        window.tomarTurno = async (tomar) => {
+            const hoy = hoyISO();
+            let lista = window.turnoHoy?.fecha === hoy ? [...(window.turnoHoy.revisores || [])] : [];
+            lista = lista.filter(r => r.id !== window.userId && r.nombre !== window.userName);
+            if (tomar) lista.push({ id: window.userId || "", nombre: window.userName, desde: new Date().toISOString() });
+            try { await setDoc(doc(db, "Configuracion", "Turno"), { fecha: hoy, revisores: lista, actualizado_por: window.userName, actualizado: new Date().toISOString() }); mostrarToast(tomar ? "Tomaste el turno de hoy. Recibirás las alertas de cobros sin respuesta." : "Dejaste el turno de hoy.", "success"); }
+            catch (e) { console.error(e); mostrarToast("No se pudo actualizar el turno. Pide al administrador que active la Bandeja de revisión en tu rol.", "error"); }
+        };
         window.copiarTicket = (t) => { if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => mostrarToast(`${t} copiado. Pégalo en el buscador de Outlook.`, "info")).catch(() => {}); };
 
         function pintarTurno() {
@@ -2655,9 +2669,11 @@
             const lista = revisoresHoy();
             const aviso = document.getElementById("rev-aviso");
             const quien = lista.length ? `Hoy revisa: <b>${esc(lista.join(", "))}</b>.` : (esAdmin() ? `Nadie tiene turno hoy. Asígnalo en <a href="#" onclick="event.preventDefault(); showSec('sec-7'); abrirAjuste('aj-revision');">Ajustes → Respuestas y revisión</a>.` : "Nadie tiene turno hoy.");
+            const tomado = turnoTomadoHoy().includes(window.userName);
+            const btnTurno = tomado ? `<button class="btn btn-outline btn-sm" onclick="tomarTurno(false)"><i class="fas fa-right-from-bracket"></i> Dejar el turno</button>` : `<button class="btn btn-primary btn-sm" onclick="tomarTurno(true)"><i class="fas fa-hand"></i> Tomar el turno de hoy</button>`;
             aviso.innerHTML = modoManual()
-                ? `<i class="fas fa-inbox"></i><div><b>Revisión manual.</b> Abre la carpeta <b>gestion de cobros</b> de Soporte ST, busca el número de solicitud y registra aquí lo que contestó el cliente. ${quien}</div>`
-                : `<i class="fas fa-robot"></i><div><b>La lectura automática está encendida.</b> Las respuestas se registran solas. Usa esta bandeja para lo que no llegó, como clientes que usaron "Responder" en lugar de "Responder a todos". ${quien}</div>`;
+                ? `<i class="fas fa-inbox"></i><div><b>Revisión manual.</b> Abre la carpeta <b>gestion de cobros</b> de Soporte ST, busca el número de solicitud y registra aquí lo que contestó el cliente. ${quien}</div><div style="margin-left:auto; flex:none;">${btnTurno}</div>`
+                : `<i class="fas fa-robot"></i><div><b>La lectura automática está encendida.</b> Las respuestas se registran solas. Usa esta bandeja para lo que no llegó, como clientes que usaron "Responder" en lugar de "Responder a todos". ${quien}</div><div style="margin-left:auto; flex:none;">${btnTurno}</div>`;
             document.getElementById("rev-kpi-tarde-lbl").innerText = `Más de ${sla} h sin respuesta`;
 
             const canal = document.getElementById("rev-canal").value; const ag = document.getElementById("rev-agente").value;
