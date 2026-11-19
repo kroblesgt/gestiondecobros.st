@@ -66,6 +66,11 @@ service cloud.firestore {
     match /Configuracion/{id} {
       allow read: if signedIn();
       allow write: if isAdmin();
+      // Turno del día: quien tiene la "Bandeja de revisión" (módulo 8) puede tomarlo o dejarlo.
+      allow write: if id == 'Turno' && tieneModulo('8')
+                   && request.resource.data.keys().hasOnly(['fecha', 'revisores', 'actualizado_por', 'actualizado'])
+                   && request.resource.data.revisores is list && request.resource.data.revisores.size() <= 20
+                   && request.resource.data.actualizado_por == nombre();
     }
 
     // ---------------- Cobros ----------------

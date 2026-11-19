@@ -555,10 +555,13 @@ exports.recibirRespuestaCliente = onRequest({ secrets: [MAKE_TOKEN], cors: false
 
 // ================================================================== SLA
 // Configuracion/General.revision_turnos = { "0": [nombres] (domingo) … "6": [nombres] (sábado) }
-function revisoresDeHoy(general) {
+// Configuracion/Turno = { fecha: "AAAA-MM-DD", revisores: [{ id, nombre }] } (tomado desde la Bandeja)
+function revisoresDeHoy(general, turno = {}) {
   const dia = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[new Intl.DateTimeFormat("en-US", { timeZone: ZONA, weekday: "short" }).format(new Date())];
-  const lista = (general.revision_turnos || {})[String(dia)];
-  return Array.isArray(lista) ? [...new Set(lista.map((x) => String(x || "").trim()).filter(Boolean))].slice(0, 10) : [];
+  const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA }).format(new Date());
+  const fijos = (general.revision_turnos || {})[String(dia)];
+  const tomados = turno.fecha === hoy && Array.isArray(turno.revisores) ? turno.revisores.map((r) => r && r.nombre) : [];
+  return [...new Set([...(Array.isArray(fijos) ? fijos : []), ...tomados].map((x) => String(x || "").trim()).filter(Boolean))].slice(0, 10);
 }
 // Corre en el servidor cada 15 min. Reemplaza la lógica que antes corría en
 // CADA navegador abierto y generaba alertas duplicadas.
@@ -568,7 +571,8 @@ exports.revisarSLA = onSchedule({ schedule: "every 15 minutes", timeZone: "Ameri
   const catalogos = catSnap.data() || {};
   const limite = Date.now() - slaHoras * 3600 * 1000;
   // Persona(s) de turno para revisar respuestas hoy (Ajustes → Respuestas y revisión).
-  const revisores = revisoresDeHoy(generalSnap.data() || {});
+  const turnoSnap = await db.doc("Configuracion/Turno").get();
+  const revisores = revisoresDeHoy(generalSnap.data() || {}, turnoSnap.exists ? turnoSnap.data() : {});
 
   const pendientes = await db.collection("Cobros").where("alerta_sla_creada", "==", false).get();
   let lote = db.batch(); let ops = 0; let alertas = 0;

@@ -5,7 +5,7 @@ La app solo **envía** los cobros. Las respuestas de los clientes llegan al corr
 ## Tu rutina
 
 1. Abre Outlook con la cuenta de Soporte ST, en la carpeta **gestion de cobros**.
-2. En la app, entra a **Bandeja de revisión**. Arriba dice quién tiene turno hoy.
+2. En la app, entra a **Bandeja de revisión** y toca **Tomar el turno de hoy**. Tu nombre aparece arriba para todo el equipo y te llegan las alertas de cobros sin respuesta. Al terminar, toca **Dejar el turno**.
 3. Por cada correo nuevo de un cliente:
    - Copia el número **ST-######** del asunto, o tócalo en la bandeja para copiarlo y buscarlo en Outlook.
    - En la fila de esa solicitud, elige:
@@ -28,7 +28,7 @@ Siempre aparece primero la más antigua.
 
 ## Para el administrador
 
-- **Turnos:** Ajustes → Respuestas y revisión → marca quién revisa cada día. Puede haber varias personas.
+- **Turnos:** no hace falta tener a alguien fijo. Cualquiera con la Bandeja puede tomar el turno del día y queda a su nombre. Si más adelante quieres turnos fijos, márcalos en Ajustes → Respuestas y revisión.
 - **Acceso:** en Roles y permisos, activa **Bandeja de revisión** en el rol de quien revisa. Esa persona también debe tener asignadas las campañas que va a revisar.
 - **Productividad:** Dashboard → *Productividad del equipo*. Muestra cobros enviados por correo y por WhatsApp, respuestas, anotaciones de revisión, completadas y el tiempo típico entre el envío y el comprobante. Usa *Hoy*, *Esta semana* o *Este mes*.
 - Los agentes dueños de una solicitud también pueden registrar la respuesta desde el visor.
