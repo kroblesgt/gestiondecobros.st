@@ -450,6 +450,8 @@
         .btn-rev:hover { border-color: var(--ink); }
         .btn-rev.comp { border-color: #E3C27E; background: var(--ambar-suave); color: #7A4C06; }
         .btn-rev.fin { border-color: #A9D7BF; background: var(--verde-suave); color: var(--verde); }
+        .composer-rev .rev-banda { font-size: 13px; color: var(--texto-2); background: var(--superficie-2); border: 1px solid var(--linea); border-left: 3px solid var(--azul); border-radius: var(--radio-sm); padding: 8px 10px; margin-bottom: 8px; }
+        .composer-rev .rev-banda i { color: var(--azul); margin-right: 4px; }
         .registro-cliente { border: 1px dashed var(--linea-fuerte); border-radius: var(--radio); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
         .registro-cliente p { margin: 0; font-size: 13px; color: var(--texto-2); }
         .registro-cliente .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1404,7 +1406,7 @@
             window.scrollTo(0, 0);
         };
         document.querySelectorAll(".nav-item").forEach(n => n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); n.click(); } }));
-        window.cerrarVisor = () => { document.getElementById("modal-visor").style.display = "none"; window.visorAbiertoId = null; document.body.style.overflow = ""; };
+        window.cerrarVisor = () => { document.getElementById("modal-visor").style.display = "none"; window.visorAbiertoId = null; window.visorModoRevision = null; if (document.getElementById("sec-8")?.style.display !== "none") window.renderBandejaRevision(); document.body.style.overflow = ""; };
         document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.getElementById("modal-visor").style.display !== "none" && !document.querySelector(".modal-motivo")) window.cerrarVisor(); });
 
         window.cambiarColorTemperamento = (selectObj) => {
@@ -1839,12 +1841,16 @@
             if (!chatHTML) chatHTML = `<div class="vacio" style="margin:auto;"><i class="far fa-comments"></i>Todavía no hay mensajes en esta solicitud.</div>`;
 
             // ---- Composer o modo lectura ----
-            const esLectura = !esMiSolicitud(d) && !esLiderOAdmin();
+            // Modo revisión (desde la Bandeja): notas internas y estatus, sin enviar correos al cliente.
+            const modoRev = window.visorModoRevision === id && tieneBandeja();
+            const esLectura = !modoRev && !esMiSolicitud(d) && !esLiderOAdmin();
             const rr = window.configCatalogos?.respuestas_rapidas || [];
             const selRR = rr.length ? `<select onchange="insertarRespuestaRapida(${js(id)}, this)" aria-label="Insertar respuesta rápida"><option value="">⚡ Respuesta rápida…</option>${rr.map((r, i) => `<option value="${i}">${esc(r.titulo)}</option>`).join("")}</select>` : "<span></span>";
             const puedeCorreo = correoHabilitado() && !!d.cliente?.correo;
             const motivoSinCorreo = !correoHabilitado() ? "El envío por correo está pausado por el administrador" : (!d.cliente?.correo ? "La solicitud no tiene correo del cliente" : "");
-            const composer = esLectura
+            const composer = modoRev
+                ? `<div class="composer composer-rev"><div class="rev-banda"><i class="fas fa-inbox"></i> Modo revisión: lo que escribas queda como <b>nota interna</b>; no se envía al cliente.</div><textarea id="chat-input-${esc(id)}" rows="3" placeholder="Ej. El cliente respondió que paga mañana por transferencia"></textarea><div class="composer-pie">${selRR}<button class="btn btn-primary btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'interna')"><i class="fas fa-lock"></i> Guardar nota interna</button></div></div>`
+                : esLectura
                 ? `<div class="composer"><div class="lectura"><div><b><i class="fas fa-eye"></i> Solo lectura</b><br><span style="font-size:13px;">Asignada a ${esc(d.agente || "nadie")}.</span></div><button class="btn btn-warning btn-sm" onclick="tomarSeguimiento(${js(id)})"><i class="fas fa-hand"></i> Tomar seguimiento</button></div></div>`
                 : `<div class="composer"><textarea id="chat-input-${esc(id)}" rows="3" placeholder="Escribe una respuesta para el cliente o una nota interna"></textarea><div class="composer-pie">${selRR}<div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn btn-outline btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'interna')" title="Solo la ve el equipo"><i class="fas fa-lock"></i> Guardar nota</button><button class="btn btn-accent btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'correo')" ${puedeCorreo ? "" : `disabled title="${esc(motivoSinCorreo)}"`}><i class="fas fa-paper-plane"></i> Enviar por correo</button></div></div></div>`;
 
@@ -1858,7 +1864,9 @@
             const iconoMotor = { EXITO: "✅", ESPERA: "⏳", ERROR: "🚨", INACTIVO: "⏸️" };
             let opcionesEstatus = catalogo.map(e => `<option value="${esc(e)}" ${d.estatus === e ? "selected" : ""}>${iconoMotor[motorDe(e)] || ""} ${esc(e)}</option>`).join("");
             if (!catalogo.includes(d.estatus)) opcionesEstatus += `<option value="${esc(d.estatus)}" selected>${esc(d.estatus)} (ya no existe)</option>`;
-            const asignacion = esLectura
+            const asignacion = modoRev
+                ? `<div class="asignacion"><div class="input-group"><label for="v-nuevo-estatus">Estatus</label><select id="v-nuevo-estatus">${opcionesEstatus}</select></div><div class="input-group"><label>Agente</label><b>${esc(d.agente || "Sin asignar")}</b></div><button class="btn btn-primary" onclick="guardarEstatus(${js(id)})"><i class="fas fa-check"></i> Cambiar estatus</button></div>`
+                : esLectura
                 ? `<div class="bloque"><h4>Asignación</h4>${dato("Agente", esc(d.agente || "Sin asignar"))}${dato("Campaña", esc(d.campaña || "—"))}</div>`
                 : `<div class="asignacion"><div class="input-group"><label for="v-nuevo-estatus">Estatus</label><select id="v-nuevo-estatus">${opcionesEstatus}</select></div><div class="input-group"><label${esLiderOAdmin() ? ' for="v-nuevo-agente"' : ""}>Agente</label>${selectorAgenteHTML}</div><button class="btn btn-primary" onclick="guardarEstatus(${js(id)})"><i class="fas fa-check"></i> Aplicar cambios</button></div>`;
 
@@ -1889,7 +1897,7 @@
 
             // Revisión manual: el agente dueño o quien revisa registra lo que el cliente contestó en Soporte ST.
             let bloqueRegistro = "";
-            if (modoManual() && (!esLectura || tieneBandeja()) && ["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) {
+            if ((modoRev || (modoManual() && (!esLectura || tieneBandeja()))) && ["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) {
                 const bR = d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> Respondió</button><button class="btn-rev comp" onclick="registrarRespuesta(${js(id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Envió comprobante</button>`;
@@ -1916,8 +1924,12 @@
                 } else {
                     const hist = [...(d.historial_respuestas || [])];
                     if (tieneMensajeCliente(d)) hist.push({ tipo: "cliente", fecha: new Date().toISOString(), mensaje: d.ultimo_mensaje_cliente });
-                    hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: msg, enviado_por_correo: false });
-                    await updateDoc(doc(db, "Cobros", id), { historial_respuestas: hist, ultimo_mensaje_cliente: "Sin mensaje reciente", nueva_respuesta_cliente: false, ultima_actividad: new Date(), alerta_sla_creada: false });
+                    const enRev = window.visorModoRevision === id;
+                    hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: msg, enviado_por_correo: false, ...(enRev ? { revision: "NOTA" } : {}) });
+                    const actN = { historial_respuestas: hist, ultimo_mensaje_cliente: "Sin mensaje reciente", nueva_respuesta_cliente: false, ultima_actividad: new Date(), alerta_sla_creada: false };
+                    if (enRev) { actN.revisado_por = window.userName; actN.revisado_en = new Date(); }
+                    await updateDoc(doc(db, "Cobros", id), actN);
+                    if (enRev && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, "NUEVA_RESPUESTA", `${window.userName} dejó una nota en ${d.ticket}.`);
                     mostrarToast("Nota interna registrada.", "info");
                 }
                 inF.value = "";
@@ -1935,6 +1947,9 @@
                 if (motorDe(nE) === "EXITO" && !d.completado_en) act.completado_en = new Date();
             }
             const hE = []; const sA = document.getElementById("v-nuevo-agente");
+            const enRevision = window.visorModoRevision === id;
+            if (nE !== d.estatus && nE !== "ANULADO") hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: `🔁 Estatus: ${d.estatus} → ${nE}.`, enviado_por_correo: false, ...(enRevision ? { revision: "ESTATUS" } : {}) });
+            if (nE === d.estatus && !(sA && sA.value !== d.agente)) return mostrarToast("No hay cambios que aplicar.", "info");
             if (sA && sA.value !== d.agente) { act.agente = sA.value; hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: "SISTEMA", mensaje: `🔄 Reasignada de ${d.agente || "N/A"} a ${sA.value} por ${window.userName}.`, enviado_por_correo: false }); }
             if (nE === "ANULADO" && d.estatus !== "ANULADO") {
                 const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${d.ticket}`, boton: "Anular", claseBoton: "btn-danger" }); if (!r) return;
@@ -1945,6 +1960,7 @@
                 if (hE.length > 0) act.historial_respuestas = [...(d.historial_respuestas || []), ...hE];
                 await updateDoc(doc(db, "Cobros", id), act);
                 if (nE === "COMPROBANTE RECIBIDO" && d.estatus !== "COMPROBANTE RECIBIDO") window.crearNotificacionSistema(d.ticket, d.campaña, (act.agente || d.agente), "COMPROBANTE", `Comprobante recibido: ${d.ticket}`);
+                else if (enRevision && nE !== d.estatus && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, "NUEVA_RESPUESTA", `${window.userName} cambió ${d.ticket} a ${nE}.`);
                 mostrarToast("Cambios aplicados.", "success");
             } catch (e) { mostrarToast("No se pudieron aplicar los cambios. Intenta de nuevo.", "error"); }
         };
@@ -2853,6 +2869,8 @@
         const ACCION_REV = {
             RESPONDIO: { titulo: "El cliente respondió", corto: "Respondió", texto: "📨 El cliente respondió por correo.", ayuda: "Resume lo que pidió o preguntó. Lo verá el agente de la solicitud.", boton: "Registrar respuesta" },
             COMPROBANTE: { titulo: "El cliente envió su comprobante", corto: "Comprobante", texto: "🧾 El cliente envió su comprobante de pago.", ayuda: "Si guardaste el archivo en Drive o SharePoint, pega el enlace. Si no, anota el número de boleta o autorización.", boton: "Registrar comprobante" },
+            ESTATUS: { titulo: "Cambio de estatus", corto: "Estatus", texto: "", ayuda: "", boton: "" },
+            NOTA: { titulo: "Nota interna", corto: "Nota", texto: "", ayuda: "", boton: "" },
             COMPLETAR: { titulo: "Pago verificado", corto: "Completada", texto: "✅ Pago verificado. Solicitud completada.", ayuda: "La solicitud pasa a COMPLETADO.", boton: "Completar solicitud" }
         };
 
@@ -2867,6 +2885,7 @@
             try { await setDoc(doc(db, "Configuracion", "Turno"), { fecha: hoy, revisores: lista, actualizado_por: window.userName, actualizado: new Date().toISOString() }); mostrarToast(tomar ? "Tomaste el turno de hoy. Recibirás las alertas de cobros sin respuesta." : "Dejaste el turno de hoy.", "success"); }
             catch (e) { console.error(e); mostrarToast("No se pudo actualizar el turno. Pide al administrador que active la Bandeja de revisión en tu rol.", "error"); }
         };
+        window.abrirVisorRevision = (id) => { window.visorModoRevision = id; window.abrirVisor(id); };
         window.copiarTicket = (t) => { if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => mostrarToast(`${t} copiado. Pégalo en el buscador de Outlook.`, "info")).catch(() => {}); };
 
         function pintarTurno() {
@@ -2918,8 +2937,8 @@
                 const env = enviadoEn(d); const c = canalDe(d);
                 const ico = c === "WhatsApp" ? '<i class="fab fa-whatsapp" title="Enviado por WhatsApp"></i>' : '<i class="fas fa-envelope" title="Enviado por correo"></i>';
                 const u = ultimaRevision(d);
-                const ultima = u ? `<div class="rev-ultima"><b>${esc(u.revision ? ACCION_REV[u.revision]?.corto || "Nota" : "Nota")}</b> · ${esc(u.agente)}, ${esc(fmtFecha(u.fecha))}<br>${esc(String(u.mensaje || "").split("\n").slice(u.revision ? 1 : 0).join(" ").slice(0, 90))}</div>` : '<span class="muted">—</span>';
-                const ver = `<button class="btn-action-sm" title="Abrir solicitud" aria-label="Abrir solicitud" onclick="abrirVisor(${js(d.id)})"><i class="fas fa-eye"></i></button>`;
+                const ultima = u ? `<div class="rev-ultima"><b>${esc(u.revision ? ACCION_REV[u.revision]?.corto || "Nota" : "Nota")}</b> · ${esc(u.agente)}, ${esc(fmtFecha(u.fecha))}<br>${esc(String(u.mensaje || "").split("\n").slice(u.revision && !["NOTA", "ESTATUS"].includes(u.revision) ? 1 : 0).join(" ").slice(0, 90))}</div>` : '<span class="muted">—</span>';
+                const ver = `<button class="btn-rev" title="Abrir en el visor para notas internas y estatus" onclick="abrirVisorRevision(${js(d.id)})"><i class="fas fa-pen-to-square"></i> Revisar</button>`;
                 const botones = d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
