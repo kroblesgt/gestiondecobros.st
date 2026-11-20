@@ -398,6 +398,12 @@
         /* =============================================================
            BANDEJA DE REVISIÓN Y PRODUCTIVIDAD
            ============================================================= */
+        .segmentado { display: inline-flex; background: var(--superficie-2); border: 1px solid var(--linea); border-radius: 10px; padding: 3px; gap: 2px; }
+        .seg-op { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; color: var(--texto-2); cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+        .seg-op .num { font-size: 12px; font-weight: 700; color: var(--texto-3); font-variant-numeric: tabular-nums; }
+        .seg-op.active { background: var(--superficie); color: var(--ink); box-shadow: 0 1px 2px rgba(15,42,68,.15); }
+        .seg-op.active .num { color: var(--azul); }
+        #pills-alertas.oculto { display: none; }
         .turno-chip { display: none; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 20px; background: var(--superficie-2); border: 1px solid var(--linea); font-size: 13px; color: var(--texto-2); white-space: nowrap; }
         .turno-chip b { color: var(--ink); font-weight: 600; }
         .turno-chip.mio { background: var(--ink); border-color: var(--ink); color: #C9D5E2; }
@@ -730,8 +736,12 @@
                 </div>
 
                 <div class="barra-filtros" style="justify-content:space-between;">
-                    <div class="filter-pills" role="tablist" aria-label="Filtro rápido">
-                        <button class="f-pill p-all active" onclick="aplicarFiltroSeguimientos('TODOS', this)">Todas</button>
+                    <div class="segmentado" role="tablist" aria-label="Abiertas o cerradas">
+                        <button class="seg-op active" data-estado="ABIERTAS" onclick="cambiarEstadoSeg('ABIERTAS')">Abiertas <span class="num" id="seg-n-abiertas">0</span></button>
+                        <button class="seg-op" data-estado="CERRADAS" onclick="cambiarEstadoSeg('CERRADAS')">Cerradas <span class="num" id="seg-n-cerradas">0</span></button>
+                        <button class="seg-op" data-estado="TODAS" onclick="cambiarEstadoSeg('TODAS')">Todas <span class="num" id="seg-n-todas">0</span></button>
+                    </div>
+                    <div class="filter-pills" role="tablist" aria-label="Filtro rápido" id="pills-alertas">
                         <button class="f-pill p-alert" onclick="aplicarFiltroSeguimientos('ATRASO', this)">Atrasadas o con error <span class="badge" id="pill-count-atraso">0</span></button>
                         <button class="f-pill p-comp" onclick="aplicarFiltroSeguimientos('COMPROBANTE', this)">Comprobante recibido <span class="badge" id="pill-count-comp">0</span></button>
                         <button class="f-pill p-resp" onclick="aplicarFiltroSeguimientos('NUEVA_RESPUESTA', this)">Respuesta nueva <span class="badge" id="pill-count-resp">0</span></button>
@@ -1279,7 +1289,7 @@
         let escuchasIniciadas = false;
         window.currentTicketEditing = null; window.adminData = { roles: {}, campañas: {}, usuarios: {} };
         window.allDashboardData = []; window.datosDashboardActual = []; window.chartInstEstatus = null; window.chartInstAgentes = null; window.datosSeguimientos = []; window.totalAlertas = undefined;
-        window.notifSistema = []; window.notifTickets = []; window.avisosFirebase = []; window.virtualAvisosTickets = []; window.filtroActualSeguimiento = "TODOS";
+        window.notifSistema = []; window.notifTickets = []; window.avisosFirebase = []; window.virtualAvisosTickets = []; window.filtroActualSeguimiento = "TODOS"; window.estadoSeg = "ABIERTAS";
         window.visorAbiertoId = null;
         // Valores por defecto de Configuracion/General (lo guardado en Firestore los reemplaza).
         const CONFIG_DEFECTO = {
@@ -2246,8 +2256,18 @@
         window.actualizarTextoEstatus = () => { const checks = document.querySelectorAll(".chk-est-item"); const selec = Array.from(checks).filter(c => c.checked).map(c => c.value); const txt = document.getElementById("txt-estatus-seleccionados"); if (selec.length === checks.length) txt.innerText = "Todos seleccionados"; else if (selec.length === 0) txt.innerText = "Ningún estatus"; else if (selec.length === 1) txt.innerText = selec[0]; else txt.innerText = `${selec.length} seleccionados`; };
         window.toggleTodosEstatus = (chk) => { document.querySelectorAll(".chk-est-item").forEach(c => c.checked = chk.checked); window.actualizarTextoEstatus(); window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null); };
         window.actualizarEstatusSelect = () => { const checks = document.querySelectorAll(".chk-est-item"); const ct = document.getElementById("chk-estatus-todos"); if (ct) ct.checked = Array.from(checks).every(c => c.checked); window.actualizarTextoEstatus(); window.aplicarFiltroSeguimientos(window.filtroActualSeguimiento, null); };
-        window.limpiarFiltrosSeguimiento = () => { document.getElementById("seg-filtro-inicio").value = ""; document.getElementById("seg-filtro-fin").value = ""; document.getElementById("seg-filtro-agente").value = "TODOS"; document.getElementById("buscador-tickets").value = ""; const ct = document.getElementById("chk-estatus-todos"); if (ct) ct.checked = true; document.querySelectorAll(".chk-est-item").forEach(c => c.checked = true); window.actualizarTextoEstatus(); window.aplicarFiltroSeguimientos("TODOS", document.querySelector(".p-all")); mostrarToast("Filtros limpiados.", "success"); };
-        window.aplicarFiltroSeguimientos = (tipo, btn) => { window.filtroActualSeguimiento = tipo; window.pagActualSeg = 1; if (btn) { document.querySelectorAll(".f-pill").forEach(b => b.classList.remove("active")); btn.classList.add("active"); } renderSeguimientosTable(tipo); };
+        window.limpiarFiltrosSeguimiento = () => { document.getElementById("seg-filtro-inicio").value = ""; document.getElementById("seg-filtro-fin").value = ""; document.getElementById("seg-filtro-agente").value = "TODOS"; document.getElementById("buscador-tickets").value = ""; const ct = document.getElementById("chk-estatus-todos"); if (ct) ct.checked = true; document.querySelectorAll(".chk-est-item").forEach(c => c.checked = true); window.actualizarTextoEstatus(); document.querySelectorAll("#pills-alertas .f-pill").forEach(b => b.classList.remove("active")); window.aplicarFiltroSeguimientos("TODOS", null); mostrarToast("Filtros limpiados.", "success"); };
+        // Abiertas = todo lo que aún requiere algo (incluye pausadas). Cerradas = completadas y anuladas.
+        const esCerrada = (d) => { const m = motorDe(d.estatus); return m === "EXITO" || (m === "INACTIVO" && d.estatus !== "PAUSADO"); };
+        window.cambiarEstadoSeg = (estado) => {
+            window.estadoSeg = estado;
+            document.querySelectorAll(".seg-op").forEach(b => b.classList.toggle("active", b.dataset.estado === estado));
+            // Los filtros rápidos (atrasadas, comprobante, respuesta nueva) solo aplican a lo abierto.
+            document.getElementById("pills-alertas").classList.toggle("oculto", estado === "CERRADAS");
+            if (estado === "CERRADAS") { window.filtroActualSeguimiento = "TODOS"; document.querySelectorAll("#pills-alertas .f-pill").forEach(b => b.classList.remove("active")); }
+            window.pagActualSeg = 1; renderSeguimientosTable(window.filtroActualSeguimiento);
+        };
+        window.aplicarFiltroSeguimientos = (tipo, btn) => { window.filtroActualSeguimiento = tipo; window.pagActualSeg = 1; if (btn) { const yaActivo = btn.classList.contains("active"); document.querySelectorAll("#pills-alertas .f-pill").forEach(b => b.classList.remove("active")); if (yaActivo) { tipo = "TODOS"; window.filtroActualSeguimiento = "TODOS"; } else btn.classList.add("active"); } if (tipo !== "TODOS" && window.estadoSeg === "CERRADAS") { window.cambiarEstadoSeg("ABIERTAS"); return; } renderSeguimientosTable(tipo); };
         window.eliminarTicket = async (id, name) => { if (!esAdmin()) return; if (!await window.confirmar({ titulo: `Eliminar ${name}`, texto: "Se borra de forma permanente con todo su historial. Si solo quieres cerrarla, usa el estatus ANULADO.", boton: "Eliminar para siempre" })) return; try { await deleteDoc(doc(db, "Cobros", id)); mostrarToast(`${name} eliminada.`, "success"); } catch (e) { mostrarToast("No se pudo eliminar la solicitud.", "error"); } };
         window.toggleFiltrosAvanzados = () => { const p = document.getElementById("contenedor-filtros-avanzados"); const i = document.getElementById("icono-filtros-avanzados"); if (p.style.display === "none") { p.style.display = "grid"; i.style.transform = "rotate(180deg)"; } else { p.style.display = "none"; i.style.transform = "rotate(0deg)"; } };
 
@@ -2272,9 +2292,6 @@
                 else if (motor !== "EXITO" && motor !== "INACTIVO" && horasSinActividad > sla) { t = "ATRASO"; cA++; }
                 d.temp_alerta = t;
             });
-            document.getElementById("pill-count-atraso").innerText = cA; document.getElementById("pill-count-comp").innerText = cC; document.getElementById("pill-count-resp").innerText = cR;
-
-            if (filtroTipo !== "TODOS") data = data.filter(d => d.temp_alerta === filtroTipo);
             const tB = (document.getElementById("buscador-tickets")?.value || "").toLowerCase().trim();
             if (tB) data = data.filter(d => [d.ticket, d.cliente?.nit, d.cliente?.contacto, d.cliente?.tel, d.agente].some(v => String(v || "").toLowerCase().includes(tB)));
             const fI = document.getElementById("seg-filtro-inicio")?.value || ""; const fF = document.getElementById("seg-filtro-fin")?.value || ""; const fA = document.getElementById("seg-filtro-agente")?.value || "TODOS";
@@ -2290,6 +2307,16 @@
             });
             const vista = document.getElementById("filtro-vista-equipo")?.value || "MIS_SOLICITUDES";
             if (vista === "MIS_SOLICITUDES") data = data.filter(esMiSolicitud);
+
+            // Abiertas / Cerradas / Todas, con contadores según los demás filtros.
+            const abiertas = data.filter(d => !esCerrada(d)); const nCerradas = data.length - abiertas.length;
+            document.getElementById("seg-n-abiertas").innerText = abiertas.length; document.getElementById("seg-n-cerradas").innerText = nCerradas; document.getElementById("seg-n-todas").innerText = data.length;
+            // Los contadores rápidos cuentan solo lo abierto y respetan los filtros de arriba.
+            document.getElementById("pill-count-atraso").innerText = abiertas.filter(d => d.temp_alerta === "ATRASO").length;
+            document.getElementById("pill-count-comp").innerText = abiertas.filter(d => d.temp_alerta === "COMPROBANTE").length;
+            document.getElementById("pill-count-resp").innerText = abiertas.filter(d => d.temp_alerta === "NUEVA_RESPUESTA").length;
+            if (window.estadoSeg === "ABIERTAS") data = abiertas; else if (window.estadoSeg === "CERRADAS") data = data.filter(esCerrada);
+            if (filtroTipo !== "TODOS") data = data.filter(d => d.temp_alerta === filtroTipo);
 
             const tR = data.length; const tP = Math.ceil(tR / window.limitePagSeg) || 1;
             window.pagActualSeg = Math.min(Math.max(window.pagActualSeg, 1), tP);
@@ -2329,7 +2356,8 @@
                 const eS2 = equipos.length > 0 ? `<span class="seg-equipo" title="${esc(equipos.join(", "))}"><i class="fas fa-screwdriver-wrench"></i> ${esc(equipos.join(", "))}</span>` : "";
                 return `<tr class="row-card" style="--borde:${borde};"><td><span class="ticket">${esc(d.ticket)}</span>${eS2}</td><td class="seg-fecha">${fechaH}</td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b>${icT}<small>NIT ${esc(d.cliente?.nit || "C/F")} · <span class="num">Q ${fmtQ(d.total)}</span></small></td><td><div style="display:flex; align-items:center; gap:8px;">${badgeEstatus(d.estatus)} ${icA}</div>${mT}</td><td>${mC}</td><td style="text-align:center;">${aH}</td><td class="acciones">${bH}</td></tr>`;
             });
-            tb.innerHTML = dR.length === 0 ? `<tr><td colspan="7" class="vacio"><i class="fas fa-folder-open"></i>No hay solicitudes con estos filtros.</td></tr>` : filas.join("");
+            const pista = window.estadoSeg === "ABIERTAS" && nCerradas > 0 ? `<br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="cambiarEstadoSeg('CERRADAS')">Ver ${nCerradas} ${nCerradas === 1 ? "cerrada" : "cerradas"} con estos filtros</button>` : "";
+            tb.innerHTML = dR.length === 0 ? `<tr><td colspan="7" class="vacio"><i class="fas fa-folder-open"></i>No hay solicitudes ${window.estadoSeg === "ABIERTAS" ? "abiertas " : window.estadoSeg === "CERRADAS" ? "cerradas " : ""}con estos filtros.${pista}</td></tr>` : filas.join("");
         }
 
         // Limpia el texto de un correo de cliente (quita cabeceras y citas).
