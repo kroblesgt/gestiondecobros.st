@@ -44,7 +44,7 @@ service cloud.firestore {
       allow read: if signedIn();
       allow update: if signedIn()
                     && request.auth.token.get('loginId', '') == id
-                    && soloCambia(['is_online', 'last_login']);
+                    && soloCambia(['is_online', 'last_login', 'preferencias']);
       allow create, delete: if false;
     }
 

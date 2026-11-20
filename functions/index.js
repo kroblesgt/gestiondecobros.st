@@ -264,7 +264,7 @@ function htmlNuevoCobro(d, general, agente, perfil) {
   }).join("");
   const fac = d.facturacion || {};
   const textos = textosCorreo(general);
-  const vars = { cliente: c.contacto || "cliente", solicitud: d.ticket || "" };
+  const vars = { cliente: c.contacto || "cliente", solicitud: d.ticket || "", orden: d.orden_servicio || "" };
   return envolver(
     `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
     `<p>${conVariables(textos.introduccion, vars)}</p>` +
@@ -301,7 +301,21 @@ const htmlRespuesta = (d, agente, mensaje, perfil, general) => envolver(htmlResp
 
 
 // ================================================================== MAKE (plan gratuito)
-const asuntoCobro = (ticket) => `Solicitud de pago ${ticket} - Distelsa Servicio Técnico`;
+// Asunto editable en Ajustes → Correo al cliente (Configuracion/General.correo_asunto).
+// Variables: {{solicitud}} {{orden}} {{cliente}} {{total}}. Debe coincidir con ASUNTO_DEFECTO de public/index.html.
+const ASUNTO_DEFECTO = "Solicitud de pago {{solicitud}} - Distelsa Servicio Técnico";
+function asuntoCobro(d, general) {
+  const ticket = d.ticket || "";
+  const plantilla = String((general && general.correo_asunto) || "").trim() || ASUNTO_DEFECTO;
+  const vars = { solicitud: ticket, orden: String(d.orden_servicio || "").trim(), cliente: String(d.cliente?.contacto || "").trim(), total: `Q ${(Number(d.total) || 0).toFixed(2)}` };
+  let a = plantilla.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : ""));
+  // Limpia separadores que quedan sueltos cuando una variable viene vacía (ej. "OS  - ").
+  a = a.replace(/[\r\n\t]+/g, " ").replace(/\(\s*\)|\[\s*\]/g, "").replace(/(\s*[-–|·:,]\s*){2,}/g, " - ").replace(/\s{2,}/g, " ").replace(/^[\s\-–|·:,]+|[\s\-–|·:,]+$/g, "").trim();
+  if (!a) a = ASUNTO_DEFECTO.replace("{{solicitud}}", ticket);
+  // En modo automático Make reconoce la respuesta por el número de solicitud: debe ir en el asunto.
+  if (modoAutomatico(general) && ticket && !a.includes(ticket)) a += ` [${ticket}]`;
+  return a.slice(0, 180);
+}
 const hashId = (s) => crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 32);
 const ZONA = "America/Guatemala";
 
@@ -401,11 +415,12 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
   const contarEnvio = async () => { await contarConsumo("envio"); if (copiaMake) await contarConsumo("copia"); };
 
   if (tipo === "NUEVO_COBRO") {
-    const asunto = asuntoCobro(ticket);
+    const asunto = asuntoCobro({ ...d, ticket }, general);
     const mime = await armarMime({ para: correo, asunto, html: htmlNuevoCobro({ ...d, ticket }, general, agente, perfil), copiaMake });
     await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
     // Registro de quién envió (para el Dashboard de productividad).
     await ref.update({
+      correo_asunto: asunto,
       correo_enviado_en: FieldValue.serverTimestamp(), enviado_en: FieldValue.serverTimestamp(),
       enviado_por: agente, enviado_por_id: t.loginId, canal_envio: "Correo", envios_correo: FieldValue.increment(1),
     });
@@ -424,7 +439,8 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
   const html = responderA
     ? `<div style="font-family:Arial,Helvetica,sans-serif; font-size:14px; color:#1e293b;">${escBr(mensaje)}${htmlFirma(agente, perfil)}</div>`
     : htmlRespuesta({ ...d, ticket }, agente, mensaje, perfil, general);
-  const asunto = "RE: " + asuntoCobro(ticket);
+  // Usa el asunto con que se envió el cobro, para que quede en la misma conversación del cliente.
+  const asunto = "RE: " + (d.correo_asunto || asuntoCobro({ ...d, ticket }, general));
   const mime = await armarMime({ para: correo, asunto, html, responderA, copiaMake });
   await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
   await contarEnvio();
