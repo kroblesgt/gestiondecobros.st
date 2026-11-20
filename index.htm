@@ -439,6 +439,8 @@
         .tabla-rev th:last-child, .tabla-rev td:last-child { position: sticky; right: 0; background: var(--superficie); box-shadow: -10px 0 10px -10px rgba(15,42,68,.25); text-align: right; white-space: nowrap; }
         .tabla-rev th:last-child { background: var(--superficie-2); }
         .ticket-copiar { cursor: pointer; border: 0; font: inherit; }
+        .ticket.sin-orden { background: var(--superficie-2); color: var(--texto-3); border: 1px dashed var(--linea-fuerte); }
+        .ticket.sin-orden::before, .ticket.sin-orden::after { display: none; }
         .orden-copiar { display: block; margin-top: 6px; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--texto-2); cursor: pointer; }
         .orden-copiar:hover { color: var(--azul); }
         .seg-orden { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--texto-2); }
@@ -600,7 +602,7 @@
                 <h1>Cobros de servicio técnico</h1>
                 <p>Crea solicitudes de pago, envíalas por correo o WhatsApp y da seguimiento hasta recibir el comprobante.</p>
             </div>
-            <div class="login-talon" aria-hidden="true"><small>Solicitud</small>ST-000127</div>
+            <div class="login-talon" aria-hidden="true"><small>Orden</small>458812</div>
         </div>
         <div class="login-form">
             <div class="login-card">
@@ -759,7 +761,7 @@
                 <div class="barra-filtros">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="search" id="buscador-tickets" class="search-input-dynamic" placeholder="Buscar por solicitud, orden, cliente, NIT, teléfono o agente" oninput="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" aria-label="Buscar solicitudes">
+                        <input type="search" id="buscador-tickets" class="search-input-dynamic" placeholder="Buscar por orden, cliente, NIT, teléfono o agente" oninput="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" aria-label="Buscar solicitudes">
                     </div>
                     <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="width:auto;" aria-label="Qué solicitudes ver">
                         <option value="MIS_SOLICITUDES">Mis solicitudes</option>
@@ -803,7 +805,7 @@
                 <div class="card tabla-card">
                     <div class="table-responsive">
                         <table class="tabla-seg">
-                            <thead id="thead-seg"><tr><th style="padding-left:18px;">Solicitud</th><th>Creada</th><th>Cliente</th><th>Estatus</th><th>Último mensaje</th><th style="text-align:center;">Adjuntos</th><th style="text-align:right;">Acciones</th></tr></thead>
+                            <thead id="thead-seg"><tr><th style="padding-left:18px;">Orden</th><th>Creada</th><th>Cliente</th><th>Estatus</th><th>Último mensaje</th><th style="text-align:center;">Adjuntos</th><th style="text-align:right;">Acciones</th></tr></thead>
                             <tbody id="lista-seguimientos"></tbody>
                         </table>
                     </div>
@@ -831,7 +833,7 @@
                 <div class="barra-filtros">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="search" id="rev-buscar" class="search-input-dynamic" placeholder="Buscar por solicitud, orden, cliente, correo o agente" oninput="renderBandejaRevision()" aria-label="Buscar en la bandeja">
+                        <input type="search" id="rev-buscar" class="search-input-dynamic" placeholder="Buscar por orden, cliente, correo o agente" oninput="renderBandejaRevision()" aria-label="Buscar en la bandeja">
                     </div>
                     <select id="rev-canal" onchange="renderBandejaRevision()" style="width:auto;" aria-label="Canal de envío">
                         <option value="Correo">Enviadas por correo</option>
@@ -852,11 +854,11 @@
                 <div class="card tabla-card">
                     <div class="table-responsive">
                         <table class="tabla-rev">
-                            <thead><tr><th style="padding-left:18px;">Solicitud</th><th>Enviada</th><th>Cliente</th><th style="text-align:right;">Total</th><th>Última anotación</th><th>Registrar</th></tr></thead>
+                            <thead><tr><th style="padding-left:18px;">Orden</th><th>Enviada</th><th>Cliente</th><th style="text-align:right;">Total</th><th>Última anotación</th><th>Registrar</th></tr></thead>
                             <tbody id="lista-revision"></tbody>
                         </table>
                     </div>
-                    <div class="paginacion"><span class="muted" style="font-size:13px;">Toca el número de solicitud para copiarlo y buscarlo en Outlook.</span><span class="muted num" id="rev-info"></span></div>
+                    <div class="paginacion"><span class="muted" style="font-size:13px;">Toca la orden de servicio para copiarla y buscarla en Outlook.</span><span class="muted num" id="rev-info"></span></div>
                 </div>
             </section>
 
@@ -1059,12 +1061,12 @@
                             <div class="card">
                                 <h3 class="card-titulo">Textos del correo de cobro</h3>
                                 <div class="input-group" style="margin-bottom:6px;"><label for="conf-correo-asunto">Asunto</label><input type="text" id="conf-correo-asunto" maxlength="150" oninput="actualizarVistaCorreo()"></div>
-                                <div class="variables" id="asunto-variables" style="margin-bottom:6px;"><code role="button" tabindex="0" onclick="insertarVariableAsunto('orden')">{{orden}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('cliente')">{{cliente}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('total')">{{total}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('solicitud')">{{solicitud}}</code></div>
+                                <div class="variables" id="asunto-variables" style="margin-bottom:6px;"><code role="button" tabindex="0" onclick="insertarVariableAsunto('orden')">{{orden}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('cliente')">{{cliente}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('total')">{{total}}</code></div>
                                 <p class="ayuda" id="asunto-ayuda" style="margin-bottom:16px;">Si usas {{orden}}, la orden de servicio será obligatoria al enviar por correo. Las respuestas se mueven a la carpeta "gestion de cobros" por la regla de Outlook, que busca <b>Solicitud de pago</b> en el asunto: si lo quitas, hay que actualizar esa regla.</p>
                                 <div class="wa-grid">
                                     <div>
                                         <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-encabezado">Encabezado</label><input type="text" id="conf-correo-encabezado" maxlength="80" oninput="actualizarVistaCorreo()"></div>
-                                        <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-intro">Introducción</label><textarea id="conf-correo-intro" rows="3" maxlength="600" oninput="actualizarVistaCorreo()"></textarea><p class="ayuda">Puedes usar {{cliente}}, {{solicitud}} y {{orden}}.</p></div>
+                                        <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-intro">Introducción</label><textarea id="conf-correo-intro" rows="3" maxlength="600" oninput="actualizarVistaCorreo()"></textarea><p class="ayuda">Puedes usar {{cliente}} y {{orden}}.</p></div>
                                         <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-instruccion">Indicación después de las formas de pago</label><textarea id="conf-correo-instruccion" rows="2" maxlength="600" oninput="actualizarVistaCorreo()"></textarea></div>
                                         <div class="input-group"><label for="conf-correo-pie">Pie del correo</label><textarea id="conf-correo-pie" rows="3" maxlength="600" oninput="actualizarVistaCorreo()"></textarea></div>
                                     </div>
@@ -1095,11 +1097,11 @@
                         <div class="panel-ajuste" id="aj-respuestas">
                             <div class="card" id="card-respuestas">
                                 <h3 class="card-titulo">Respuestas rápidas</h3>
-                                <p class="card-sub">Textos que los agentes insertan al responder desde el visor de una solicitud. Variables: {{cliente}}, {{solicitud}}, {{total}}, {{agente}}.</p>
+                                <p class="card-sub">Textos que los agentes insertan al responder desde el visor de una solicitud. Variables: {{cliente}}, {{orden}}, {{total}}, {{agente}}.</p>
                                 <input type="hidden" id="rr-editando" value="">
                                 <div class="form-grid" style="grid-template-columns: minmax(0,1fr);">
                                     <div class="input-group"><label for="rr-titulo">Nombre corto</label><input type="text" id="rr-titulo" maxlength="60" placeholder="Ej: Recordatorio de pago"></div>
-                                    <div class="input-group"><label for="rr-texto">Texto</label><textarea id="rr-texto" rows="4" maxlength="2000" placeholder="Hola {{cliente}}, te recordamos que tu solicitud {{solicitud}} por Q {{total}} sigue pendiente de pago."></textarea></div>
+                                    <div class="input-group"><label for="rr-texto">Texto</label><textarea id="rr-texto" rows="4" maxlength="2000" placeholder="Hola {{cliente}}, te recordamos que tu orden {{orden}} por Q {{total}} sigue pendiente de pago."></textarea></div>
                                 </div>
                                 <div style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:16px;">
                                     <button class="btn btn-ghost" id="rr-cancelar" style="display:none;" onclick="cancelarRespuestaRapida()">Cancelar</button>
@@ -1346,7 +1348,7 @@
         // Textos originales del correo (deben coincidir con functions/index.js).
         const CORREO_TEXTOS_DEFECTO = {
             encabezado: "DISTELSA · Servicio Técnico",
-            introduccion: "Le compartimos el detalle de su solicitud {{solicitud}} para que pueda realizar el pago correspondiente.",
+            introduccion: "Le compartimos el detalle de su orden de servicio {{orden}} para que pueda realizar el pago correspondiente.",
             instruccion: "Una vez realizado el pago, responda a este correo adjuntando su comprobante.",
             pie: "Responda a este correo para comunicarse con nosotros o enviar su comprobante de pago. Por favor no modifique el asunto, así identificamos su solicitud automáticamente."
         };
@@ -1370,13 +1372,19 @@
         window.turnoHoy = { fecha: "", revisores: [] };
         const turnoTomadoHoy = () => window.turnoHoy?.fecha === hoyISO() ? (window.turnoHoy.revisores || []).map(r => r.nombre).filter(Boolean) : [];
         const revisoresHoy = () => { const l = (window.configSistema?.revision_turnos || {})[String(new Date().getDay())]; return [...new Set([...(Array.isArray(l) ? l.filter(Boolean) : []), ...turnoTomadoHoy()])]; };
+        const enTurnoHoy = () => revisoresHoy().includes(window.userName);
         const tieneBandeja = () => esAdmin() || window.permisosUsuario === "ALL" || String(window.permisosUsuario || "").split(",").includes("8");
         const camposObligatorios = () => ({ ...CONFIG_DEFECTO.campos_obligatorios, ...(window.configSistema?.campos_obligatorios || {}) });
         // Asunto del correo de cobro (editable). Debe coincidir con ASUNTO_DEFECTO de functions/index.js.
-        const ASUNTO_DEFECTO = "Solicitud de pago {{solicitud}} - Distelsa Servicio Técnico";
+        const ASUNTO_DEFECTO = "Solicitud de pago - Orden {{orden}} - Distelsa Servicio Técnico";
         const plantillaAsunto = () => String(window.configSistema?.correo_asunto || "").trim() || ASUNTO_DEFECTO;
+        // El número interno (ST-######) no se muestra: se identifica por la orden de servicio.
+        const ordenDe = (d) => String(d?.orden_servicio || "").trim();
+        const etiquetaSol = (d) => ordenDe(d) ? `Orden ${ordenDe(d)}` : (d?.cliente?.contacto ? `cobro de ${d.cliente.contacto}` : "la solicitud");
+        const etiquetaPorTicket = (t) => { const d = (window.allDashboardData || []).find(x => x.ticket === t || x.id === t); return d ? (ordenDe(d) ? `Orden ${ordenDe(d)}` : (d.cliente?.contacto || "Solicitud")) : (t ? "Solicitud" : ""); };
+        const talon = (d, extra = "") => ordenDe(d) ? `<span class="ticket ${extra}" title="Orden de servicio">${esc(ordenDe(d))}</span>` : `<span class="ticket sin-orden ${extra}" title="Sin orden de servicio">Sin orden</span>`;
         const ordenObligatoria = () => camposObligatorios().orden || plantillaAsunto().includes("{{orden}}");
-        window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
+        window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nOrden de servicio: {{orden}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
 
         // =====================================================================
         // UI GENERAL
@@ -1641,11 +1649,11 @@
             const mios = window.allDashboardData.filter(d => d.estatus === "PAUSADO" && d.agente === window.userName);
             if (mios.length === 0) { container.style.display = "none"; return; }
             container.style.display = "block";
-            lista.innerHTML = mios.map(d => `<div class="pausada" role="button" tabindex="0" title="Retomar gestión" onclick="retomarGestion(${js(d.id)})"><div class="pausada-top"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><span class="ticket claro">${esc(d.ticket)}</span></div><small><i class="fas fa-circle-pause"></i> ${esc(d.motivo_pausa || "Sin motivo")}</small><div class="pausada-top"><small class="num">Q ${fmtQ(d.total)}</small><button class="btn btn-ghost-danger btn-sm" onclick="event.stopPropagation(); anularDesdeBuzon(${js(d.id)})"><i class="fas fa-ban"></i> Anular</button></div></div>`).join("");
+            lista.innerHTML = mios.map(d => `<div class="pausada" role="button" tabindex="0" title="Retomar gestión" onclick="retomarGestion(${js(d.id)})"><div class="pausada-top"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b>${talon(d, "claro")}</div><small><i class="fas fa-circle-pause"></i> ${esc(d.motivo_pausa || "Sin motivo")}</small><div class="pausada-top"><small class="num">Q ${fmtQ(d.total)}</small><button class="btn btn-ghost-danger btn-sm" onclick="event.stopPropagation(); anularDesdeBuzon(${js(d.id)})"><i class="fas fa-ban"></i> Anular</button></div></div>`).join("");
         };
         window.anularDesdeBuzon = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
-            const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${d.ticket}`, texto: "La solicitud quedará como ANULADO y saldrá de tus pausadas.", boton: "Anular solicitud", claseBoton: "btn-danger" });
+            const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${etiquetaSol(d)}`, texto: "La solicitud quedará como ANULADO y saldrá de tus pausadas.", boton: "Anular solicitud", claseBoton: "btn-danger" });
             if (!r) return;
             const motivo = r.motivo;
             try {
@@ -1753,7 +1761,7 @@
                     }
                 } else if (metodo === "WhatsApp") {
                     const rServ = serviciosTemporales.map(s => `* ${s.tipo} (${[s.producto, s.marca, s.modelo].filter(Boolean).join(" ")}): ${s.detalle} - Q${Number(s.precio).toFixed(2)}`).join("\n");
-                    const reemplazos = { solicitud: ticketId, cliente: clienteNombre, telefono: datos.cliente.tel || "N/A", correo: correoCliente || "N/A", direccion: datos.cliente.dir || "N/A", temperamento: datos.prioridad.temperamento || "Normal", obs_internas: datos.prioridad.observaciones_internas || "Ninguna", razon_social: datos.facturacion.nombre || "C/F", nit: datos.facturacion.nit || "C/F", servicios: rServ, total: total.toFixed(2), link_pago: textoPagoWhatsApp(metodoPago, linkNeoNet), motivo: motivoWa.trim() };
+                    const reemplazos = { solicitud: datos.orden_servicio || "", orden: datos.orden_servicio || "", cliente: clienteNombre, telefono: datos.cliente.tel || "N/A", correo: correoCliente || "N/A", direccion: datos.cliente.dir || "N/A", temperamento: datos.prioridad.temperamento || "Normal", obs_internas: datos.prioridad.observaciones_internas || "Ninguna", razon_social: datos.facturacion.nombre || "C/F", nit: datos.facturacion.nit || "C/F", servicios: rServ, total: total.toFixed(2), link_pago: textoPagoWhatsApp(metodoPago, linkNeoNet), motivo: motivoWa.trim() };
                     const msg = (window.configPlantillas?.whatsapp || "").replace(/\{\{(\w+)\}\}/g, (m, k) => (k in reemplazos ? reemplazos[k] : m));
                     const link = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
                     if (waWindow) waWindow.location.href = link; else window.open(link, "_blank");
@@ -1786,7 +1794,7 @@
 
         window.tomarSeguimiento = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
-            if (!await window.confirmar({ titulo: `Tomar ${d.ticket}`, texto: `Quedará asignada a ti. Ahora la atiende ${d.agente || "nadie"}.`, boton: "Tomar seguimiento", claseBoton: "btn-primary" })) return;
+            if (!await window.confirmar({ titulo: `Tomar ${etiquetaSol(d)}`, texto: `Quedará asignada a ti. Ahora la atiende ${d.agente || "nadie"}.`, boton: "Tomar seguimiento", claseBoton: "btn-primary" })) return;
             const hist = [...(d.historial_respuestas || []), { tipo: "agente", fecha: new Date().toISOString(), agente: "SISTEMA", mensaje: `🔄 ${window.userName} ha tomado el seguimiento (Anteriormente ${d.agente || "N/A"}).`, enviado_por_correo: false }];
             try { await updateDoc(doc(db, "Cobros", id), { agente: window.userName, historial_respuestas: hist, ultima_actividad: new Date() }); mostrarToast("¡Asignada a ti!", "success"); }
             catch (e) { mostrarToast("No se pudo tomar el seguimiento. Intenta de nuevo.", "error"); }
@@ -1809,7 +1817,7 @@
         };
         const dato = (k, v) => `<div class="dato"><span>${esc(k)}</span><span>${v}</span></div>`;
         // Rellena variables de las respuestas rápidas con los datos de la solicitud.
-        const rellenarVariables = (texto, d) => String(texto || "").replace(/\{\{(\w+)\}\}/g, (m, k) => ({ cliente: d.cliente?.contacto || "cliente", solicitud: d.ticket || "", total: fmtQ(d.total), agente: window.userName || "" }[k] ?? m));
+        const rellenarVariables = (texto, d) => String(texto || "").replace(/\{\{(\w+)\}\}/g, (m, k) => ({ cliente: d.cliente?.contacto || "cliente", solicitud: ordenDe(d), orden: ordenDe(d), total: fmtQ(d.total), agente: window.userName || "" }[k] ?? m));
         window.insertarRespuestaRapida = (id, sel) => {
             const i = sel.value; sel.value = ""; if (i === "") return;
             const d = window.allDashboardData.find(x => x.id === id); const rr = (window.configCatalogos?.respuestas_rapidas || [])[Number(i)]; if (!d || !rr) return;
@@ -1827,7 +1835,7 @@
             // ---- Encabezado: talón + estatus ----
             const colorPers = window.configCatalogos?.estatus_colores?.[d.estatus];
             const badgeEst = badgeEstatus(d.estatus, colorPers);
-            document.getElementById("v-titulo").innerHTML = `<span class="ticket grande">${esc(d.ticket)}</span>${badgeEst}<span class="muted" style="font-size:13px;">${esc(d.cliente?.contacto || "Cliente")} · creada ${esc(d.fechaFormateada ? d.fechaFormateada.toLocaleDateString() : "")}</span>`;
+            document.getElementById("v-titulo").innerHTML = `${talon(d, "grande")}${badgeEst}<span class="muted" style="font-size:13px;">${esc(d.cliente?.contacto || "Cliente")} · creada ${esc(d.fechaFormateada ? d.fechaFormateada.toLocaleDateString() : "")}</span>`;
 
             // ---- Conversación ----
             let chatHTML = (d.historial_respuestas || []).map(h => {
@@ -1842,7 +1850,7 @@
 
             // ---- Composer o modo lectura ----
             // Modo revisión (desde la Bandeja): notas internas y estatus, sin enviar correos al cliente.
-            const modoRev = window.visorModoRevision === id && tieneBandeja();
+            const modoRev = window.visorModoRevision === id && tieneBandeja() && enTurnoHoy();
             const esLectura = !modoRev && !esMiSolicitud(d) && !esLiderOAdmin();
             const rr = window.configCatalogos?.respuestas_rapidas || [];
             const selRR = rr.length ? `<select onchange="insertarRespuestaRapida(${js(id)}, this)" aria-label="Insertar respuesta rápida"><option value="">⚡ Respuesta rápida…</option>${rr.map((r, i) => `<option value="${i}">${esc(r.titulo)}</option>`).join("")}</select>` : "<span></span>";
@@ -1897,7 +1905,8 @@
 
             // Revisión manual: el agente dueño o quien revisa registra lo que el cliente contestó en Soporte ST.
             let bloqueRegistro = "";
-            if ((modoRev || (modoManual() && (!esLectura || tieneBandeja()))) && ["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) {
+            // Solo quien tiene el turno de revisión tomado registra respuestas.
+            if (modoRev && ["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) {
                 const bR = d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> Respondió</button><button class="btn-rev comp" onclick="registrarRespuesta(${js(id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Envió comprobante</button>`;
@@ -1929,7 +1938,7 @@
                     const actN = { historial_respuestas: hist, ultimo_mensaje_cliente: "Sin mensaje reciente", nueva_respuesta_cliente: false, ultima_actividad: new Date(), alerta_sla_creada: false };
                     if (enRev) { actN.revisado_por = window.userName; actN.revisado_en = new Date(); }
                     await updateDoc(doc(db, "Cobros", id), actN);
-                    if (enRev && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, "NUEVA_RESPUESTA", `${window.userName} dejó una nota en ${d.ticket}.`);
+                    if (enRev && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, "NUEVA_RESPUESTA", `${window.userName} dejó una nota en ${etiquetaSol(d)}.`);
                     mostrarToast("Nota interna registrada.", "info");
                 }
                 inF.value = "";
@@ -1952,15 +1961,15 @@
             if (nE === d.estatus && !(sA && sA.value !== d.agente)) return mostrarToast("No hay cambios que aplicar.", "info");
             if (sA && sA.value !== d.agente) { act.agente = sA.value; hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: "SISTEMA", mensaje: `🔄 Reasignada de ${d.agente || "N/A"} a ${sA.value} por ${window.userName}.`, enviado_por_correo: false }); }
             if (nE === "ANULADO" && d.estatus !== "ANULADO") {
-                const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${d.ticket}`, boton: "Anular", claseBoton: "btn-danger" }); if (!r) return;
+                const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${etiquetaSol(d)}`, boton: "Anular", claseBoton: "btn-danger" }); if (!r) return;
                 const m = r.motivo;
                 hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: `🚫 ANULADA. \nMotivo: ${m.trim()}`, enviado_por_correo: false }); act.motivo_anulacion = m.trim();
             }
             try {
                 if (hE.length > 0) act.historial_respuestas = [...(d.historial_respuestas || []), ...hE];
                 await updateDoc(doc(db, "Cobros", id), act);
-                if (nE === "COMPROBANTE RECIBIDO" && d.estatus !== "COMPROBANTE RECIBIDO") window.crearNotificacionSistema(d.ticket, d.campaña, (act.agente || d.agente), "COMPROBANTE", `Comprobante recibido: ${d.ticket}`);
-                else if (enRevision && nE !== d.estatus && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, "NUEVA_RESPUESTA", `${window.userName} cambió ${d.ticket} a ${nE}.`);
+                if (nE === "COMPROBANTE RECIBIDO" && d.estatus !== "COMPROBANTE RECIBIDO") window.crearNotificacionSistema(d.ticket, d.campaña, (act.agente || d.agente), "COMPROBANTE", `Comprobante recibido: ${etiquetaSol(d)}`);
+                else if (enRevision && nE !== d.estatus && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, "NUEVA_RESPUESTA", `${window.userName} cambió ${etiquetaSol(d)} a ${nE}.`);
                 mostrarToast("Cambios aplicados.", "success");
             } catch (e) { mostrarToast("No se pudieron aplicar los cambios. Intenta de nuevo.", "error"); }
         };
@@ -2041,10 +2050,10 @@
         });
         window.actualizarVistaCorreo = () => {
             const t = { ...CORREO_TEXTOS_DEFECTO }; const l = leerCorreoTextos(); Object.keys(l).forEach(k => { if (l[k]) t[k] = l[k]; });
-            const ej = { cliente: "María López", solicitud: "ST-000127", orden: "OS-458812" };
+            const ej = { cliente: "María López", solicitud: "458812", orden: "458812" };
             const v = (s) => esc(s).replace(/\{\{(\w+)\}\}/g, (m, k) => ej[k] ? `<b>${ej[k]}</b>` : m);
             const prev = document.getElementById("correo-preview"); if (!prev) return;
-            const asuntoEj = (document.getElementById("conf-correo-asunto").value.trim() || ASUNTO_DEFECTO).replace(/\{\{(\w+)\}\}/g, (m, k) => ({ solicitud: "ST-000127", orden: "OS-458812", cliente: "María López", total: "Q 175.00" })[k] ?? m);
+            const asuntoEj = (document.getElementById("conf-correo-asunto").value.trim() || ASUNTO_DEFECTO).replace(/\{\{(\w+)\}\}/g, (m, k) => ({ solicitud: "458812", orden: "458812", cliente: "María López", total: "Q 175.00" })[k] ?? m);
             prev.innerHTML = `<div class="cp-asunto"><span>Asunto</span>${esc(asuntoEj)}</div><div class="cp-caja"><div class="cp-head">${esc(t.encabezado)}</div><div class="cp-cuerpo"><p>Estimado(a) <b>María López</b>:</p><p>${v(t.introduccion)}</p><div class="cp-tabla">Detalle de servicios, total y formas de pago</div><p>${v(t.instruccion)}</p><p style="color:#475569;">Atentamente,<br><b style="color:#002244;">${esc(window.userName || "Agente")}</b></p></div><div class="cp-pie">${esc(t.pie)}</div></div>`;
         };
         window.guardarCorreoTextos = async () => {
@@ -2054,7 +2063,6 @@
             if (!asunto || !t.encabezado || !t.introduccion || !t.instruccion || !t.pie) return mostrarToast("Completa el asunto y los cuatro textos, o usa Restaurar textos originales.", "warning");
             const desconocidas = (asunto.match(/\{\{(\w+)\}\}/g) || []).filter(v => !["{{solicitud}}", "{{orden}}", "{{cliente}}", "{{total}}"].includes(v));
             if (desconocidas.length) return mostrarToast(`El asunto tiene variables que no existen: ${desconocidas.join(", ")}.`, "warning");
-            if (!modoManual() && !asunto.includes("{{solicitud}}")) return mostrarToast("Con la lectura automática encendida el asunto debe incluir {{solicitud}}, así Make reconoce la respuesta.", "warning");
             await guardarGeneral({ correo_textos: t, correo_asunto: asunto === ASUNTO_DEFECTO ? "" : asunto }, "Asunto y textos del correo guardados. Se usan desde el próximo envío.", "aj-correo");
         };
         window.restaurarCorreoTextos = () => {
@@ -2067,8 +2075,8 @@
         };
 
         // ---- Plantilla de WhatsApp: variables y vista previa ----
-        const VARIABLES_WA = ["solicitud", "cliente", "telefono", "correo", "direccion", "temperamento", "obs_internas", "razon_social", "nit", "servicios", "total", "link_pago", "motivo"];
-        const EJEMPLO_WA = { solicitud: "ST-000127", cliente: "María López", telefono: "5555-1234", correo: "maria@correo.com", direccion: "Zona 10, Guatemala", temperamento: "Normal", obs_internas: "Ninguna", razon_social: "C/F", nit: "C/F", servicios: "* Diagnóstico (Refrigerador LG GT32): No enfría - Q175.00", total: "175.00", link_pago: "https://neonet.com.gt/pago/ejemplo", motivo: "Cliente no tiene correo" };
+        const VARIABLES_WA = ["orden", "cliente", "telefono", "correo", "direccion", "temperamento", "obs_internas", "razon_social", "nit", "servicios", "total", "link_pago", "motivo"];
+        const EJEMPLO_WA = { orden: "458812", solicitud: "458812", cliente: "María López", telefono: "5555-1234", correo: "maria@correo.com", direccion: "Zona 10, Guatemala", temperamento: "Normal", obs_internas: "Ninguna", razon_social: "C/F", nit: "C/F", servicios: "* Diagnóstico (Refrigerador LG GT32): No enfría - Q175.00", total: "175.00", link_pago: "https://neonet.com.gt/pago/ejemplo", motivo: "Cliente no tiene correo" };
         window.insertarVariableWA = (v) => {
             const ta = document.getElementById("conf-plantilla-wa"); const ins = `{{${v}}}`;
             const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? ta.value.length;
@@ -2316,8 +2324,8 @@
             const filas = c.map(d => {
                 let iA = "", nA = "";
                 if (d.tipo === "MENSAJE") { const eM = d.remitente === window.userName; iA = eM ? '<i class="fas fa-arrow-right" style="color:var(--verde);"></i> Para' : '<i class="fas fa-arrow-left" style="color:var(--violeta);"></i> De'; nA = eM ? d.destinatario : d.remitente; }
-                else if (d.subtipo === "NUEVO_CORREO") { iA = '<i class="fas fa-envelope" style="color:var(--verde);"></i> Correo'; nA = d.ticket || ""; }
-                else { iA = '<i class="fas fa-gear" style="color:var(--texto-3);"></i> Sistema'; nA = d.ticket || "General"; }
+                else if (d.subtipo === "NUEVO_CORREO") { iA = '<i class="fas fa-envelope" style="color:var(--verde);"></i> Correo'; nA = etiquetaPorTicket(d.ticket); }
+                else { iA = '<i class="fas fa-gear" style="color:var(--texto-3);"></i> Sistema'; nA = etiquetaPorTicket(d.ticket) || "General"; }
                 const tL = d.leido ? '<span class="badge status-completado">Leído</span>' : '<span class="badge status-recibido">Pendiente</span>';
                 const bE = (esLiderOAdmin() && d.id) ? `<button class="btn-action-sm peligro" title="Eliminar aviso" aria-label="Eliminar aviso" onclick="eliminarAvisoInterno(${js(d.id)})"><i class="fas fa-trash"></i></button>` : "";
                 return `<tr><td class="num" style="font-size:13px; white-space:nowrap; color:var(--texto-2);">${esc(fmtFecha(d.fecha))}</td><td style="white-space:nowrap;">${iA} <b>${esc(nA)}</b></td><td style="max-width:420px;">${esc(d.mensaje)}</td><td class="acciones">${tL}${bE}</td></tr>`;
@@ -2423,7 +2431,7 @@
                     ? `<button class="btn-action-sm retomar" title="Retomar gestión" aria-label="Retomar gestión" onclick="retomarGestion(${js(d.id)})"><i class="fas fa-pen"></i></button>`
                     : `<button class="btn-action-sm" title="Abrir solicitud" aria-label="Abrir solicitud" onclick="abrirVisor(${js(d.id)})"><i class="fas fa-eye"></i></button>`;
                 if (esPropia && d.nueva_respuesta_cliente) bH += `<button class="btn-action-sm ok" title="Marcar respuesta como revisada" aria-label="Marcar revisada" onclick="marcarRevisado(${js(d.id)})"><i class="fas fa-check-double"></i></button>`;
-                if (esAdmin()) bH += `<button class="btn-action-sm peligro" title="Eliminar solicitud" aria-label="Eliminar solicitud" onclick="eliminarTicket(${js(d.id)}, ${js(d.ticket)})"><i class="fas fa-trash"></i></button>`;
+                if (esAdmin()) bH += `<button class="btn-action-sm peligro" title="Eliminar solicitud" aria-label="Eliminar solicitud" onclick="eliminarTicket(${js(d.id)}, ${js(etiquetaSol(d))})"><i class="fas fa-trash"></i></button>`;
                 let mT = "";
                 if (d.estatus === "PAUSADO" && d.motivo_pausa) mT = `<div class="seg-nota" style="color:var(--ambar);"><i class="fas fa-circle-pause"></i> ${esc(d.motivo_pausa)}</div>`;
                 else if (d.estatus === "ANULADO" && d.motivo_anulacion) mT = `<div class="seg-nota" style="color:var(--rojo);"><i class="fas fa-ban"></i> ${esc(d.motivo_anulacion)}</div>`;
@@ -2443,12 +2451,11 @@
                     adjuntos: `<td style="text-align:center;">${aH}</td>`,
                     actividad: `<td class="seg-fecha">${fAct ? `${esc(fAct.toLocaleDateString())}<small>${esc(fAct.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</small>` : "—"}</td>`
                 };
-                const ordenBajoTicket = d.orden_servicio && !colOn("orden") ? `<span class="seg-orden">OS ${esc(d.orden_servicio)}</span>` : "";
-                return `<tr class="row-card" style="--borde:${borde};"><td><span class="ticket">${esc(d.ticket)}</span>${ordenBajoTicket}${eS2}</td>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c]) => celdas[c]).join("")}<td class="acciones">${bH}</td></tr>`;
+                return `<tr class="row-card" style="--borde:${borde};"><td>${talon(d)}${eS2}</td>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c]) => celdas[c]).join("")}<td class="acciones">${bH}</td></tr>`;
             });
             const pista = window.estadoSeg === "ABIERTAS" && nCerradas > 0 ? `<br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="cambiarEstadoSeg('CERRADAS')">Ver ${nCerradas} ${nCerradas === 1 ? "cerrada" : "cerradas"} con estos filtros</button>` : "";
             const thS = { total: ' style="text-align:right;"', adjuntos: ' style="text-align:center;"' };
-            document.getElementById("thead-seg").innerHTML = `<tr><th style="padding-left:18px;">Solicitud</th>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c, et]) => `<th${thS[c] || ""}>${esc(et === "Canal de envío" ? "Canal" : et === "Orden de servicio" ? "Orden" : et)}</th>`).join("")}<th style="text-align:right;">Acciones</th></tr>`;
+            document.getElementById("thead-seg").innerHTML = `<tr><th style="padding-left:18px;">Orden</th>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c, et]) => `<th${thS[c] || ""}>${esc(et === "Canal de envío" ? "Canal" : et === "Orden de servicio" ? "Orden" : et)}</th>`).join("")}<th style="text-align:right;">Acciones</th></tr>`;
             const nCols = 2 + COLUMNAS_SEG.filter(([c]) => colOn(c)).length;
             tb.innerHTML = dR.length === 0 ? `<tr><td colspan="${nCols}" class="vacio"><i class="fas fa-folder-open"></i>No hay solicitudes ${window.estadoSeg === "ABIERTAS" ? "abiertas " : window.estadoSeg === "CERRADAS" ? "cerradas " : ""}con estos filtros.${pista}</td></tr>` : filas.join("");
         }
@@ -2697,7 +2704,7 @@
                     if (paraMi && !d.leido) {
                         let i = '<i class="fas fa-info-circle"></i>', cls = "n-accent";
                         if (d.tipo === "MENSAJE") { i = '<i class="fas fa-comment-dots"></i>'; cls = "n-msg"; } else if (d.subtipo === "ATRASO") { i = '<i class="fas fa-exclamation-triangle"></i>'; cls = "n-danger"; } else if (d.subtipo === "COMPROBANTE") { i = '<i class="fas fa-file-invoice-dollar"></i>'; cls = "n-warning"; } else if (d.subtipo === "NUEVA_RESPUESTA") { i = '<i class="fas fa-user-check"></i>'; cls = "n-accent"; }
-                        window.notifSistema.push(`<div class="notif-item ${cls}" onclick="marcarLeidoYAbrir(${js(d.id)}, ${js(d.ticket || "")})"><div class="notif-icon">${i}</div><div><div class="notif-titulo">${esc(d.ticket || (d.tipo === "MENSAJE" ? "Aviso de " + d.remitente : "Aviso general"))}</div><div class="notif-texto">${esc(d.mensaje)}</div></div></div>`);
+                        window.notifSistema.push(`<div class="notif-item ${cls}" onclick="marcarLeidoYAbrir(${js(d.id)}, ${js(d.ticket || "")})"><div class="notif-icon">${i}</div><div><div class="notif-titulo">${esc(d.ticket ? etiquetaPorTicket(d.ticket) : (d.tipo === "MENSAJE" ? "Aviso de " + d.remitente : "Aviso general"))}</div><div class="notif-texto">${esc(d.mensaje)}</div></div></div>`);
                     }
                     let mostrar = false;
                     if (d.tipo === "MENSAJE") mostrar = esAdmin() || d.destinatario === window.userName || d.remitente === window.userName;
@@ -2725,7 +2732,7 @@
                         d.fechaFormateada = toDate(d.fecha) || new Date();
                         docs.push(d);
                         if (d.nueva_respuesta_cliente && (d.agente === window.userName || esLiderOAdmin())) {
-                            window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); showSec('sec-3'); abrirVisor(${js(d.id)});"><div class="notif-icon"><i class="fas fa-envelope-open-text"></i></div><div><div class="notif-titulo">${esc(d.cliente?.contacto || "Cliente")} respondió</div><div class="notif-texto">Solicitud ${esc(d.ticket)}</div></div></div>`);
+                            window.notifTickets.push(`<div class="notif-item n-success" onclick="document.getElementById('notif-panel').classList.remove('show'); showSec('sec-3'); abrirVisor(${js(d.id)});"><div class="notif-icon"><i class="fas fa-envelope-open-text"></i></div><div><div class="notif-titulo">${esc(d.cliente?.contacto || "Cliente")} respondió</div><div class="notif-texto">${esc(etiquetaSol(d))}</div></div></div>`);
                             window.virtualAvisosTickets.push({ fecha: (toDate(d.ultima_actividad) || new Date()).toISOString(), tipo: "SISTEMA", subtipo: "NUEVO_CORREO", mensaje: `Nueva respuesta cliente: ${d.cliente?.contacto || "N/A"}`, ticket: d.ticket, leido: false });
                         }
                     } catch (err) { console.warn("Solicitud con datos inválidos:", docSnap.id, err); }
@@ -2757,7 +2764,7 @@
         const WIDGETS_BLOQUE = [["g-estatus", "Gráfica: solicitudes por estatus"], ["g-agentes", "Gráfica: monto por agente"], ["g-envios", "Gráfica: cobros enviados por día"], ["productividad", "Tabla: productividad del equipo"], ["make", "Uso de Make (solo administrador)"]];
         const PREF_DEFECTO = {
             dashboard: { periodo: "mes", kpis: ["abiertas", "enviados", "monto", "espera", "completadas"], kpis_orden: WIDGETS_KPI.map(w => w[0]), bloques: ["g-estatus", "g-agentes", "g-envios", "productividad", "make"], bloques_orden: WIDGETS_BLOQUE.map(w => w[0]) },
-            seguimientos: { columnas: ["creada", "orden", "cliente", "estatus", "mensaje", "adjuntos"] }
+            seguimientos: { columnas: ["creada", "cliente", "estatus", "mensaje", "adjuntos"] }
         };
         window.prefs = JSON.parse(JSON.stringify(PREF_DEFECTO));
         const LS_PREFS = () => "cobros_prefs_" + (window.userId || "");
@@ -2841,7 +2848,7 @@
         };
 
         // ---- Seguimientos: columnas visibles ----
-        const COLUMNAS_SEG = [["creada", "Creada"], ["orden", "Orden de servicio"], ["cliente", "Cliente"], ["total", "Total"], ["agente", "Agente"], ["canal", "Canal de envío"], ["estatus", "Estatus"], ["mensaje", "Último mensaje"], ["adjuntos", "Adjuntos"], ["actividad", "Última actividad"]];
+        const COLUMNAS_SEG = [["creada", "Creada"], ["cliente", "Cliente"], ["total", "Total"], ["agente", "Agente"], ["canal", "Canal de envío"], ["estatus", "Estatus"], ["mensaje", "Último mensaje"], ["adjuntos", "Adjuntos"], ["actividad", "Última actividad"]];
         const colOn = (c) => (window.prefs.seguimientos.columnas || []).includes(c);
         function pintarColumnasSeg() {
             const cont = document.getElementById("cols-seg-lista"); if (!cont) return;
@@ -2885,7 +2892,7 @@
             try { await setDoc(doc(db, "Configuracion", "Turno"), { fecha: hoy, revisores: lista, actualizado_por: window.userName, actualizado: new Date().toISOString() }); mostrarToast(tomar ? "Tomaste el turno de hoy. Recibirás las alertas de cobros sin respuesta." : "Dejaste el turno de hoy.", "success"); }
             catch (e) { console.error(e); mostrarToast("No se pudo actualizar el turno. Pide al administrador que active la Bandeja de revisión en tu rol.", "error"); }
         };
-        window.abrirVisorRevision = (id) => { window.visorModoRevision = id; window.abrirVisor(id); };
+        window.abrirVisorRevision = (id) => { window.visorModoRevision = enTurnoHoy() ? id : null; window.abrirVisor(id); };
         window.copiarTicket = (t) => { if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => mostrarToast(`${t} copiado. Pégalo en el buscador de Outlook.`, "info")).catch(() => {}); };
 
         function pintarTurno() {
@@ -2938,11 +2945,12 @@
                 const ico = c === "WhatsApp" ? '<i class="fab fa-whatsapp" title="Enviado por WhatsApp"></i>' : '<i class="fas fa-envelope" title="Enviado por correo"></i>';
                 const u = ultimaRevision(d);
                 const ultima = u ? `<div class="rev-ultima"><b>${esc(u.revision ? ACCION_REV[u.revision]?.corto || "Nota" : "Nota")}</b> · ${esc(u.agente)}, ${esc(fmtFecha(u.fecha))}<br>${esc(String(u.mensaje || "").split("\n").slice(u.revision && !["NOTA", "ESTATUS"].includes(u.revision) ? 1 : 0).join(" ").slice(0, 90))}</div>` : '<span class="muted">—</span>';
-                const ver = `<button class="btn-rev" title="Abrir en el visor para notas internas y estatus" onclick="abrirVisorRevision(${js(d.id)})"><i class="fas fa-pen-to-square"></i> Revisar</button>`;
-                const botones = d.estatus === "COMPROBANTE RECIBIDO"
+                const miTurno = enTurnoHoy();
+                const ver = miTurno ? `<button class="btn-rev" title="Abrir en el visor para notas internas y estatus" onclick="abrirVisorRevision(${js(d.id)})"><i class="fas fa-pen-to-square"></i> Revisar</button>` : `<button class="btn-action-sm" title="Ver (solo lectura)" aria-label="Ver solicitud" onclick="abrirVisor(${js(d.id)})"><i class="fas fa-eye"></i></button>`;
+                const botones = !miTurno ? `<span class="muted" style="font-size:12px;">Toma el turno para registrar</span>` : d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
-                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td><button class="ticket ticket-copiar" title="Copiar para buscar en Outlook" onclick="copiarTicket(${js(d.ticket)})">${esc(d.ticket)}</button>${d.orden_servicio ? `<button class="orden-copiar" title="Copiar la orden de servicio" onclick="copiarTicket(${js(d.orden_servicio)})">OS ${esc(d.orden_servicio)}</button>` : ""}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
+                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td>${ordenDe(d) ? `<button class="ticket ticket-copiar" title="Copiar la orden para buscarla en Outlook" onclick="copiarTicket(${js(ordenDe(d))})">${esc(ordenDe(d))}</button>` : talon(d)}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
             }).join("");
         };
 
@@ -2950,10 +2958,11 @@
         window.registrarRespuesta = async (id, accion) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             const a = ACCION_REV[accion]; if (!a) return;
+            if (!enTurnoHoy()) return mostrarToast("Solo quien tiene el turno de hoy puede registrar. Toca \"Tomar el turno de hoy\".", "warning");
             const datos = await new Promise((resolve) => {
                 const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
                 const campoRef = accion === "COMPROBANTE" ? `<div class="input-group" style="margin-top:12px;"><label for="rev-ref">Enlace del comprobante o número de boleta (opcional)</label><input type="text" id="rev-ref" maxlength="500" placeholder="https://… o No. 123456"></div>` : "";
-                ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rev-titulo" style="max-width:520px;"><div class="modal-head"><h3 id="rev-titulo">${esc(a.titulo)} · ${esc(d.ticket)}</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)} · agente ${esc(d.agente || "sin asignar")}</p><div class="input-group"><label for="rev-nota">${accion === "COMPLETAR" ? "Nota (opcional)" : "Qué dijo el cliente (opcional)"}</label><textarea id="rev-nota" rows="3" maxlength="1500"></textarea><p class="ayuda">${esc(a.ayuda)}</p></div>${campoRef}</div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn ${accion === "COMPLETAR" ? "btn-success" : "btn-primary"}" data-r="1">${esc(a.boton)}</button></div></div>`;
+                ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rev-titulo" style="max-width:520px;"><div class="modal-head"><h3 id="rev-titulo">${esc(a.titulo)} · ${esc(etiquetaSol(d))}</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)} · agente ${esc(d.agente || "sin asignar")}</p><div class="input-group"><label for="rev-nota">${accion === "COMPLETAR" ? "Nota (opcional)" : "Qué dijo el cliente (opcional)"}</label><textarea id="rev-nota" rows="3" maxlength="1500"></textarea><p class="ayuda">${esc(a.ayuda)}</p></div>${campoRef}</div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn ${accion === "COMPLETAR" ? "btn-success" : "btn-primary"}" data-r="1">${esc(a.boton)}</button></div></div>`;
                 document.body.appendChild(ov);
                 const cerrar = (v) => { document.removeEventListener("keydown", tecla); ov.remove(); resolve(v); };
                 const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
@@ -2977,8 +2986,8 @@
             if (accion === "COMPLETAR") { act.estatus = "COMPLETADO"; act.completado_en = ahora; act.nueva_respuesta_cliente = false; }
             try {
                 await updateDoc(doc(db, "Cobros", id), act);
-                if (accion !== "COMPLETAR" && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, accion === "COMPROBANTE" ? "COMPROBANTE" : "NUEVA_RESPUESTA", accion === "COMPROBANTE" ? `${window.userName} registró el comprobante de ${d.ticket}.` : `${d.cliente?.contacto || "El cliente"} respondió. Lo registró ${window.userName}.`);
-                mostrarToast(`${d.ticket}: ${a.corto.toLowerCase()} registrado.`, "success");
+                if (accion !== "COMPLETAR" && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, accion === "COMPROBANTE" ? "COMPROBANTE" : "NUEVA_RESPUESTA", accion === "COMPROBANTE" ? `${window.userName} registró el comprobante de ${etiquetaSol(d)}.` : `${d.cliente?.contacto || "El cliente"} respondió. Lo registró ${window.userName}.`);
+                mostrarToast(`${etiquetaSol(d)}: ${a.corto.toLowerCase()} registrado.`, "success");
             } catch (e) { console.error(e); mostrarToast("No se pudo registrar. Revisa tu conexión e intenta de nuevo.", "error"); }
         };
 
@@ -3109,7 +3118,7 @@
                 const serv = (d.servicios || []).map(s => `[${s.tipo}] ${s.producto || ""} ${s.marca || ""} ${s.modelo || ""} - ${s.detalle} (Q${s.precio})`).join(" | ");
                 const marcas = [...new Set((d.servicios || []).map(s => s.marca).filter(Boolean))].join(", ");
                 const comp = comprobantesDe(d);
-                return { "SOLICITUD": d.ticket || "N/A", "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : "N/A", "ÚLTIMA ACTIVIDAD": fmtFecha(d.ultima_actividad), "ESTATUS": d.estatus || "N/A", "CATEGORÍA": window.configCatalogos?.estatus_categorias?.[d.estatus] || "Sin categoría", "MOTOR": motorDe(d.estatus), "AGENTE": d.agente || "N/A", "CAMPAÑA": d.campaña || "N/A", "TEMPERAMENTO": d.prioridad?.temperamento || "Normal", "OBS. INTERNAS": d.prioridad?.observaciones_internas || "Ninguna", "CLIENTE": d.cliente?.contacto || "N/A", "NIT CLIENTE": d.cliente?.nit || "C/F", "TELÉFONO": d.cliente?.tel || "N/A", "CORREO": d.cliente?.correo || "N/A", "DIRECCIÓN": d.cliente?.dir || "N/A", "OBS. TÉCNICO": d.cliente?.obs_tec || "Ninguna", "SERVICIOS": serv || "Sin servicios", "MARCAS": marcas || "N/A", "TOTAL (Q)": Number(d.total) || 0, "RAZÓN SOCIAL": d.facturacion?.nombre || "C/F", "NIT FACTURA": d.facturacion?.nit || "C/F", "MÉTODO ENVÍO": d.metodoEnvio || "N/A", "MÉTODO PAGO": d.pago_metodo || "N/A", "MOTIVO": d.motivo_anulacion || d.motivo_pausa || "N/A", "LINK NEO-NET": d.pago_link || "N/A", "COMPROBANTES": comp.length ? comp.join(", ") : "N/A", "HISTORIAL MSJS": (d.historial_respuestas || []).length };
+                return { "ORDEN DE SERVICIO": ordenDe(d) || "Sin orden", "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : "N/A", "ÚLTIMA ACTIVIDAD": fmtFecha(d.ultima_actividad), "ESTATUS": d.estatus || "N/A", "CATEGORÍA": window.configCatalogos?.estatus_categorias?.[d.estatus] || "Sin categoría", "MOTOR": motorDe(d.estatus), "AGENTE": d.agente || "N/A", "CAMPAÑA": d.campaña || "N/A", "TEMPERAMENTO": d.prioridad?.temperamento || "Normal", "OBS. INTERNAS": d.prioridad?.observaciones_internas || "Ninguna", "CLIENTE": d.cliente?.contacto || "N/A", "NIT CLIENTE": d.cliente?.nit || "C/F", "TELÉFONO": d.cliente?.tel || "N/A", "CORREO": d.cliente?.correo || "N/A", "DIRECCIÓN": d.cliente?.dir || "N/A", "OBS. TÉCNICO": d.cliente?.obs_tec || "Ninguna", "SERVICIOS": serv || "Sin servicios", "MARCAS": marcas || "N/A", "TOTAL (Q)": Number(d.total) || 0, "RAZÓN SOCIAL": d.facturacion?.nombre || "C/F", "NIT FACTURA": d.facturacion?.nit || "C/F", "MÉTODO ENVÍO": d.metodoEnvio || "N/A", "MÉTODO PAGO": d.pago_metodo || "N/A", "MOTIVO": d.motivo_anulacion || d.motivo_pausa || "N/A", "LINK NEO-NET": d.pago_link || "N/A", "COMPROBANTES": comp.length ? comp.join(", ") : "N/A", "HISTORIAL MSJS": (d.historial_respuestas || []).length };
             });
             const ws = XLSX.utils.json_to_sheet(filas); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Dashboard"); XLSX.writeFile(wb, `Reporte_Dashboard_${Date.now()}.xlsx`); mostrarToast("Exportado a Excel.", "success");
         };
