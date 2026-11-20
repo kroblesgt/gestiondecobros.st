@@ -391,6 +391,28 @@
         .kpi .lbl { font-size: 13px; color: var(--texto-2); display: flex; align-items: center; gap: 8px; }
         .kpi .lbl i { color: var(--c, var(--azul)); }
         .graficas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; }
+        .kpi-strip { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+        .dash-barra { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 6px; }
+        .dash-fechas { display: none; align-items: center; gap: 6px; }
+        .dash-fechas.visible { display: inline-flex; }
+        .dash-fechas input { width: auto; }
+        .dash-acciones { margin-left: auto; display: flex; gap: 8px; }
+        .dash-rango { font-size: 13px; margin: 0 0 14px; }
+        .dash-bloques { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .dash-bloques > .card { margin: 0; }
+        .dash-bloques > .ancho { grid-column: 1 / -1; }
+        .w-oculto { display: none !important; }
+        .cols-seg { width: auto; min-width: 150px; }
+        #cols-seg-lista { position: absolute; top: calc(100% + 4px); right: 0; min-width: 230px; background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--radio); padding: 8px; z-index: 1000; box-shadow: var(--sombra-flotante); display: flex; flex-direction: column; gap: 2px; }
+        .perso-lista { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 16px; }
+        .perso-item { display: flex; align-items: center; gap: 10px; border: 1px solid var(--linea); border-radius: var(--radio-sm); padding: 8px 10px; background: var(--superficie); }
+        .perso-item label { flex: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; font-weight: 500; color: var(--ink); }
+        .perso-item input[type=checkbox] { width: 18px; height: 18px; }
+        .perso-item.apagado label { color: var(--texto-3); }
+        .perso-item .mover { border: 1px solid var(--linea); background: var(--superficie); border-radius: 6px; width: 30px; height: 30px; cursor: pointer; color: var(--texto-2); }
+        .perso-item .mover:disabled { opacity: .35; cursor: default; }
+        .perso-sub { font-size: 13px; font-weight: 700; color: var(--texto-2); margin: 4px 0 0; }
+        @media (max-width: 900px) { .dash-bloques { grid-template-columns: minmax(0, 1fr); } .dash-acciones { margin-left: 0; } }
         .grafica { height: 280px; position: relative; }
         .consumo-barra { background: var(--papel); border-radius: 20px; height: 8px; overflow: hidden; margin: 10px 0 6px; }
         .consumo-barra div { height: 100%; width: 0; background: var(--verde); transition: width .4s; }
@@ -417,6 +439,9 @@
         .tabla-rev th:last-child, .tabla-rev td:last-child { position: sticky; right: 0; background: var(--superficie); box-shadow: -10px 0 10px -10px rgba(15,42,68,.25); text-align: right; white-space: nowrap; }
         .tabla-rev th:last-child { background: var(--superficie-2); }
         .ticket-copiar { cursor: pointer; border: 0; font: inherit; }
+        .orden-copiar { display: block; margin-top: 6px; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--texto-2); cursor: pointer; }
+        .orden-copiar:hover { color: var(--azul); }
+        .seg-orden { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--texto-2); }
         .espera { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--texto-2); }
         .espera.tarde { color: var(--rojo); }
         .rev-ultima { font-size: 12px; color: var(--texto-3); max-width: 220px; }
@@ -480,6 +505,8 @@
         .vista-previa-wa div { background: #DCF8C6; border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; font-size: 13px; box-shadow: 0 1px 1px rgba(0,0,0,.1); max-width: 92%; margin-left: auto; word-break: break-word; }
         .wa-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: 16px; }
         .correo-preview { border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; font-family: Arial, Helvetica, sans-serif; font-size: 13px; background: #F0F4F8; padding: 14px; }
+        .correo-preview .cp-asunto { max-width: 520px; margin: 0 auto 10px; background: #fff; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--ink); }
+        .correo-preview .cp-asunto span { display: block; font-size: 11px; font-weight: 500; color: var(--texto-3); margin-bottom: 2px; }
         .correo-preview .cp-caja { background: #fff; border-radius: 8px; overflow: hidden; max-width: 520px; margin: 0 auto; }
         .correo-preview .cp-head { background: #002244; color: #fff; padding: 12px 16px; font-weight: bold; font-size: 15px; }
         .correo-preview .cp-cuerpo { padding: 16px; color: #1e293b; line-height: 1.5; }
@@ -655,6 +682,9 @@
                         <div class="card" id="card-cliente">
                             <h3 class="card-titulo"><span class="paso">2</span> Cliente</h3>
                             <div class="form-grid">
+                                <div class="input-group"><label for="cli-orden" id="lbl-cli-orden">Orden de servicio</label><input type="text" id="cli-orden" maxlength="40" autocomplete="off" placeholder="No. de orden en el sistema de servicio"></div>
+                            </div>
+                            <div class="form-grid">
                                 <div class="input-group"><label for="cli-contacto">Nombre <span class="req">*</span></label><input type="text" id="cli-contacto" class="campo-cliente" autocomplete="off"></div>
                                 <div class="input-group"><label for="cli-tel">Teléfono <span class="req">*</span></label><input type="tel" id="cli-tel" class="campo-cliente" autocomplete="off"></div>
                                 <div class="input-group"><label for="cli-nit" id="lbl-cli-nit">NIT</label><input type="text" id="cli-nit" class="campo-cliente" autocomplete="off"></div>
@@ -727,12 +757,16 @@
                 <div class="barra-filtros">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="search" id="buscador-tickets" class="search-input-dynamic" placeholder="Buscar por solicitud, cliente, NIT, teléfono o agente" oninput="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" aria-label="Buscar solicitudes">
+                        <input type="search" id="buscador-tickets" class="search-input-dynamic" placeholder="Buscar por solicitud, orden, cliente, NIT, teléfono o agente" oninput="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" aria-label="Buscar solicitudes">
                     </div>
                     <select id="filtro-vista-equipo" onchange="aplicarFiltroSeguimientos(window.filtroActualSeguimiento || 'TODOS', null)" style="width:auto;" aria-label="Qué solicitudes ver">
                         <option value="MIS_SOLICITUDES">Mis solicitudes</option>
                         <option value="EQUIPO">Todo el equipo</option>
                     </select>
+                    <details class="custom-dropdown cols-seg" id="det-cols-seg">
+                        <summary><span><i class="fas fa-table-columns" style="color:var(--azul); margin-right:6px;"></i>Columnas</span><i class="fas fa-chevron-down" style="font-size:12px; color:var(--texto-3);"></i></summary>
+                        <div id="cols-seg-lista"></div>
+                    </details>
                 </div>
 
                 <div class="barra-filtros" style="justify-content:space-between;">
@@ -767,7 +801,7 @@
                 <div class="card tabla-card">
                     <div class="table-responsive">
                         <table class="tabla-seg">
-                            <thead><tr><th style="padding-left:18px;">Solicitud</th><th>Creada</th><th>Cliente</th><th>Estatus</th><th>Último mensaje</th><th style="text-align:center;">Adjuntos</th><th style="text-align:right;">Acciones</th></tr></thead>
+                            <thead id="thead-seg"><tr><th style="padding-left:18px;">Solicitud</th><th>Creada</th><th>Cliente</th><th>Estatus</th><th>Último mensaje</th><th style="text-align:center;">Adjuntos</th><th style="text-align:right;">Acciones</th></tr></thead>
                             <tbody id="lista-seguimientos"></tbody>
                         </table>
                     </div>
@@ -795,7 +829,7 @@
                 <div class="barra-filtros">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="search" id="rev-buscar" class="search-input-dynamic" placeholder="Buscar por solicitud, cliente, correo o agente" oninput="renderBandejaRevision()" aria-label="Buscar en la bandeja">
+                        <input type="search" id="rev-buscar" class="search-input-dynamic" placeholder="Buscar por solicitud, orden, cliente, correo o agente" oninput="renderBandejaRevision()" aria-label="Buscar en la bandeja">
                     </div>
                     <select id="rev-canal" onchange="renderBandejaRevision()" style="width:auto;" aria-label="Canal de envío">
                         <option value="Correo">Enviadas por correo</option>
@@ -826,60 +860,65 @@
 
             <!-- ================= DASHBOARD ================= -->
             <section id="sec-4" style="display:none" data-titulo="Dashboard">
-                <div class="card" style="padding:16px;">
-                    <div class="form-grid" style="margin-bottom:0; align-items:end;">
-                        <div class="input-group"><label for="filtro-inicio">Desde</label><input type="date" id="filtro-inicio" onchange="aplicarFiltrosDashboard()"></div>
-                        <div class="input-group"><label for="filtro-fin">Hasta</label><input type="date" id="filtro-fin" onchange="aplicarFiltrosDashboard()"></div>
-                        <div class="input-group"><label for="filtro-estatus">Estatus</label><select id="filtro-estatus" onchange="aplicarFiltrosDashboard()"></select></div>
-                        <div class="input-group"><label for="filtro-agente">Agente</label><select id="filtro-agente" onchange="aplicarFiltrosDashboard()"><option value="TODOS">Todos</option></select></div>
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn btn-outline" onclick="limpiarFiltrosDashboard()" title="Quitar filtros"><i class="fas fa-eraser"></i></button>
-                            <button class="btn btn-success" onclick="exportarExcelDashboard()" style="flex:1;"><i class="fas fa-file-excel"></i> Exportar</button>
+                <div class="dash-barra">
+                    <div class="segmentado" role="tablist" aria-label="Periodo">
+                        <button class="seg-op periodo-op" data-periodo="hoy" onclick="elegirPeriodo('hoy')">Hoy</button>
+                        <button class="seg-op periodo-op" data-periodo="semana" onclick="elegirPeriodo('semana')">Semana</button>
+                        <button class="seg-op periodo-op" data-periodo="mes" onclick="elegirPeriodo('mes')">Mes</button>
+                        <button class="seg-op periodo-op" data-periodo="mes-anterior" onclick="elegirPeriodo('mes-anterior')">Mes anterior</button>
+                        <button class="seg-op periodo-op" data-periodo="todo" onclick="elegirPeriodo('todo')">Todo</button>
+                        <button class="seg-op periodo-op" data-periodo="custom" onclick="elegirPeriodo('custom')">Fechas</button>
+                    </div>
+                    <div class="dash-fechas" id="dash-fechas">
+                        <input type="date" id="filtro-inicio" aria-label="Desde" onchange="aplicarFiltrosDashboard()">
+                        <span class="muted">a</span>
+                        <input type="date" id="filtro-fin" aria-label="Hasta" onchange="aplicarFiltrosDashboard()">
+                    </div>
+                    <select id="filtro-agente" onchange="aplicarFiltrosDashboard()" aria-label="Agente" style="width:auto;"><option value="TODOS">Todos los agentes</option></select>
+                    <select id="filtro-estatus" onchange="aplicarFiltrosDashboard()" aria-label="Estatus" style="width:auto;"></select>
+                    <div class="dash-acciones">
+                        <button class="btn btn-outline" onclick="abrirPersonalizarDashboard()"><i class="fas fa-table-cells-large"></i> Personalizar</button>
+                        <button class="btn btn-success" onclick="exportarExcelDashboard()"><i class="fas fa-file-excel"></i> Exportar</button>
+                    </div>
+                </div>
+                <p class="muted dash-rango" id="dash-rango"></p>
+
+                <div class="kpi-strip" id="dash-kpis">
+                    <div class="kpi" data-w="abiertas"><div class="lbl"><i class="fas fa-folder-open"></i> Abiertas</div><div class="value" id="kpi-tickets">0</div></div>
+                    <div class="kpi" data-w="enviados" style="--c: var(--azul);"><div class="lbl"><i class="fas fa-paper-plane"></i> Cobros enviados</div><div class="value" id="kpi-enviados">0</div></div>
+                    <div class="kpi" data-w="monto" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-coins"></i> Monto gestionado</div><div class="value" id="kpi-monto">Q 0.00</div></div>
+                    <div class="kpi" data-w="cobrado" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-sack-dollar"></i> Monto completado</div><div class="value" id="kpi-cobrado">Q 0.00</div></div>
+                    <div class="kpi" data-w="espera" style="--c: var(--ambar);"><div class="lbl"><i class="fas fa-hourglass-half"></i> En espera del cliente</div><div class="value" id="kpi-espera">0</div></div>
+                    <div class="kpi" data-w="completadas" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-circle-check"></i> Completadas</div><div class="value" id="kpi-completados">0</div></div>
+                </div>
+
+                <div class="dash-bloques" id="dash-bloques">
+                    <div class="card" data-w="g-estatus"><h3 class="card-titulo">Solicitudes por estatus</h3><div class="grafica"><canvas id="chartEstatus"></canvas></div></div>
+                    <div class="card" data-w="g-agentes"><h3 class="card-titulo">Monto por agente (Q)</h3><div class="grafica"><canvas id="chartAgentes"></canvas></div></div>
+                    <div class="card ancho" data-w="g-envios"><h3 class="card-titulo">Cobros enviados por día</h3><div class="grafica"><canvas id="chartEnvios"></canvas></div></div>
+                    <div class="card tabla-card ancho" data-w="productividad">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; gap:10px; flex-wrap:wrap; border-bottom:1px solid var(--linea);">
+                            <h3 class="card-titulo" style="margin:0;">Productividad del equipo</h3>
+                            <span class="muted" style="font-size:13px;" id="prod-rango"></span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="tabla-prod">
+                                <thead><tr><th>Persona</th><th class="num">Cobros por correo</th><th class="num">Cobros por WhatsApp</th><th class="num">Respuestas por correo</th><th class="num">Anotaciones de revisión</th><th class="num">Completadas</th><th class="num" title="Mediana del tiempo entre el envío del cobro y el comprobante">Envío a comprobante</th></tr></thead>
+                                <tbody id="lista-productividad"></tbody>
+                                <tfoot id="pie-productividad"></tfoot>
+                            </table>
                         </div>
                     </div>
-                </div>
-
-                <div class="rango-rapido" style="margin:-6px 0 14px;">
-                    <button class="f-pill" onclick="rangoDashboard('hoy')">Hoy</button>
-                    <button class="f-pill" onclick="rangoDashboard('semana')">Esta semana</button>
-                    <button class="f-pill" onclick="rangoDashboard('mes')">Este mes</button>
-                    <button class="f-pill" onclick="rangoDashboard('mes-anterior')">Mes anterior</button>
-                </div>
-
-                <div class="kpi-strip">
-                    <div class="kpi"><div class="lbl"><i class="fas fa-folder-open"></i> Abiertas</div><div class="value" id="kpi-tickets">0</div></div>
-                    <div class="kpi" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-coins"></i> Monto gestionado</div><div class="value" id="kpi-monto">Q 0.00</div></div>
-                    <div class="kpi" style="--c: var(--ambar);"><div class="lbl"><i class="fas fa-hourglass-half"></i> En espera del cliente</div><div class="value" id="kpi-espera">0</div></div>
-                    <div class="kpi" style="--c: var(--verde);"><div class="lbl"><i class="fas fa-circle-check"></i> Completadas</div><div class="value" id="kpi-completados">0</div></div>
-                </div>
-
-                <div class="graficas">
-                    <div class="card"><h3 class="card-titulo">Solicitudes por estatus</h3><div class="grafica"><canvas id="chartEstatus"></canvas></div></div>
-                    <div class="card"><h3 class="card-titulo">Monto por agente (Q)</h3><div class="grafica"><canvas id="chartAgentes"></canvas></div></div>
-                </div>
-
-                <div class="card tabla-card" style="margin-top:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; gap:10px; flex-wrap:wrap; border-bottom:1px solid var(--linea);">
-                        <h3 class="card-titulo" style="margin:0;">Productividad del equipo</h3>
-                        <span class="muted" style="font-size:13px;" id="prod-rango"></span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="tabla-prod">
-                            <thead><tr><th>Persona</th><th class="num">Cobros por correo</th><th class="num">Cobros por WhatsApp</th><th class="num">Respuestas por correo</th><th class="num">Anotaciones de revisión</th><th class="num">Completadas</th><th class="num" title="Mediana del tiempo entre el envío del cobro y el comprobante">Envío a comprobante</th></tr></thead>
-                            <tbody id="lista-productividad"></tbody>
-                            <tfoot id="pie-productividad"></tfoot>
-                        </table>
+                    <div id="card-consumo-make" class="card ancho" data-w="make" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <h3 class="card-titulo" style="margin:0;"><i class="fas fa-plug" style="color:var(--azul);"></i> Uso de Make este mes (estimado)</h3>
+                            <span class="muted" style="font-size:13px;" id="consumo-make-detalle"></span>
+                        </div>
+                        <div class="consumo-barra"><div id="consumo-make-barra"></div></div>
+                        <div class="num" style="font-weight:600;" id="consumo-make-texto">0 / 1000 créditos</div>
                     </div>
                 </div>
-
-                <div id="card-consumo-make" class="card" style="display:none; margin-top:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-                        <h3 class="card-titulo" style="margin:0;"><i class="fas fa-plug" style="color:var(--azul);"></i> Uso de Make este mes (estimado)</h3>
-                        <span class="muted" style="font-size:13px;" id="consumo-make-detalle"></span>
-                    </div>
-                    <div class="consumo-barra"><div id="consumo-make-barra"></div></div>
-                    <div class="num" style="font-weight:600;" id="consumo-make-texto">0 / 1000 créditos</div>
-                </div>
+                <p class="muted vacio" id="dash-vacio" style="display:none;"><i class="fas fa-table-cells-large"></i>Ocultaste todo. Usa <b>Personalizar</b> para elegir qué ver.</p>
             </section>
 
             <!-- ================= MONITOR ================= -->
@@ -987,6 +1026,7 @@
                                 <div class="switch"><div><b>NIT del cliente</b></div><label class="toggle"><input type="checkbox" id="conf-req-nit"><span></span></label></div>
                                 <div class="switch"><div><b>Dirección</b></div><label class="toggle"><input type="checkbox" id="conf-req-dir"><span></span></label></div>
                                 <div class="switch"><div><b>Producto, marca y modelo</b><small>En cada servicio que se agregue.</small></div><label class="toggle"><input type="checkbox" id="conf-req-equipo"><span></span></label></div>
+                                <div class="switch"><div><b>Orden de servicio</b><small>Siempre es obligatoria si el asunto del correo usa {{orden}}.</small></div><label class="toggle"><input type="checkbox" id="conf-req-orden"><span></span></label></div>
                                 <div class="panel-pie"><button class="btn btn-primary" onclick="guardarReglasOperacion()"><i class="fas fa-check"></i> Guardar reglas</button></div>
                             </div>
                         </div>
@@ -1016,11 +1056,13 @@
                         <div class="panel-ajuste" id="aj-correo">
                             <div class="card">
                                 <h3 class="card-titulo">Textos del correo de cobro</h3>
-                                <div class="info-fija"><i class="fas fa-lock"></i><span>El asunto no se puede cambiar: <b>Solicitud de pago ST-###### - Distelsa Servicio Técnico</b>. Así se reconocen las respuestas del cliente.</span></div>
+                                <div class="input-group" style="margin-bottom:6px;"><label for="conf-correo-asunto">Asunto</label><input type="text" id="conf-correo-asunto" maxlength="150" oninput="actualizarVistaCorreo()"></div>
+                                <div class="variables" id="asunto-variables" style="margin-bottom:6px;"><code role="button" tabindex="0" onclick="insertarVariableAsunto('orden')">{{orden}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('cliente')">{{cliente}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('total')">{{total}}</code><code role="button" tabindex="0" onclick="insertarVariableAsunto('solicitud')">{{solicitud}}</code></div>
+                                <p class="ayuda" id="asunto-ayuda" style="margin-bottom:16px;">Si usas {{orden}}, la orden de servicio será obligatoria al enviar por correo. Las respuestas se mueven a la carpeta "gestion de cobros" por la regla de Outlook, que busca <b>Solicitud de pago</b> en el asunto: si lo quitas, hay que actualizar esa regla.</p>
                                 <div class="wa-grid">
                                     <div>
                                         <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-encabezado">Encabezado</label><input type="text" id="conf-correo-encabezado" maxlength="80" oninput="actualizarVistaCorreo()"></div>
-                                        <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-intro">Introducción</label><textarea id="conf-correo-intro" rows="3" maxlength="600" oninput="actualizarVistaCorreo()"></textarea><p class="ayuda">Puedes usar {{cliente}} y {{solicitud}}.</p></div>
+                                        <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-intro">Introducción</label><textarea id="conf-correo-intro" rows="3" maxlength="600" oninput="actualizarVistaCorreo()"></textarea><p class="ayuda">Puedes usar {{cliente}}, {{solicitud}} y {{orden}}.</p></div>
                                         <div class="input-group" style="margin-bottom:12px;"><label for="conf-correo-instruccion">Indicación después de las formas de pago</label><textarea id="conf-correo-instruccion" rows="2" maxlength="600" oninput="actualizarVistaCorreo()"></textarea></div>
                                         <div class="input-group"><label for="conf-correo-pie">Pie del correo</label><textarea id="conf-correo-pie" rows="3" maxlength="600" oninput="actualizarVistaCorreo()"></textarea></div>
                                     </div>
@@ -1029,7 +1071,7 @@
                                         <div class="correo-preview" id="correo-preview"></div>
                                     </div>
                                 </div>
-                                <div class="panel-pie"><button class="btn btn-ghost" onclick="restaurarCorreoTextos()">Restaurar textos originales</button><button class="btn btn-primary" onclick="guardarCorreoTextos()"><i class="fas fa-check"></i> Guardar textos</button></div>
+                                <div class="panel-pie"><button class="btn btn-ghost" onclick="restaurarCorreoTextos()">Restaurar textos originales</button><button class="btn btn-primary" onclick="guardarCorreoTextos()"><i class="fas fa-check"></i> Guardar asunto y textos</button></div>
                             </div>
                         </div>
 
@@ -1296,7 +1338,7 @@
             sla_horas: 24, neonet_habilitado: true, neonet_mensaje_alterno: "", wa_habilitado: true, correo_habilitado: true, precio_diagnostico: 175,
             aviso_global: { activo: false, tipo: "info", texto: "" }, sesion_minutos: 0, make_limite: 1000,
             modo_respuestas: "MANUAL", revision_turnos: {},
-            campos_obligatorios: { correo: false, nit: false, direccion: false, equipo: false },
+            campos_obligatorios: { correo: false, nit: false, direccion: false, equipo: false, orden: false },
             correo_textos: {}
         };
         // Textos originales del correo (deben coincidir con functions/index.js).
@@ -1328,6 +1370,10 @@
         const revisoresHoy = () => { const l = (window.configSistema?.revision_turnos || {})[String(new Date().getDay())]; return [...new Set([...(Array.isArray(l) ? l.filter(Boolean) : []), ...turnoTomadoHoy()])]; };
         const tieneBandeja = () => esAdmin() || window.permisosUsuario === "ALL" || String(window.permisosUsuario || "").split(",").includes("8");
         const camposObligatorios = () => ({ ...CONFIG_DEFECTO.campos_obligatorios, ...(window.configSistema?.campos_obligatorios || {}) });
+        // Asunto del correo de cobro (editable). Debe coincidir con ASUNTO_DEFECTO de functions/index.js.
+        const ASUNTO_DEFECTO = "Solicitud de pago {{solicitud}} - Distelsa Servicio Técnico";
+        const plantillaAsunto = () => String(window.configSistema?.correo_asunto || "").trim() || ASUNTO_DEFECTO;
+        const ordenObligatoria = () => camposObligatorios().orden || plantillaAsunto().includes("{{orden}}");
         window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nSolicitud: {{solicitud}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
 
         // =====================================================================
@@ -1485,6 +1531,7 @@
                 let perfil = {};
                 try { const s = await getDoc(doc(db, "Usuarios", window.userId)); if (s.exists()) perfil = s.data(); } catch (e) { console.warn(e); }
                 window.userFirma = perfil.firma || ""; window.userFirmaImg = perfil.firma_img || "";
+                cargarPreferencias(perfil.preferencias);
                 setDoc(doc(db, "Usuarios", window.userId), { is_online: true, last_login: new Date().toISOString() }, { merge: true }).catch(() => {});
                 await completarLoginUI();
                 mostrarToast(`¡Bienvenido, ${window.userName}!`, "success");
@@ -1644,6 +1691,7 @@
                 if (req.nit && !document.getElementById("cli-nit").value.trim()) faltan.push("NIT");
                 if (req.direccion && !document.getElementById("cli-dir").value.trim()) faltan.push("dirección");
                 if (req.correo && !correoCliente) faltan.push("correo");
+                if ((req.orden || (metodo === "Correo" && plantillaAsunto().includes("{{orden}}"))) && !document.getElementById("cli-orden").value.trim()) faltan.push("orden de servicio");
                 if (faltan.length) return mostrarToast(`Falta: ${faltan.join(", ")} del cliente.`, "warning");
             }
             if (correoCliente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoCliente)) return mostrarToast("El correo del cliente no es válido.", "warning");
@@ -1671,7 +1719,7 @@
 
                 let estatusFinal = "ENVIADO"; if (metodo === "Pausa") estatusFinal = "PAUSADO"; if (metodo === "Anular") estatusFinal = "ANULADO";
                 const datos = {
-                    ticket: ticketId, servicios: serviciosTemporales, total,
+                    ticket: ticketId, servicios: serviciosTemporales, total, orden_servicio: document.getElementById("cli-orden").value.trim(),
                     prioridad: { temperamento: document.getElementById("cli-temperamento").value, observaciones_internas: document.getElementById("cli-obs-internas").value },
                     cliente: { nit: document.getElementById("cli-nit").value, contacto: clienteNombre, tel: document.getElementById("cli-tel").value, dir: document.getElementById("cli-dir").value, correo: correoCliente, obs_tec: document.getElementById("cli-obs-tec").value },
                     facturacion: { nit: document.getElementById("fac-nit").value, nombre: document.getElementById("fac-nombre").value },
@@ -1726,7 +1774,7 @@
             const sTemp = document.getElementById("cli-temperamento"); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp);
             document.getElementById("cli-obs-internas").value = d.prioridad?.observaciones_internas || "";
             const c = d.cliente || {};
-            document.getElementById("cli-nit").value = c.nit || ""; document.getElementById("cli-contacto").value = c.contacto || ""; document.getElementById("cli-tel").value = c.tel || ""; document.getElementById("cli-dir").value = c.dir || ""; document.getElementById("cli-correo").value = c.correo || ""; document.getElementById("cli-obs-tec").value = c.obs_tec || "";
+            document.getElementById("cli-orden").value = d.orden_servicio || ""; document.getElementById("cli-nit").value = c.nit || ""; document.getElementById("cli-contacto").value = c.contacto || ""; document.getElementById("cli-tel").value = c.tel || ""; document.getElementById("cli-dir").value = c.dir || ""; document.getElementById("cli-correo").value = c.correo || ""; document.getElementById("cli-obs-tec").value = c.obs_tec || "";
             document.getElementById("fac-nit").value = d.facturacion?.nit || ""; document.getElementById("fac-nombre").value = d.facturacion?.nombre || "";
             document.getElementById("pago-metodo").value = d.pago_metodo || "AMBOS"; window.sincronizarMetodoPago(); window.toggleLinkPago();
             document.getElementById("pago-link").value = d.pago_link || "";
@@ -1823,7 +1871,7 @@
                 d.motivo_pausa && d.estatus === "PAUSADO" ? `<div class="nota-motivo int"><i class="fas fa-pause"></i> <b>Pausada:</b> ${esc(d.motivo_pausa)}</div>` : "",
                 d.motivo_anulacion ? `<div class="nota-motivo anul"><i class="fas fa-ban"></i> <b>Anulada:</b> ${esc(d.motivo_anulacion)}</div>` : ""
             ].join("");
-            const bloqueCliente = `<div class="bloque"><h4>Cliente</h4>${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
+            const bloqueCliente = `<div class="bloque"><h4>Cliente</h4>${d.orden_servicio ? dato("Orden de servicio", `<b>${esc(d.orden_servicio)}</b>`) : ""}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
 
             const servList = (d.servicios || []).map(s => `<li><div><b>${esc(s.tipo)}</b><small>${esc([s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—")} · ${esc(s.detalle)}</small></div><span class="num">Q ${fmtQ(s.precio)}</span></li>`).join("") || `<li><span class="muted">Sin servicios</span></li>`;
             const bloqueServicios = `<div class="bloque"><h4>Servicios</h4><ul class="lista-serv">${servList}</ul><div class="total-visor"><span>Total</span><span class="num">Q ${fmtQ(d.total)}</span></div></div>`;
@@ -1958,11 +2006,17 @@
             await guardarGeneral({
                 sla_horas: sla, precio_diagnostico: Math.round(precio * 100) / 100,
                 sesion_minutos: parseInt(document.getElementById("conf-sesion-min").value, 10) || 0,
-                campos_obligatorios: { correo: document.getElementById("conf-req-correo").checked, nit: document.getElementById("conf-req-nit").checked, direccion: document.getElementById("conf-req-dir").checked, equipo: document.getElementById("conf-req-equipo").checked }
+                campos_obligatorios: { correo: document.getElementById("conf-req-correo").checked, nit: document.getElementById("conf-req-nit").checked, direccion: document.getElementById("conf-req-dir").checked, equipo: document.getElementById("conf-req-equipo").checked, orden: document.getElementById("conf-req-orden").checked }
             }, "Reglas guardadas.", "aj-reglas");
         };
 
         // ---- Textos del correo ----
+        window.insertarVariableAsunto = (v) => {
+            const i = document.getElementById("conf-correo-asunto"); const ins = `{{${v}}}`;
+            const a = i.selectionStart ?? i.value.length, b = i.selectionEnd ?? i.value.length;
+            i.value = i.value.slice(0, a) + ins + i.value.slice(b); i.focus(); i.selectionStart = i.selectionEnd = a + ins.length;
+            const p = document.getElementById("aj-correo"); if (p) p.dataset.sucio = "1"; window.actualizarVistaCorreo();
+        };
         const leerCorreoTextos = () => ({
             encabezado: document.getElementById("conf-correo-encabezado").value.trim(),
             introduccion: document.getElementById("conf-correo-intro").value.trim(),
@@ -1971,18 +2025,24 @@
         });
         window.actualizarVistaCorreo = () => {
             const t = { ...CORREO_TEXTOS_DEFECTO }; const l = leerCorreoTextos(); Object.keys(l).forEach(k => { if (l[k]) t[k] = l[k]; });
-            const ej = { cliente: "María López", solicitud: "ST-000127" };
+            const ej = { cliente: "María López", solicitud: "ST-000127", orden: "OS-458812" };
             const v = (s) => esc(s).replace(/\{\{(\w+)\}\}/g, (m, k) => ej[k] ? `<b>${ej[k]}</b>` : m);
             const prev = document.getElementById("correo-preview"); if (!prev) return;
-            prev.innerHTML = `<div class="cp-caja"><div class="cp-head">${esc(t.encabezado)}</div><div class="cp-cuerpo"><p>Estimado(a) <b>María López</b>:</p><p>${v(t.introduccion)}</p><div class="cp-tabla">Detalle de servicios, total y formas de pago</div><p>${v(t.instruccion)}</p><p style="color:#475569;">Atentamente,<br><b style="color:#002244;">${esc(window.userName || "Agente")}</b></p></div><div class="cp-pie">${esc(t.pie)}</div></div>`;
+            const asuntoEj = (document.getElementById("conf-correo-asunto").value.trim() || ASUNTO_DEFECTO).replace(/\{\{(\w+)\}\}/g, (m, k) => ({ solicitud: "ST-000127", orden: "OS-458812", cliente: "María López", total: "Q 175.00" })[k] ?? m);
+            prev.innerHTML = `<div class="cp-asunto"><span>Asunto</span>${esc(asuntoEj)}</div><div class="cp-caja"><div class="cp-head">${esc(t.encabezado)}</div><div class="cp-cuerpo"><p>Estimado(a) <b>María López</b>:</p><p>${v(t.introduccion)}</p><div class="cp-tabla">Detalle de servicios, total y formas de pago</div><p>${v(t.instruccion)}</p><p style="color:#475569;">Atentamente,<br><b style="color:#002244;">${esc(window.userName || "Agente")}</b></p></div><div class="cp-pie">${esc(t.pie)}</div></div>`;
         };
         window.guardarCorreoTextos = async () => {
             if (!soloAdmin()) return;
             const t = leerCorreoTextos();
-            if (!t.encabezado || !t.introduccion || !t.instruccion || !t.pie) return mostrarToast("Completa los cuatro textos, o usa Restaurar textos originales.", "warning");
-            await guardarGeneral({ correo_textos: t }, "Textos del correo guardados. Se usan desde el próximo envío.", "aj-correo");
+            const asunto = document.getElementById("conf-correo-asunto").value.replace(/[\r\n]+/g, " ").trim();
+            if (!asunto || !t.encabezado || !t.introduccion || !t.instruccion || !t.pie) return mostrarToast("Completa el asunto y los cuatro textos, o usa Restaurar textos originales.", "warning");
+            const desconocidas = (asunto.match(/\{\{(\w+)\}\}/g) || []).filter(v => !["{{solicitud}}", "{{orden}}", "{{cliente}}", "{{total}}"].includes(v));
+            if (desconocidas.length) return mostrarToast(`El asunto tiene variables que no existen: ${desconocidas.join(", ")}.`, "warning");
+            if (!modoManual() && !asunto.includes("{{solicitud}}")) return mostrarToast("Con la lectura automática encendida el asunto debe incluir {{solicitud}}, así Make reconoce la respuesta.", "warning");
+            await guardarGeneral({ correo_textos: t, correo_asunto: asunto === ASUNTO_DEFECTO ? "" : asunto }, "Asunto y textos del correo guardados. Se usan desde el próximo envío.", "aj-correo");
         };
         window.restaurarCorreoTextos = () => {
+            document.getElementById("conf-correo-asunto").value = ASUNTO_DEFECTO;
             document.getElementById("conf-correo-encabezado").value = CORREO_TEXTOS_DEFECTO.encabezado;
             document.getElementById("conf-correo-intro").value = CORREO_TEXTOS_DEFECTO.introduccion;
             document.getElementById("conf-correo-instruccion").value = CORREO_TEXTOS_DEFECTO.instruccion;
@@ -2293,7 +2353,7 @@
                 d.temp_alerta = t;
             });
             const tB = (document.getElementById("buscador-tickets")?.value || "").toLowerCase().trim();
-            if (tB) data = data.filter(d => [d.ticket, d.cliente?.nit, d.cliente?.contacto, d.cliente?.tel, d.agente].some(v => String(v || "").toLowerCase().includes(tB)));
+            if (tB) data = data.filter(d => [d.ticket, d.orden_servicio, d.cliente?.nit, d.cliente?.contacto, d.cliente?.tel, d.cliente?.correo, d.agente].some(v => String(v || "").toLowerCase().includes(tB)));
             const fI = document.getElementById("seg-filtro-inicio")?.value || ""; const fF = document.getElementById("seg-filtro-fin")?.value || ""; const fA = document.getElementById("seg-filtro-agente")?.value || "TODOS";
             const checks = document.querySelectorAll(".chk-est-item"); let eS = ["TODOS"];
             if (checks.length > 0) { const sel = Array.from(checks).filter(c => c.checked).map(c => c.value); if (sel.length !== checks.length && sel.length !== 0) eS = sel; }
@@ -2354,10 +2414,27 @@
                 else if (d.motivo_whatsapp) mT = `<div class="seg-nota" style="color:#178a43;"><i class="fab fa-whatsapp"></i> ${esc(d.motivo_whatsapp)}</div>`;
                 const equipos = (d.servicios || []).map(s => [s.producto, s.marca, s.modelo].filter(Boolean).join(" ")).filter(Boolean);
                 const eS2 = equipos.length > 0 ? `<span class="seg-equipo" title="${esc(equipos.join(", "))}"><i class="fas fa-screwdriver-wrench"></i> ${esc(equipos.join(", "))}</span>` : "";
-                return `<tr class="row-card" style="--borde:${borde};"><td><span class="ticket">${esc(d.ticket)}</span>${eS2}</td><td class="seg-fecha">${fechaH}</td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b>${icT}<small>NIT ${esc(d.cliente?.nit || "C/F")} · <span class="num">Q ${fmtQ(d.total)}</span></small></td><td><div style="display:flex; align-items:center; gap:8px;">${badgeEstatus(d.estatus)} ${icA}</div>${mT}</td><td>${mC}</td><td style="text-align:center;">${aH}</td><td class="acciones">${bH}</td></tr>`;
+                const canal = canalDe(d); const fAct = fechaActividad(d);
+                const celdas = {
+                    creada: `<td class="seg-fecha">${fechaH}</td>`,
+                    orden: `<td>${d.orden_servicio ? `<b class="num">${esc(d.orden_servicio)}</b>` : '<span style="color:var(--texto-3);">—</span>'}</td>`,
+                    cliente: `<td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b>${icT}<small>NIT ${esc(d.cliente?.nit || "C/F")}${colOn("total") ? "" : ` · <span class="num">Q ${fmtQ(d.total)}</span>`}</small></td>`,
+                    total: `<td class="num" style="text-align:right; font-weight:600; white-space:nowrap;">Q ${fmtQ(d.total)}</td>`,
+                    agente: `<td>${esc(d.agente || "Sin agente")}</td>`,
+                    canal: `<td>${canal === "WhatsApp" ? '<i class="fab fa-whatsapp" style="color:#178a43;"></i> WhatsApp' : canal === "Correo" ? '<i class="fas fa-envelope" style="color:var(--azul);"></i> Correo' : esc(canal || "—")}</td>`,
+                    estatus: `<td><div style="display:flex; align-items:center; gap:8px;">${badgeEstatus(d.estatus)} ${icA}</div>${mT}</td>`,
+                    mensaje: `<td>${mC}</td>`,
+                    adjuntos: `<td style="text-align:center;">${aH}</td>`,
+                    actividad: `<td class="seg-fecha">${fAct ? `${esc(fAct.toLocaleDateString())}<small>${esc(fAct.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</small>` : "—"}</td>`
+                };
+                const ordenBajoTicket = d.orden_servicio && !colOn("orden") ? `<span class="seg-orden">OS ${esc(d.orden_servicio)}</span>` : "";
+                return `<tr class="row-card" style="--borde:${borde};"><td><span class="ticket">${esc(d.ticket)}</span>${ordenBajoTicket}${eS2}</td>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c]) => celdas[c]).join("")}<td class="acciones">${bH}</td></tr>`;
             });
             const pista = window.estadoSeg === "ABIERTAS" && nCerradas > 0 ? `<br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="cambiarEstadoSeg('CERRADAS')">Ver ${nCerradas} ${nCerradas === 1 ? "cerrada" : "cerradas"} con estos filtros</button>` : "";
-            tb.innerHTML = dR.length === 0 ? `<tr><td colspan="7" class="vacio"><i class="fas fa-folder-open"></i>No hay solicitudes ${window.estadoSeg === "ABIERTAS" ? "abiertas " : window.estadoSeg === "CERRADAS" ? "cerradas " : ""}con estos filtros.${pista}</td></tr>` : filas.join("");
+            const thS = { total: ' style="text-align:right;"', adjuntos: ' style="text-align:center;"' };
+            document.getElementById("thead-seg").innerHTML = `<tr><th style="padding-left:18px;">Solicitud</th>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c, et]) => `<th${thS[c] || ""}>${esc(et === "Canal de envío" ? "Canal" : et === "Orden de servicio" ? "Orden" : et)}</th>`).join("")}<th style="text-align:right;">Acciones</th></tr>`;
+            const nCols = 2 + COLUMNAS_SEG.filter(([c]) => colOn(c)).length;
+            tb.innerHTML = dR.length === 0 ? `<tr><td colspan="${nCols}" class="vacio"><i class="fas fa-folder-open"></i>No hay solicitudes ${window.estadoSeg === "ABIERTAS" ? "abiertas " : window.estadoSeg === "CERRADAS" ? "cerradas " : ""}con estos filtros.${pista}</td></tr>` : filas.join("");
         }
 
         // Limpia el texto de un correo de cliente (quita cabeceras y citas).
@@ -2457,12 +2534,12 @@
                 set("conf-correo-estado", cfg.correo_habilitado !== false); set("conf-wa-estado", cfg.wa_habilitado !== false); set("conf-make-limite", cfg.make_limite || 1000);
                 // Reglas
                 set("conf-sla", cfg.sla_horas || 24); set("conf-precio-diag", cfg.precio_diagnostico ?? 175); set("conf-sesion-min", String(cfg.sesion_minutos || 0));
-                set("conf-req-correo", req.correo); set("conf-req-nit", req.nit); set("conf-req-dir", req.direccion); set("conf-req-equipo", req.equipo);
+                set("conf-req-correo", req.correo); set("conf-req-nit", req.nit); set("conf-req-dir", req.direccion); set("conf-req-equipo", req.equipo); set("conf-req-orden", req.orden);
                 // Pagos
                 set("conf-neonet-estado", cfg.neonet_habilitado === false ? "false" : "true"); set("conf-neonet-msg", cfg.neonet_mensaje_alterno || "");
                 set("conf-banco", b.banco); set("conf-banco-tipo", b.tipo); set("conf-banco-numero", b.numero); set("conf-banco-titular", b.titular);
                 // Correo
-                set("conf-correo-encabezado", textos.encabezado); set("conf-correo-intro", textos.introduccion); set("conf-correo-instruccion", textos.instruccion); set("conf-correo-pie", textos.pie);
+                set("conf-correo-asunto", cfg.correo_asunto || ASUNTO_DEFECTO); set("conf-correo-encabezado", textos.encabezado); set("conf-correo-intro", textos.introduccion); set("conf-correo-instruccion", textos.instruccion); set("conf-correo-pie", textos.pie);
                 window.actualizarVistaCorreo();
 
                 // Aviso arriba de la pantalla
@@ -2475,7 +2552,7 @@
                 const bW = document.getElementById("btn-enviar-wa"); if (bW) bW.style.display = cfg.wa_habilitado === false ? "none" : "";
                 const bC = document.getElementById("btn-enviar-correo"); if (bC) bC.style.display = cfg.correo_habilitado === false ? "none" : "";
                 const marcaReq = (id, txt, on) => { const l = document.getElementById(id); if (l) l.innerHTML = esc(txt) + (on ? ' <span class="req">*</span>' : ""); };
-                marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
+                marcaReq("lbl-cli-orden", "Orden de servicio", ordenObligatoria()); marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
                 ["lbl-producto", "lbl-marca", "lbl-modelo"].forEach((id, i) => marcaReq(id, ["Producto", "Marca", "Modelo"][i], req.equipo));
                 const lI = document.getElementById("pago-link");
                 if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Pagos con tarjeta deshabilitados"; } else window.toggleLinkPago();
@@ -2532,7 +2609,7 @@
                 const lR = document.getElementById("lista-respuestas-rapidas");
                 if (lR) lR.innerHTML = respuestas.map((r, i) => `<div class="fila"><div class="info" style="align-items:flex-start;"><i class="fas fa-bolt" style="color:var(--ambar); margin-top:3px;"></i><span style="min-width:0;"><b>${esc(r.titulo)}</b><small style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:560px;">${esc(r.texto)}</small></span></div><div class="acciones"><button class="btn-action-sm" title="Editar" aria-label="Editar respuesta" onclick="cargarRespuestaRapida(${i})"><i class="fas fa-pen"></i></button>${btnQuitar(`eliminarRespuestaRapida(${i})`, "Quitar respuesta")}</div></div>`).join("") || vacia("Aún no hay respuestas rápidas.");
 
-                const sDE = document.getElementById("filtro-estatus"); if (sDE) { const vA = sDE.value; sDE.innerHTML = '<option value="TODOS">Todos</option>' + estSis.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join(""); sDE.value = estSis.includes(vA) ? vA : "TODOS"; }
+                const sDE = document.getElementById("filtro-estatus"); if (sDE) { const vA = sDE.value; sDE.innerHTML = '<option value="TODOS">Todos los estatus</option>' + estSis.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join(""); sDE.value = estSis.includes(vA) ? vA : "TODOS"; }
                 const cCE = document.getElementById("contenedor-chk-estatus");
                 if (cCE) {
                     const marcados = Array.from(document.querySelectorAll(".chk-est-item")).filter(c => c.checked).map(c => c.value);
@@ -2640,7 +2717,7 @@
                 docs.sort((a, b) => b.fechaFormateada - a.fechaFormateada);
                 window.datosSeguimientos = docs; window.allDashboardData = docs;
                 const agentes = [...new Set(docs.map(t => t.agente).filter(Boolean))].sort();
-                ["seg-filtro-agente", "filtro-agente"].forEach(idSel => { const sel = document.getElementById(idSel); if (!sel) return; const vA = sel.value; sel.innerHTML = '<option value="TODOS">Todos</option>' + agentes.map(ag => `<option value="${esc(ag)}">${esc(ag)}</option>`).join(""); sel.value = agentes.includes(vA) ? vA : "TODOS"; });
+                ["seg-filtro-agente", "filtro-agente"].forEach(idSel => { const sel = document.getElementById(idSel); if (!sel) return; const vA = sel.value; sel.innerHTML = `<option value="TODOS">${idSel === "filtro-agente" ? "Todos los agentes" : "Todos"}</option>` + agentes.map(ag => `<option value="${esc(ag)}">${esc(ag)}</option>`).join(""); sel.value = agentes.includes(vA) ? vA : "TODOS"; });
                 const selRev = document.getElementById("rev-agente"); if (selRev) { const vA = selRev.value; selRev.innerHTML = '<option value="TODOS">Todos los agentes</option>' + agentes.map(ag => `<option value="${esc(ag)}">${esc(ag)}</option>`).join(""); selRev.value = agentes.includes(vA) ? vA : "TODOS"; }
                 renderSeguimientosTable(window.filtroActualSeguimiento); window.renderBuzonPausados(); window.aplicarFiltrosDashboard(); window.renderBandejaRevision(); window.renderTablaAvisos(); window.renderizarCampana();
                 if (window.visorAbiertoId) window.abrirVisor(window.visorAbiertoId);
@@ -2654,6 +2731,116 @@
             setInterval(() => renderSeguimientosTable(window.filtroActualSeguimiento), 5 * 60 * 1000);
         }
 
+
+
+        // =====================================================================
+        // PREFERENCIAS DEL USUARIO (Dashboard y columnas de Seguimientos)
+        // Se guardan en Usuarios/{id}.preferencias y, de respaldo, en este navegador.
+        // =====================================================================
+        const WIDGETS_KPI = [["abiertas", "Abiertas"], ["enviados", "Cobros enviados"], ["monto", "Monto gestionado"], ["cobrado", "Monto completado"], ["espera", "En espera del cliente"], ["completadas", "Completadas"]];
+        const WIDGETS_BLOQUE = [["g-estatus", "Gráfica: solicitudes por estatus"], ["g-agentes", "Gráfica: monto por agente"], ["g-envios", "Gráfica: cobros enviados por día"], ["productividad", "Tabla: productividad del equipo"], ["make", "Uso de Make (solo administrador)"]];
+        const PREF_DEFECTO = {
+            dashboard: { periodo: "mes", kpis: ["abiertas", "enviados", "monto", "espera", "completadas"], kpis_orden: WIDGETS_KPI.map(w => w[0]), bloques: ["g-estatus", "g-agentes", "g-envios", "productividad", "make"], bloques_orden: WIDGETS_BLOQUE.map(w => w[0]) },
+            seguimientos: { columnas: ["creada", "orden", "cliente", "estatus", "mensaje", "adjuntos"] }
+        };
+        window.prefs = JSON.parse(JSON.stringify(PREF_DEFECTO));
+        const LS_PREFS = () => "cobros_prefs_" + (window.userId || "");
+        function cargarPreferencias(remotas) {
+            let p = remotas;
+            if (!p) { try { p = JSON.parse(localStorage.getItem(LS_PREFS()) || "null"); } catch (e) { p = null; } }
+            const d = JSON.parse(JSON.stringify(PREF_DEFECTO));
+            if (p && typeof p === "object") {
+                d.dashboard = { ...d.dashboard, ...(p.dashboard || {}) };
+                d.seguimientos = { ...d.seguimientos, ...(p.seguimientos || {}) };
+            }
+            // Completa el orden con widgets nuevos que no existían cuando se guardó.
+            d.dashboard.kpis_orden = [...new Set([...(d.dashboard.kpis_orden || []), ...WIDGETS_KPI.map(w => w[0])])].filter(id => WIDGETS_KPI.some(w => w[0] === id));
+            d.dashboard.bloques_orden = [...new Set([...(d.dashboard.bloques_orden || []), ...WIDGETS_BLOQUE.map(w => w[0])])].filter(id => WIDGETS_BLOQUE.some(w => w[0] === id));
+            window.prefs = d;
+            aplicarLayoutDashboard(); elegirPeriodo(d.dashboard.periodo || "mes", true); pintarColumnasSeg();
+        }
+        async function guardarPreferencias(msg) {
+            try { localStorage.setItem(LS_PREFS(), JSON.stringify(window.prefs)); } catch (e) {}
+            try { await updateDoc(doc(db, "Usuarios", window.userId), { preferencias: window.prefs }); if (msg) mostrarToast(msg, "success"); }
+            catch (e) { console.warn(e); if (msg) mostrarToast(msg + " (solo en este navegador)", "info"); }
+        }
+
+        // ---- Dashboard: periodo ----
+        window.periodoDash = "mes";
+        window.elegirPeriodo = (p, silencioso) => {
+            window.periodoDash = p;
+            document.querySelectorAll(".periodo-op").forEach(b => b.classList.toggle("active", b.dataset.periodo === p));
+            document.getElementById("dash-fechas").classList.toggle("visible", p === "custom");
+            if (p === "todo") { document.getElementById("filtro-inicio").value = ""; document.getElementById("filtro-fin").value = ""; }
+            else if (p !== "custom") { rangoFechas(p); }
+            if (!silencioso || window.allDashboardData.length) window.aplicarFiltrosDashboard();
+        };
+        function rangoFechas(r) {
+            const hoy = new Date(); let ini = new Date(hoy), fin = new Date(hoy);
+            if (r === "semana") { const dia = (hoy.getDay() + 6) % 7; ini.setDate(hoy.getDate() - dia); }
+            if (r === "mes") ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            if (r === "mes-anterior") { ini = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0); }
+            const f = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            document.getElementById("filtro-inicio").value = f(ini); document.getElementById("filtro-fin").value = f(fin);
+        }
+
+        // ---- Dashboard: qué se ve y en qué orden ----
+        function aplicarLayoutDashboard() {
+            const pd = window.prefs.dashboard;
+            const kc = document.getElementById("dash-kpis"), bc = document.getElementById("dash-bloques"); if (!kc || !bc) return;
+            pd.kpis_orden.forEach(id => { const el = kc.querySelector(`[data-w="${id}"]`); if (el) { kc.appendChild(el); el.classList.toggle("w-oculto", !pd.kpis.includes(id)); } });
+            pd.bloques_orden.forEach(id => { const el = bc.querySelector(`[data-w="${id}"]`); if (el) { bc.appendChild(el); el.classList.toggle("w-oculto", !pd.bloques.includes(id) || (id === "make" && !esAdmin())); } });
+            const nK = pd.kpis.length; kc.classList.toggle("w-oculto", nK === 0);
+            const nB = pd.bloques.filter(id => id !== "make" || esAdmin()).length;
+            document.getElementById("dash-vacio").style.display = nK === 0 && nB === 0 ? "" : "none";
+            // Las gráficas se redibujan al mostrarse.
+            if (window.allDashboardData.length && document.getElementById("sec-4").style.display !== "none") window.aplicarFiltrosDashboard();
+        }
+        window.abrirPersonalizarDashboard = () => {
+            const pd = JSON.parse(JSON.stringify(window.prefs.dashboard));
+            const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
+            const lista = (tipo) => {
+                const orden = tipo === "kpi" ? pd.kpis_orden : pd.bloques_orden; const on = tipo === "kpi" ? pd.kpis : pd.bloques; const def = tipo === "kpi" ? WIDGETS_KPI : WIDGETS_BLOQUE;
+                const items = orden.filter(id => tipo === "kpi" || id !== "make" || esAdmin());
+                return items.map((id, i) => `<div class="perso-item ${on.includes(id) ? "" : "apagado"}"><label><input type="checkbox" data-t="${tipo}" data-id="${id}" ${on.includes(id) ? "checked" : ""}> ${esc(def.find(w => w[0] === id)[1])}</label><button class="mover" data-t="${tipo}" data-id="${id}" data-dir="-1" aria-label="Subir" ${i === 0 ? "disabled" : ""}><i class="fas fa-arrow-up"></i></button><button class="mover" data-t="${tipo}" data-id="${id}" data-dir="1" aria-label="Bajar" ${i === items.length - 1 ? "disabled" : ""}><i class="fas fa-arrow-down"></i></button></div>`).join("");
+            };
+            const pintar = () => {
+                ov.querySelector("#perso-kpis").innerHTML = lista("kpi"); ov.querySelector("#perso-bloques").innerHTML = lista("bloque");
+            };
+            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="perso-titulo" style="max-width:560px;"><div class="modal-head"><h3 id="perso-titulo">Personalizar mi dashboard</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body" style="max-height:70vh; overflow:auto;"><p class="muted" style="margin-top:0;">Elige qué ver y en qué orden. Solo cambia tu vista; el resto del equipo no se ve afectado.</p><div class="input-group"><label for="perso-periodo">Periodo al abrir el Dashboard</label><select id="perso-periodo"><option value="hoy">Hoy</option><option value="semana">Esta semana</option><option value="mes">Este mes</option><option value="mes-anterior">Mes anterior</option><option value="todo">Todo el historial</option></select></div><p class="perso-sub">Indicadores</p><div class="perso-lista" id="perso-kpis"></div><p class="perso-sub">Gráficas y tablas</p><div class="perso-lista" id="perso-bloques"></div></div><div class="modal-actions"><button class="btn btn-ghost" data-r="def" style="margin-right:auto;">Restaurar</button><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-primary" data-r="1">Guardar mi vista</button></div></div>`;
+            document.body.appendChild(ov); ov.querySelector("#perso-periodo").value = pd.periodo === "custom" ? "mes" : (pd.periodo || "mes"); pintar();
+            const cerrar = () => { document.removeEventListener("keydown", tecla); ov.remove(); };
+            const tecla = (e) => { if (e.key === "Escape") cerrar(); }; document.addEventListener("keydown", tecla);
+            ov.addEventListener("change", (e) => { const c = e.target.closest("input[data-id]"); if (!c) return; const arr = c.dataset.t === "kpi" ? pd.kpis : pd.bloques; const k = arr.indexOf(c.dataset.id); if (c.checked && k < 0) arr.push(c.dataset.id); if (!c.checked && k >= 0) arr.splice(k, 1); c.closest(".perso-item").classList.toggle("apagado", !c.checked); });
+            ov.addEventListener("click", async (e) => {
+                const mv = e.target.closest(".mover");
+                if (mv) { const arr = mv.dataset.t === "kpi" ? pd.kpis_orden : pd.bloques_orden; const visibles = arr.filter(id => mv.dataset.t === "kpi" || id !== "make" || esAdmin()); const i = visibles.indexOf(mv.dataset.id), j = i + Number(mv.dataset.dir); if (j < 0 || j >= visibles.length) return; const a = arr.indexOf(visibles[i]), b = arr.indexOf(visibles[j]); [arr[a], arr[b]] = [arr[b], arr[a]]; pintar(); return; }
+                const b = e.target.closest("[data-r]"); if (!b && e.target !== ov) return;
+                if (e.target === ov || b.dataset.r === "0") return cerrar();
+                if (b.dataset.r === "def") { Object.assign(pd, JSON.parse(JSON.stringify(PREF_DEFECTO.dashboard))); ov.querySelector("#perso-periodo").value = pd.periodo; pintar(); return; }
+                pd.periodo = ov.querySelector("#perso-periodo").value;
+                window.prefs.dashboard = pd; cerrar(); aplicarLayoutDashboard(); window.elegirPeriodo(pd.periodo);
+                await guardarPreferencias("Tu vista del Dashboard quedó guardada.");
+            });
+        };
+
+        // ---- Seguimientos: columnas visibles ----
+        const COLUMNAS_SEG = [["creada", "Creada"], ["orden", "Orden de servicio"], ["cliente", "Cliente"], ["total", "Total"], ["agente", "Agente"], ["canal", "Canal de envío"], ["estatus", "Estatus"], ["mensaje", "Último mensaje"], ["adjuntos", "Adjuntos"], ["actividad", "Última actividad"]];
+        const colOn = (c) => (window.prefs.seguimientos.columnas || []).includes(c);
+        function pintarColumnasSeg() {
+            const cont = document.getElementById("cols-seg-lista"); if (!cont) return;
+            cont.innerHTML = COLUMNAS_SEG.map(([id, et]) => `<label class="checkbox-wrapper"><input type="checkbox" value="${id}" ${colOn(id) ? "checked" : ""} onchange="cambiarColumnaSeg(this)"> ${esc(et)}</label>`).join("") + `<button class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="restaurarColumnasSeg()">Restaurar columnas</button>`;
+            if (typeof renderSeguimientosTable === "function" && window.datosSeguimientos) renderSeguimientosTable(window.filtroActualSeguimiento);
+        }
+        let tGuardarCols = null;
+        window.cambiarColumnaSeg = (c) => {
+            const arr = window.prefs.seguimientos.columnas; const k = arr.indexOf(c.value);
+            if (c.checked && k < 0) arr.push(c.value); if (!c.checked && k >= 0) arr.splice(k, 1);
+            window.prefs.seguimientos.columnas = COLUMNAS_SEG.map(x => x[0]).filter(id => arr.includes(id));
+            renderSeguimientosTable(window.filtroActualSeguimiento);
+            clearTimeout(tGuardarCols); tGuardarCols = setTimeout(() => guardarPreferencias(), 800);
+        };
+        window.restaurarColumnasSeg = () => { window.prefs.seguimientos.columnas = [...PREF_DEFECTO.seguimientos.columnas]; pintarColumnasSeg(); guardarPreferencias("Columnas restauradas."); };
 
         // =====================================================================
         // BANDEJA DE REVISIÓN (modo manual: una persona registra las respuestas)
@@ -2710,7 +2897,7 @@
                 if (!["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) return false;
                 if (canal !== "TODOS" && canalDe(d) !== canal) return false;
                 if (ag !== "TODOS" && d.agente !== ag) return false;
-                if (q && ![d.ticket, d.cliente?.contacto, d.cliente?.correo, d.cliente?.nit, d.agente, d.enviado_por].some(v => String(v || "").toLowerCase().includes(q))) return false;
+                if (q && ![d.ticket, d.orden_servicio, d.cliente?.contacto, d.cliente?.correo, d.cliente?.nit, d.agente, d.enviado_por].some(v => String(v || "").toLowerCase().includes(q))) return false;
                 return true;
             });
             const horas = (d) => (ahora - fechaActividad(d)) / 36e5;
@@ -2736,7 +2923,7 @@
                 const botones = d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
-                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td><button class="ticket ticket-copiar" title="Copiar para buscar en Outlook" onclick="copiarTicket(${js(d.ticket)})">${esc(d.ticket)}</button></td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
+                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td><button class="ticket ticket-copiar" title="Copiar para buscar en Outlook" onclick="copiarTicket(${js(d.ticket)})">${esc(d.ticket)}</button>${d.orden_servicio ? `<button class="orden-copiar" title="Copiar la orden de servicio" onclick="copiarTicket(${js(d.orden_servicio)})">OS ${esc(d.orden_servicio)}</button>` : ""}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
             }).join("");
         };
 
@@ -2799,15 +2986,7 @@
         // =====================================================================
         // PRODUCTIVIDAD (Dashboard)
         // =====================================================================
-        window.rangoDashboard = (r) => {
-            const hoy = new Date(); let ini = new Date(hoy), fin = new Date(hoy);
-            if (r === "semana") { const dia = (hoy.getDay() + 6) % 7; ini.setDate(hoy.getDate() - dia); }
-            if (r === "mes") ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-            if (r === "mes-anterior") { ini = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0); }
-            const f = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-            document.getElementById("filtro-inicio").value = f(ini); document.getElementById("filtro-fin").value = f(fin);
-            window.aplicarFiltrosDashboard();
-        };
+        window.rangoDashboard = (r) => window.elegirPeriodo(r);
         function pintarProductividad() {
             const tb = document.getElementById("lista-productividad"); if (!tb) return;
             const fI = document.getElementById("filtro-inicio").value; const fF = document.getElementById("filtro-fin").value; const fA = document.getElementById("filtro-agente").value || "TODOS";
@@ -2857,7 +3036,7 @@
         window.limpiarFiltrosDashboard = () => { document.getElementById("filtro-inicio").value = ""; document.getElementById("filtro-fin").value = ""; document.getElementById("filtro-estatus").value = "TODOS"; document.getElementById("filtro-agente").value = "TODOS"; window.aplicarFiltrosDashboard(); };
 
         function actualizarVistaDashboard(docs) {
-            let monto = 0, abiertas = 0, espera = 0, completadas = 0; const porAgente = {};
+            let monto = 0, abiertas = 0, espera = 0, completadas = 0, cobrado = 0; const porAgente = {};
             const lE = window.configCatalogos?.estatus_tickets || []; const cE = {}; lE.forEach(e => cE[e] = 0); cE["Otros"] = 0;
             docs.forEach(d => {
                 if (cE[d.estatus] !== undefined) cE[d.estatus]++; else cE["Otros"]++;
@@ -2865,13 +3044,21 @@
                 if (m === "INACTIVO") return;
                 if (m === "ESPERA" || m === "ERROR") abiertas++;
                 if (m === "ESPERA") espera++;
-                if (m === "EXITO") completadas++;
+                if (m === "EXITO") { completadas++; cobrado += Number(d.total) || 0; }
                 const t = Number(d.total) || 0; monto += t;
                 const ag = d.agente || "Desconocido"; porAgente[ag] = (porAgente[ag] || 0) + t;
             });
             document.getElementById("kpi-tickets").innerText = abiertas;
             document.getElementById("kpi-monto").innerText = "Q " + monto.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.getElementById("kpi-espera").innerText = espera; document.getElementById("kpi-completados").innerText = completadas;
+            document.getElementById("kpi-cobrado").innerText = "Q " + cobrado.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            // Cobros enviados en el periodo (por fecha de envío, no de creación).
+            const fI = document.getElementById("filtro-inicio").value, fF = document.getElementById("filtro-fin").value, fA = document.getElementById("filtro-agente").value || "TODOS";
+            const dI = fI ? new Date(fI + "T00:00:00") : null, dF = fF ? new Date(fF + "T23:59:59.999") : null;
+            const envios = window.allDashboardData.filter(d => { const c = canalDe(d); const f = enviadoEn(d); return (c === "Correo" || c === "WhatsApp") && f && (!dI || f >= dI) && (!dF || f <= dF) && (fA === "TODOS" || (d.enviado_por || d.agente) === fA); });
+            document.getElementById("kpi-enviados").innerText = envios.length;
+            const etP = { hoy: "Hoy", semana: "Esta semana", mes: "Este mes", "mes-anterior": "Mes anterior", todo: "Todo el historial", custom: "Fechas elegidas" }[window.periodoDash] || "";
+            document.getElementById("dash-rango").innerText = `${etP}${dI || dF ? ` · ${dI ? dI.toLocaleDateString() : "inicio"} a ${dF ? dF.toLocaleDateString() : "hoy"}` : ""} · ${docs.length} ${docs.length === 1 ? "solicitud creada" : "solicitudes creadas"} en el periodo`;
             pintarProductividad();
 
             const etiquetas = Object.keys(cE).filter(k => cE[k] > 0); const valores = etiquetas.map(l => cE[l]);
@@ -2883,6 +3070,14 @@
             window.chartInstEstatus = new Chart(document.getElementById("chartEstatus").getContext("2d"), { type: "doughnut", data: { labels: etiquetas, datasets: [{ data: valores, backgroundColor: colores, borderWidth: 2, borderColor: "#fff" }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "right", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "circle", font: { size: 12 } } } } } });
             if (window.chartInstAgentes) window.chartInstAgentes.destroy();
             const orden = Object.keys(porAgente).sort((a, b) => porAgente[b] - porAgente[a]);
+            // Cobros enviados por día (correo y WhatsApp). Sin periodo: últimos 30 días.
+            if (window.chartInstEnvios) window.chartInstEnvios.destroy();
+            const dia = (f) => `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+            let iniE = dI ? new Date(dI) : new Date(Date.now() - 29 * 864e5); let finE = dF ? new Date(dF) : new Date(); if (finE > new Date()) finE = new Date();
+            if ((finE - iniE) / 864e5 > 120) iniE = new Date(finE.getTime() - 119 * 864e5);
+            const dias = []; for (let f = new Date(iniE.getFullYear(), iniE.getMonth(), iniE.getDate()); f <= finE; f.setDate(f.getDate() + 1)) dias.push(dia(f));
+            const cuenta = (canal) => dias.map(k => envios.filter(d => canalDe(d) === canal && dia(enviadoEn(d)) === k).length);
+            window.chartInstEnvios = new Chart(document.getElementById("chartEnvios").getContext("2d"), { type: "bar", data: { labels: dias.map(k => { const [y, m, d] = k.split("-"); return `${d}/${m}`; }), datasets: [{ label: "Correo", data: cuenta("Correo"), backgroundColor: "#0B6E99", borderRadius: 3, maxBarThickness: 22 }, { label: "WhatsApp", data: cuenta("WhatsApp"), backgroundColor: "#7FB8A0", borderRadius: 3, maxBarThickness: 22 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "top", align: "end", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "circle" } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#EEF1F4" } } } } });
             window.chartInstAgentes = new Chart(document.getElementById("chartAgentes").getContext("2d"), { type: "bar", data: { labels: orden, datasets: [{ data: orden.map(a => porAgente[a]), backgroundColor: "#0F2A44", borderRadius: 4, maxBarThickness: 28 }] }, options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => "Q " + fmtQ(c.parsed.x) } } }, scales: { x: { grid: { color: "#EEF1F4" }, ticks: { callback: (v) => "Q " + Number(v).toLocaleString("es-GT") } }, y: { grid: { display: false } } } } });
         }
 
