@@ -237,7 +237,7 @@ function htmlFirma(agente, perfil) {
 // Deben coincidir con CORREO_TEXTOS_DEFECTO de public/index.html.
 const CORREO_TEXTOS_DEFECTO = {
   encabezado: "DISTELSA · Servicio Técnico",
-  introduccion: "Le compartimos el detalle de su solicitud {{solicitud}} para que pueda realizar el pago correspondiente.",
+  introduccion: "Le compartimos el detalle de su orden de servicio {{orden}} para que pueda realizar el pago correspondiente.",
   instruccion: "Una vez realizado el pago, responda a este correo adjuntando su comprobante.",
   pie: "Responda a este correo para comunicarse con nosotros o enviar su comprobante de pago. Por favor no modifique el asunto, así identificamos su solicitud automáticamente.",
 };
@@ -264,7 +264,7 @@ function htmlNuevoCobro(d, general, agente, perfil) {
   }).join("");
   const fac = d.facturacion || {};
   const textos = textosCorreo(general);
-  const vars = { cliente: c.contacto || "cliente", solicitud: d.ticket || "", orden: d.orden_servicio || "" };
+  const vars = { cliente: c.contacto || "cliente", solicitud: d.orden_servicio || "", orden: d.orden_servicio || "" };
   return envolver(
     `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
     `<p>${conVariables(textos.introduccion, vars)}</p>` +
@@ -280,7 +280,7 @@ function htmlNuevoCobro(d, general, agente, perfil) {
 function htmlRespuestaInterno(d, agente, mensaje, perfil) {
   const cliente = d.cliente?.contacto || "Cliente";
   let h = `<div style="background-color:#f1f5f9; padding:15px; border-radius:6px; border-left:4px solid #0077A3;">${escBr(mensaje)}</div>` + htmlFirma(agente, perfil) +
-    `<hr style="border:0; border-bottom:1px solid #e2e8f0; margin:25px 0 15px;"><h4 style="color:#64748b; font-size:12px; text-transform:uppercase; margin:0 0 10px;">Historial de la solicitud ${esc(d.ticket)}</h4>`;
+    `<hr style="border:0; border-bottom:1px solid #e2e8f0; margin:25px 0 15px;"><h4 style="color:#64748b; font-size:12px; text-transform:uppercase; margin:0 0 10px;">Historial${d.orden_servicio ? ` de la orden ${esc(d.orden_servicio)}` : ""}</h4>`;
   if (d.ultimo_mensaje_cliente && !MSG_VACIOS.includes(d.ultimo_mensaje_cliente)) {
     h += `<div style="margin-bottom:15px; border-left:2px solid #e2e8f0; padding-left:10px;"><p style="font-weight:bold; margin:0 0 3px; font-size:13px;">${esc(cliente)}</p><div style="color:#475569; font-size:13px;">${escBr(d.ultimo_mensaje_cliente)}</div></div>`;
   }
@@ -303,15 +303,17 @@ const htmlRespuesta = (d, agente, mensaje, perfil, general) => envolver(htmlResp
 // ================================================================== MAKE (plan gratuito)
 // Asunto editable en Ajustes → Correo al cliente (Configuracion/General.correo_asunto).
 // Variables: {{solicitud}} {{orden}} {{cliente}} {{total}}. Debe coincidir con ASUNTO_DEFECTO de public/index.html.
-const ASUNTO_DEFECTO = "Solicitud de pago {{solicitud}} - Distelsa Servicio Técnico";
+const ASUNTO_DEFECTO = "Solicitud de pago - Orden {{orden}} - Distelsa Servicio Técnico";
 function asuntoCobro(d, general) {
   const ticket = d.ticket || "";
   const plantilla = String((general && general.correo_asunto) || "").trim() || ASUNTO_DEFECTO;
-  const vars = { solicitud: ticket, orden: String(d.orden_servicio || "").trim(), cliente: String(d.cliente?.contacto || "").trim(), total: `Q ${(Number(d.total) || 0).toFixed(2)}` };
+  const orden = String(d.orden_servicio || "").trim();
+  // El número interno ST no se muestra: {{solicitud}} (plantillas viejas) también muestra la orden.
+  const vars = { solicitud: orden, orden, cliente: String(d.cliente?.contacto || "").trim(), total: `Q ${(Number(d.total) || 0).toFixed(2)}` };
   let a = plantilla.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : ""));
   // Limpia separadores que quedan sueltos cuando una variable viene vacía (ej. "OS  - ").
   a = a.replace(/[\r\n\t]+/g, " ").replace(/\(\s*\)|\[\s*\]/g, "").replace(/(\s*[-–|·:,]\s*){2,}/g, " - ").replace(/\s{2,}/g, " ").replace(/^[\s\-–|·:,]+|[\s\-–|·:,]+$/g, "").trim();
-  if (!a) a = ASUNTO_DEFECTO.replace("{{solicitud}}", ticket);
+  if (!a) a = "Solicitud de pago - Distelsa Servicio Técnico";
   // En modo automático Make reconoce la respuesta por el número de solicitud: debe ir en el asunto.
   if (modoAutomatico(general) && ticket && !a.includes(ticket)) a += ` [${ticket}]`;
   return a.slice(0, 180);
