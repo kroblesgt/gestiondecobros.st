@@ -608,10 +608,10 @@
             <div class="login-card">
                 <h2>Inicia sesión</h2>
                 <p class="muted" style="margin:0 0 24px;">Usa el usuario que te asignó tu administrador.</p>
-                <div class="input-group"><label for="user">Usuario</label><input type="text" id="user" placeholder="Ej: jperez" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+                <div class="input-group"><label for="user">Usuario o correo</label><input type="text" id="user" placeholder="Ej: jperez o nombre@distelsa.com.gt" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
                 <div class="input-group"><label for="pass">Contraseña</label><input type="password" id="pass" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()"></div>
                 <button class="btn btn-primary" id="btn-login" onclick="login()">Entrar</button>
-                <p class="login-pie">¿Olvidaste tu contraseña? Pide a tu administrador que te asigne una nueva.</p>
+                <p class="login-pie">¿Olvidaste tu contraseña? <a href="#" onclick="event.preventDefault(); recuperarContrasena();">Recupérala con tu correo</a> o pide a tu administrador que te asigne una nueva.</p>
             </div>
         </div>
     </div>
@@ -1194,6 +1194,7 @@
                     <div class="form-grid">
                         <div class="input-group"><label for="u-id">Usuario para entrar <span class="req">*</span></label><input type="text" id="u-id" placeholder="Letras, números, punto o guion" autocapitalize="none" spellcheck="false"></div>
                         <div class="input-group"><label for="u-nom">Nombre completo <span class="req">*</span></label><input type="text" id="u-nom"></div>
+                        <div class="input-group"><label for="u-correo">Correo (opcional)</label><input type="email" id="u-correo" placeholder="nombre@distelsa.com.gt" autocapitalize="none" spellcheck="false"><p class="ayuda">Si lo pones, la persona entra con este correo y puede recuperar su contraseña sola.</p></div>
                         <div class="input-group"><label for="u-pass">Contraseña</label><input type="password" id="u-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
                         <div class="input-group"><label for="u-rol">Rol</label><select id="u-rol"></select></div>
                     </div>
@@ -1260,7 +1261,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, query, where, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
         // =====================================================================
@@ -1521,12 +1522,22 @@
             const u = document.getElementById("user").value.trim(); const p = document.getElementById("pass").value;
             if (!u || !p) return mostrarToast("Ingresa usuario y contraseña.", "warning");
             const btn = document.getElementById("btn-login"); btn.disabled = true;
-            try { await signInWithEmailAndPassword(auth, `${u.toLowerCase()}@${DOMINIO_LOGIN}`, p); }
+            // Con "@" se entra con el correo registrado; sin "@", con el usuario de siempre.
+            try { await signInWithEmailAndPassword(auth, u.includes("@") ? u.toLowerCase() : `${u.toLowerCase()}@${DOMINIO_LOGIN}`, p); }
             catch (e) {
                 if (e.code === "auth/too-many-requests") mostrarToast("Demasiados intentos. Espera unos minutos.", "error");
                 else if (e.code === "auth/network-request-failed") mostrarToast("Error de conexión.", "error");
-                else mostrarToast("Usuario/Contraseña incorrectos.", "error");
+                else mostrarToast(u.includes("@") ? "Correo o contraseña incorrectos." : "Usuario o contraseña incorrectos. Si tienes correo registrado, entra con tu correo.", "error");
             } finally { btn.disabled = false; }
+        };
+        window.recuperarContrasena = async () => {
+            const actual = document.getElementById("user").value.trim();
+            const correo = actual.includes("@") ? actual : (prompt("Escribe el correo registrado en tu usuario:") || "").trim();
+            if (!correo) return;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return mostrarToast("Escribe un correo válido.", "warning");
+            try { auth.languageCode = "es"; await sendPasswordResetEmail(auth, correo.toLowerCase()); } catch (e) { console.warn(e.code); }
+            // Mismo mensaje exista o no el correo, para no revelar qué cuentas hay.
+            mostrarToast("Si ese correo está registrado, te llegará un enlace para crear una contraseña nueva. Revisa también Correo no deseado.", "success");
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -2244,7 +2255,7 @@
             } else if (tipo === "Usuarios") {
                 document.getElementById("card-usuarios").classList.add("edit-mode"); document.getElementById("u-id").value = id; document.getElementById("u-id").disabled = true;
                 document.getElementById("u-nom").value = d.nombre || ""; document.getElementById("u-pass").value = ""; document.getElementById("u-pass").placeholder = "Dejar vacío para no cambiar";
-                document.getElementById("u-rol").value = d.rol || ""; document.getElementById("u-firma").value = d.firma || ""; document.getElementById("u-firma-img").value = d.firma_img || "";
+                document.getElementById("u-rol").value = d.rol || ""; document.getElementById("u-firma").value = d.firma || ""; document.getElementById("u-correo").value = d.correo || ""; document.getElementById("u-firma-img").value = d.firma_img || "";
                 const camps = Array.isArray(d.campaña) ? d.campaña : [d.campaña]; Array.from(document.getElementById("u-camp").options).forEach(opt => opt.selected = camps.includes(opt.value));
                 document.getElementById("btn-save-user").innerHTML = '<i class="fas fa-check"></i> Guardar cambios'; document.getElementById("card-usuarios").scrollIntoView({ behavior: "smooth", block: "start" }); document.getElementById("btn-cancel-user").style.display = "inline-flex";
             }
@@ -2285,7 +2296,7 @@
                     if (editando && password && password.length < 6) return mostrarToast("La contraseña debe tener al menos 6 caracteres.", "warning");
                     const btn = document.getElementById("btn-save-user"); btn.disabled = true;
                     try {
-                        await fnGestionarUsuario({ accion: "guardar", id, nombre: document.getElementById("u-nom").value.trim(), password: password || null, rol: document.getElementById("u-rol").value, campanas: Array.from(document.getElementById("u-camp").selectedOptions).map(o => o.value), firma: document.getElementById("u-firma").value, firma_img: document.getElementById("u-firma-img").value.trim(), nuevo: !editando });
+                        await fnGestionarUsuario({ accion: "guardar", id, nombre: document.getElementById("u-nom").value.trim(), password: password || null, rol: document.getElementById("u-rol").value, campanas: Array.from(document.getElementById("u-camp").selectedOptions).map(o => o.value), correo: document.getElementById("u-correo").value.trim(), firma: document.getElementById("u-firma").value, firma_img: document.getElementById("u-firma-img").value.trim(), nuevo: !editando });
                     } finally { btn.disabled = false; }
                 }
                 mostrarToast(tipo === "Usuarios" ? "Usuario guardado." : tipo === "Roles" ? "Rol guardado." : "Campaña guardada.", "success"); cancelarEdicion(tipo);
