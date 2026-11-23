@@ -215,7 +215,7 @@ function htmlPago(d, general) {
   const titulo = (t, extra = "") => `<div style="text-align:center; font-weight:bold; color:#002244;${extra}">${t}</div>`;
 
   if (general.neonet_habilitado === false && metodo !== "TRANSFERENCIA") {
-    const alt = general.neonet_mensaje_alterno || "Pagos con tarjeta deshabilitados.";
+    const alt = general.neonet_mensaje_alterno || "El Link de Pago no está disponible por el momento.";
     let h = `<div style="background-color:#fef2f2; border:1px solid #f87171; border-radius:8px; padding:15px; text-align:center; color:#991b1b; font-weight:bold; margin:15px 0;">⚠️ ${escBr(alt)}</div>`;
     if (metodo === "AMBOS") h += caja;
     return h;
@@ -223,9 +223,9 @@ function htmlPago(d, general) {
   if (metodo === "TRANSFERENCIA") return titulo("Pago por transferencia:") + caja;
   // Sin enlace de pago no se muestra la opción de tarjeta vacía.
   if (!link && metodo === "AMBOS") return titulo("Pago por transferencia:") + caja;
-  if (!link) return titulo("Pago con tarjeta:") + `<p style="text-align:center; color:#475569;">En breve le compartiremos el enlace para pagar con tarjeta.</p>`;
-  if (metodo === "NEONET") return titulo("Pago con tarjeta:") + btn;
-  return titulo("Opción 1: Pago con tarjeta:") + btn + titulo("Opción 2: Transferencia:", " margin-top:25px;") + caja;
+  if (!link) return titulo("Link de Pago:") + `<p style="text-align:center; color:#475569;">En breve le compartiremos el Link de Pago.</p>`;
+  if (metodo === "NEONET") return titulo("Link de Pago:") + btn;
+  return titulo("Opción 1: Link de Pago:") + btn + titulo("Opción 2: Transferencia:", " margin-top:25px;") + caja;
 }
 
 function htmlFirma(agente, perfil) {
@@ -258,17 +258,21 @@ function envolver(contenido, textos = CORREO_TEXTOS_DEFECTO) {
 
 function htmlNuevoCobro(d, general, agente, perfil) {
   const c = d.cliente || {};
+  const td = 'style="padding:8px; border-bottom:1px solid #e2e8f0; vertical-align:top;"';
   const filas = (d.servicios || []).map((s) => {
-    const equipo = [s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—";
-    return `<tr><td style="padding:8px; border-bottom:1px solid #e2e8f0;"><b>${esc(s.tipo)}</b><br><span style="color:#64748b; font-size:12px;">${esc(equipo)}</span></td><td style="padding:8px; border-bottom:1px solid #e2e8f0;">${esc(s.detalle)}</td><td style="padding:8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap;">Q ${(Number(s.precio) || 0).toFixed(2)}</td></tr>`;
+    const equipo = [s.producto, s.marca].filter(Boolean).join(" · ");
+    return `<tr><td ${td}><b>${esc(s.tipo)}</b></td><td ${td}>${esc(equipo || "—")}${s.modelo ? `<br><span style="color:#64748b; font-size:12px;">Modelo: ${esc(s.modelo)}</span>` : ""}</td><td ${td}>${esc(s.detalle || "—")}</td><td ${td.replace('vertical-align:top;', 'vertical-align:top; text-align:right; white-space:nowrap;')}>Q ${(Number(s.precio) || 0).toFixed(2)}</td></tr>`;
   }).join("");
+  // Datos del cliente: le confirman que el cobro es de su caso. Las notas internas y el temperamento nunca van al correo.
+  const fila = (k, v) => (v ? `<tr><td style="padding:3px 10px 3px 0; color:#64748b; white-space:nowrap; vertical-align:top;">${k}</td><td style="padding:3px 0; color:#1e293b;">${esc(v)}</td></tr>` : "");
+  const datosCliente = `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; margin:15px 0; font-size:13px;"><div style="font-weight:bold; color:#002244; margin-bottom:6px;">Datos registrados</div><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${fila("Orden de servicio", d.orden_servicio)}${fila("Nombre", c.contacto)}${fila("Teléfono", c.tel)}${fila("Correo", c.correo)}${fila("Dirección", c.dir)}</table></div>`;
   const fac = d.facturacion || {};
   const textos = textosCorreo(general);
   const vars = { cliente: c.contacto || "cliente", solicitud: d.orden_servicio || "", orden: d.orden_servicio || "" };
   return envolver(
     `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
-    `<p>${conVariables(textos.introduccion, vars)}</p>` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:15px 0; font-size:13px;"><tr style="background:#e2e8f0; color:#002244;"><th align="left" style="padding:8px;">Servicio</th><th align="left" style="padding:8px;">Detalle</th><th align="right" style="padding:8px;">Precio</th></tr>${filas}<tr><td colspan="2" style="padding:10px 8px; text-align:right; font-weight:bold;">TOTAL</td><td style="padding:10px 8px; text-align:right; font-weight:bold; font-size:16px; color:#002244; white-space:nowrap;">Q ${(Number(d.total) || 0).toFixed(2)}</td></tr></table>` +
+    `<p>${conVariables(textos.introduccion, vars)}</p>` + datosCliente +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:15px 0; font-size:13px;"><tr style="background:#e2e8f0; color:#002244;"><th align="left" style="padding:8px;">Servicio</th><th align="left" style="padding:8px;">Equipo</th><th align="left" style="padding:8px;">Detalle</th><th align="right" style="padding:8px;">Precio</th></tr>${filas}<tr><td colspan="3" style="padding:10px 8px; text-align:right; font-weight:bold;">TOTAL</td><td style="padding:10px 8px; text-align:right; font-weight:bold; font-size:16px; color:#002244; white-space:nowrap;">Q ${(Number(d.total) || 0).toFixed(2)}</td></tr></table>` +
     `<p style="font-size:12px; color:#475569; margin:0 0 15px 0;"><b>Facturar a:</b> ${esc(fac.nombre || "Consumidor Final")} · <b>NIT:</b> ${esc(fac.nit || "C/F")}</p>` +
     htmlPago(d, general) +
     `<p>${conVariables(textos.instruccion, vars)}</p>` +
