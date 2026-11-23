@@ -267,8 +267,20 @@ function envolver(contenido, textos = CORREO_TEXTOS_DEFECTO) {
   return `<!DOCTYPE html><html><body style="margin:0; padding:0; background:#f0f4f8;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8; padding:20px 0;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#ffffff; border-radius:10px; overflow:hidden; font-family:Arial,Helvetica,sans-serif; color:#1e293b; font-size:14px; line-height:1.5;"><tr><td style="background:#002244; color:#ffffff; padding:18px 24px; font-size:18px; font-weight:bold;">${esc(textos.encabezado)}</td></tr><tr><td style="padding:24px;">${contenido}</td></tr><tr><td style="background:#f8fafc; padding:14px 24px; font-size:11px; color:#64748b; border-top:1px solid #e2e8f0;">${escBr(textos.pie)}</td></tr></table></td></tr></table></body></html>`;
 }
 
+// Descuento: el cliente ve subtotal y descuento; el motivo es interno y no va al correo.
+function datosDescuento(d) {
+  const m = Number(d.descuento?.monto) || 0;
+  if (!(m > 0)) return null;
+  const sub = Number(d.subtotal) || (Number(d.total) || 0) + m;
+  const etiqueta = d.descuento?.tipo === "PORCENTAJE" ? `Descuento (${Number(d.descuento.valor) || 0}%)` : "Descuento";
+  return { sub, m, etiqueta };
+}
+
 function htmlNuevoCobro(d, general, agente, perfil) {
   const c = d.cliente || {};
+  const dsc = datosDescuento(d);
+  const filaRes = (k, v, color) => `<tr><td colspan="3" style="padding:6px 8px; text-align:right; color:${color || "#475569"};">${k}</td><td style="padding:6px 8px; text-align:right; white-space:nowrap; color:${color || "#475569"};">${v}</td></tr>`;
+  const lineasDescuento = dsc ? filaRes("Subtotal", `Q ${dsc.sub.toFixed(2)}`) + filaRes(esc(dsc.etiqueta), `− Q ${dsc.m.toFixed(2)}`, "#B45309") : "";
   const td = 'style="padding:8px; border-bottom:1px solid #e2e8f0; vertical-align:top;"';
   const filas = (d.servicios || []).map((s) => {
     const equipo = [s.producto, s.marca].filter(Boolean).join(" · ");
@@ -283,7 +295,7 @@ function htmlNuevoCobro(d, general, agente, perfil) {
   return envolver(
     `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
     `<p>${conVariables(d.orden_servicio ? (String(d.orden_servicio).includes(",") ? textos.introduccion.replace(/su\s+orden\s+de\s+servicio/i, "sus órdenes de servicio") : textos.introduccion) : textos.introduccion.replace(/(?:su\s+)?orden\s+de\s+servicio\s+\{\{(?:orden|solicitud)\}\}/gi, "su solicitud").replace(/\s*\{\{(?:orden|solicitud)\}\}/g, ""), vars)}</p>` + datosCliente +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:15px 0; font-size:13px;"><tr style="background:#e2e8f0; color:#002244;"><th align="left" style="padding:8px;">Servicio</th><th align="left" style="padding:8px;">Equipo</th><th align="left" style="padding:8px;">Detalle</th><th align="right" style="padding:8px;">Precio</th></tr>${filas}<tr><td colspan="3" style="padding:10px 8px; text-align:right; font-weight:bold;">TOTAL</td><td style="padding:10px 8px; text-align:right; font-weight:bold; font-size:16px; color:#002244; white-space:nowrap;">Q ${(Number(d.total) || 0).toFixed(2)}</td></tr></table>` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:15px 0; font-size:13px;"><tr style="background:#e2e8f0; color:#002244;"><th align="left" style="padding:8px;">Servicio</th><th align="left" style="padding:8px;">Equipo</th><th align="left" style="padding:8px;">Detalle</th><th align="right" style="padding:8px;">Precio</th></tr>${filas}${lineasDescuento}<tr><td colspan="3" style="padding:10px 8px; text-align:right; font-weight:bold;">${dsc ? "TOTAL A PAGAR" : "TOTAL"}</td><td style="padding:10px 8px; text-align:right; font-weight:bold; font-size:16px; color:#002244; white-space:nowrap;">Q ${(Number(d.total) || 0).toFixed(2)}</td></tr></table>` +
     `<p style="font-size:12px; color:#475569; margin:0 0 15px 0;"><b>Facturar a:</b> ${esc(fac.nombre || "Consumidor Final")} · <b>NIT:</b> ${esc(fac.nit || "C/F")}</p>` +
     htmlPago(d, general) +
     `<p>${conVariables(textos.instruccion, vars)}</p>` +
@@ -296,9 +308,10 @@ function htmlNuevoCobro(d, general, agente, perfil) {
 function htmlPagoRapido(d, general, agente, perfil) {
   const c = d.cliente || {};
   const sv = (d.servicios || [])[0] || {};
+  const dscR = datosDescuento(d);
   const textos = textosCorreo(general);
   const fila = (k, v) => (v ? `<tr><td style="padding:3px 10px 3px 0; color:#64748b; white-space:nowrap; vertical-align:top;">${k}</td><td style="padding:3px 0; color:#1e293b;">${esc(v)}</td></tr>` : "");
-  const resumen = `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin:15px 0; font-size:13px;"><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${fila("Nombre", c.contacto)}${fila("Teléfono", c.tel)}${fila(String(d.orden_servicio || "").includes(",") ? "Órdenes de servicio" : "Orden de servicio", d.orden_servicio)}${fila("Concepto", [sv.tipo, sv.detalle].filter(Boolean).join(" · "))}</table><div style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:15px; color:#002244;"><b>Monto a pagar: Q ${(Number(d.total) || 0).toFixed(2)}</b></div></div>`;
+  const resumen = `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin:15px 0; font-size:13px;"><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${fila("Nombre", c.contacto)}${fila("Teléfono", c.tel)}${fila(String(d.orden_servicio || "").includes(",") ? "Órdenes de servicio" : "Orden de servicio", d.orden_servicio)}${fila("Concepto", [sv.tipo, sv.detalle].filter(Boolean).join(" · "))}</table><div style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:15px; color:#002244;">${dscR ? `<div style="font-size:13px; color:#475569;">Subtotal: Q ${dscR.sub.toFixed(2)}</div><div style="font-size:13px; color:#B45309; margin-bottom:4px;">${esc(dscR.etiqueta)}: − Q ${dscR.m.toFixed(2)}</div>` : ""}<b>Monto a pagar: Q ${(Number(d.total) || 0).toFixed(2)}</b></div></div>`;
   return envolver(
     `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
     `<p>Como lo solicitó, le compartimos los datos para realizar su pago.</p>` + resumen +
