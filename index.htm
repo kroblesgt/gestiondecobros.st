@@ -402,6 +402,14 @@
         .dash-bloques > .card { margin: 0; }
         .dash-bloques > .ancho { grid-column: 1 / -1; }
         .w-oculto { display: none !important; }
+        .links-pago { display: flex; flex-direction: column; gap: 8px; }
+        .link-fila { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-items: center; }
+        .link-fila .lp-concepto, .link-fila .lp-monto, .link-fila .lp-quitar { display: none; }
+        .links-pago.varios .link-fila { grid-template-columns: minmax(0, 1.1fr) 110px minmax(0, 1.6fr) 34px; }
+        .links-pago.varios .link-fila .lp-concepto, .links-pago.varios .link-fila .lp-monto, .links-pago.varios .link-fila .lp-quitar { display: block; }
+        .lp-quitar { border: 1px solid var(--linea); background: var(--superficie); border-radius: var(--radio-sm); height: 38px; cursor: pointer; color: var(--rojo); }
+        #links-ayuda.mal { color: var(--rojo); font-weight: 600; }
+        @media (max-width: 700px) { .links-pago.varios .link-fila { grid-template-columns: minmax(0, 1fr) 100px 34px; } .links-pago.varios .link-fila .lp-link { grid-column: 1 / -1; } }
         .modo-cobro { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
         .modo-ayuda { font-size: 13px; margin: 0; max-width: 70ch; }
         #sec-2 .solo-rapido { display: none; }
@@ -781,7 +789,14 @@
                                     <label><input type="radio" name="metodo-pago-ui" value="TRANSFERENCIA" onchange="elegirMetodoPago(this.value)"><b><i class="fas fa-building-columns"></i> Transferencia</b>Solo cuenta bancaria</label>
                                 </div>
                             </div>
-                            <div class="input-group" id="grupo-link-pago"><label for="pago-link">Link de Pago</label><input type="url" id="pago-link" placeholder="https://..."></div>
+                            <div class="input-group" id="grupo-link-pago">
+                                <label for="pago-link" id="lbl-links">Link de Pago</label>
+                                <div class="links-pago" id="links-pago">
+                                    <div class="link-fila" data-fila="0"><input type="text" class="lp-concepto" placeholder="Concepto (opcional)" aria-label="Concepto del link 1"><input type="number" class="lp-monto num" min="0" step="0.01" placeholder="Q" aria-label="Monto del link 1" oninput="sumarLinks()"><input type="url" id="pago-link" class="lp-link" placeholder="https://..."></div>
+                                </div>
+                                <button type="button" class="btn btn-ghost btn-sm" id="btn-agregar-link" onclick="agregarLinkPago()" style="align-self:flex-start; margin-top:6px;"><i class="fas fa-plus"></i> Agregar otro link de pago</button>
+                                <p class="ayuda" id="links-ayuda" style="display:none;"></p>
+                            </div>
                         </div>
                     </div>
 
@@ -1660,9 +1675,56 @@
         // =====================================================================
         // GESTIÓN DE COBRO
         // =====================================================================
+
+        // ---- Varios links de pago para una misma solicitud (ej. uno por servicio) ----
+        const filasLink = () => Array.from(document.querySelectorAll("#links-pago .link-fila"));
+        window.agregarLinkPago = (val = {}) => {
+            const cont = document.getElementById("links-pago");
+            const n = filasLink().length;
+            if (n >= 6) return mostrarToast("Máximo 6 links por solicitud.", "warning");
+            if (n === 1 && !val.link && !filasLink()[0].querySelector(".lp-monto").value) {
+                // Al pasar a varios links, sugiere el desglose por servicio.
+                const sv = window.modoCobro === "RAPIDO" ? [] : serviciosTemporales;
+                if (sv.length > 1) {
+                    const f0 = filasLink()[0]; f0.querySelector(".lp-concepto").value = sv[0].tipo; f0.querySelector(".lp-monto").value = Number(sv[0].precio).toFixed(2);
+                    sv.slice(1).forEach(x => window.agregarLinkPago({ concepto: x.tipo, monto: Number(x.precio).toFixed(2) }));
+                    return;
+                }
+            }
+            const div = document.createElement("div"); div.className = "link-fila";
+            div.innerHTML = `<input type="text" class="lp-concepto" placeholder="Concepto (opcional)" aria-label="Concepto"><input type="number" class="lp-monto num" min="0" step="0.01" placeholder="Q" aria-label="Monto" oninput="sumarLinks()"><input type="url" class="lp-link" placeholder="https://..." aria-label="Link de pago"><button type="button" class="lp-quitar" title="Quitar este link" aria-label="Quitar este link" onclick="this.closest('.link-fila').remove(); sumarLinks();"><i class="fas fa-xmark"></i></button>`;
+            div.querySelector(".lp-concepto").value = val.concepto || ""; div.querySelector(".lp-monto").value = val.monto ?? ""; div.querySelector(".lp-link").value = val.link || "";
+            cont.appendChild(div); window.sumarLinks();
+        };
+        window.sumarLinks = () => {
+            const filas = filasLink(); const varios = filas.length > 1;
+            document.getElementById("links-pago").classList.toggle("varios", varios);
+            if (varios && !filas[0].querySelector(".lp-quitar")) { const b = document.createElement("button"); b.type = "button"; b.className = "lp-quitar"; b.title = "Quitar este link"; b.setAttribute("aria-label", "Quitar este link"); b.innerHTML = '<i class="fas fa-xmark"></i>'; b.onclick = () => { filas[0].remove(); window.sumarLinks(); }; filas[0].appendChild(b); }
+            if (!varios) { filas[0]?.querySelector(".lp-quitar")?.remove(); filas[0]?.querySelector(".lp-link") && (filas[0].querySelector(".lp-link").id = "pago-link"); }
+            document.getElementById("lbl-links").innerText = varios ? "Links de pago (uno por monto)" : "Link de Pago";
+            const ay = document.getElementById("links-ayuda");
+            if (!varios) { ay.style.display = "none"; document.getElementById("rp-monto").readOnly = false; return; }
+            const suma = filas.reduce((a, f) => a + (parseFloat(f.querySelector(".lp-monto").value) || 0), 0);
+            document.getElementById("rp-monto").readOnly = varios && window.modoCobro === "RAPIDO";
+            if (window.modoCobro === "RAPIDO") { document.getElementById("rp-monto").value = suma ? suma.toFixed(2) : ""; window.actualizarResumenRapido(); }
+            const total = window.modoCobro === "RAPIDO" ? suma : totalServicios();
+            const ok = Math.abs(suma - total) < 0.005;
+            ay.style.display = ""; ay.classList.toggle("mal", !ok);
+            ay.innerText = window.modoCobro === "RAPIDO" ? `El monto a pagar es la suma de los links: Q ${fmtQ(suma)}.` : (ok ? `Los links suman Q ${fmtQ(suma)}, igual al total.` : `Los links suman Q ${fmtQ(suma)} y el total es Q ${fmtQ(total)}. Deben coincidir.`);
+        };
+        const leerLinksPago = () => filasLink().map(f => ({ concepto: f.querySelector(".lp-concepto").value.trim(), monto: Math.round((parseFloat(f.querySelector(".lp-monto").value) || 0) * 100) / 100, link: safeUrl(f.querySelector(".lp-link").value) || "" }));
+        const ponerLinksPago = (d) => {
+            filasLink().slice(1).forEach(f => f.remove());
+            const lst = Array.isArray(d?.pago_links) ? d.pago_links : [];
+            const f0 = filasLink()[0]; f0.querySelector(".lp-concepto").value = lst[0]?.concepto || ""; f0.querySelector(".lp-monto").value = lst[0]?.monto ?? ""; f0.querySelector(".lp-link").value = lst[0]?.link || d?.pago_link || "";
+            lst.slice(1).forEach(x => window.agregarLinkPago(x)); window.sumarLinks();
+        };
         window.toggleLinkPago = () => {
             const met = document.getElementById("pago-metodo").value; const input = document.getElementById("pago-link");
             document.getElementById("grupo-link-pago").style.display = met === "TRANSFERENCIA" ? "none" : "";
+            const off = met === "TRANSFERENCIA" || window.configSistema?.neonet_habilitado === false;
+            if (off) { filasLink().slice(1).forEach(f => f.remove()); window.sumarLinks(); }
+            document.getElementById("btn-agregar-link").style.display = off ? "none" : "";
             if (met === "TRANSFERENCIA") { input.disabled = true; input.value = ""; }
             else if (window.configSistema?.neonet_habilitado === false) { input.disabled = true; input.value = ""; input.placeholder = "Link de Pago deshabilitado por el administrador"; }
             else { input.disabled = false; input.placeholder = "https://..."; }
@@ -1704,6 +1766,7 @@
             serviciosTemporales = []; window.currentTicketEditing = null; renderServicios();
             document.querySelectorAll('#sec-2 input:not([type="checkbox"]):not([type="radio"]), #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; });
             if (window.modoCobro === "RAPIDO") setTimeout(() => window.cambioConceptoRapido(), 0);
+            ponerLinksPago({});
             document.getElementById("check-confirmar").checked = false;
             const selTemp = document.getElementById("cli-temperamento"); selTemp.value = "Normal"; cambiarColorTemperamento(selTemp);
             const selTipo = document.getElementById("gc-tipo"); if (selTipo.options.length > 0) selTipo.selectedIndex = 0;
@@ -1870,7 +1933,14 @@
                 const existente = esNuevo ? null : window.allDashboardData.find(x => x.id === ticketId);
                 const ahora = new Date();
                 const clienteNombre = document.getElementById("cli-contacto").value.trim() || "Cliente";
-                const linkNeoNet = safeUrl(document.getElementById("pago-link").value);
+                const linksPago = leerLinksPago();
+                const variosLinks = linksPago.length > 1;
+                if (variosLinks && esEnvio) {
+                    const suma = linksPago.reduce((a, x) => a + x.monto, 0);
+                    if (linksPago.some(x => !(x.monto > 0))) return mostrarToast("Escribe el monto de cada link de pago.", "warning");
+                    if (Math.abs(suma - total) >= 0.005) return mostrarToast(`Los links suman Q ${fmtQ(suma)} y el total es Q ${fmtQ(total)}. Deben coincidir.`, "warning");
+                }
+                const linkNeoNet = variosLinks ? (linksPago.find(x => x.link)?.link || "") : safeUrl(document.getElementById("pago-link").value);
                 const metodoPago = document.getElementById("pago-metodo").value;
 
                 let estatusFinal = "ENVIADO"; if (metodo === "Pausa") estatusFinal = "PAUSADO"; if (metodo === "Anular") estatusFinal = "ANULADO";
@@ -1879,7 +1949,7 @@
                     prioridad: { temperamento: document.getElementById("cli-temperamento").value, observaciones_internas: document.getElementById("cli-obs-internas").value },
                     cliente: { nit: document.getElementById("cli-nit").value, contacto: clienteNombre, tel: document.getElementById("cli-tel").value, dir: document.getElementById("cli-dir").value, correo: correoCliente, obs_tec: document.getElementById("cli-obs-tec").value },
                     facturacion: { nit: document.getElementById("fac-nit").value, nombre: document.getElementById("fac-nombre").value },
-                    pago_link: linkNeoNet, pago_metodo: metodoPago, estatus: estatusFinal, metodoEnvio: metodo, tipo_cobro: rapido ? "RAPIDO" : "COMPLETO",
+                    pago_link: linkNeoNet, pago_links: variosLinks ? linksPago : [], pago_metodo: metodoPago, estatus: estatusFinal, metodoEnvio: metodo, tipo_cobro: rapido ? "RAPIDO" : "COMPLETO",
                     ultima_actividad: ahora, alerta_sla_creada: false
                 };
                 // CORREGIDO: al retomar una gestión ya NO se pisan fecha de creación, agente ni campaña.
@@ -1935,7 +2005,7 @@
             document.getElementById("cli-orden").value = d.orden_servicio || ""; document.getElementById("cli-nit").value = c.nit || ""; document.getElementById("cli-contacto").value = c.contacto || ""; document.getElementById("cli-tel").value = c.tel || ""; document.getElementById("cli-dir").value = c.dir || ""; document.getElementById("cli-correo").value = c.correo || ""; document.getElementById("cli-obs-tec").value = c.obs_tec || "";
             document.getElementById("fac-nit").value = d.facturacion?.nit || ""; document.getElementById("fac-nombre").value = d.facturacion?.nombre || "";
             document.getElementById("pago-metodo").value = d.pago_metodo || "AMBOS"; window.sincronizarMetodoPago(); window.toggleLinkPago();
-            document.getElementById("pago-link").value = d.pago_link || "";
+            ponerLinksPago(d);
             serviciosTemporales = [...(d.servicios || [])]; renderServicios();
             showSec("sec-2"); mostrarToast("Gestión recuperada.", "info");
         };
@@ -2046,6 +2116,7 @@
 
             const metodoTxt = { AMBOS: "Link de Pago y transferencia", NEONET: "Solo Link de Pago", TRANSFERENCIA: "Solo transferencia" }[d.pago_metodo] || "—";
             const linkPago = safeUrl(d.pago_link);
+            const listaLinks = Array.isArray(d.pago_links) && d.pago_links.length > 1 ? d.pago_links : null;
             const links = comprobantesDe(d).map(safeUrl).filter(Boolean);
             const adjuntos = links.length ? `<div class="adjuntos-grid">${links.map((link, idx) => {
                 let preview = "";
@@ -2053,7 +2124,7 @@
                 else { const mD = link.match(/\/d\/([\w-]+)\//); if (mD) preview = `https://drive.google.com/uc?export=view&id=${mD[1]}`; }
                 return `<a class="adjunto-thumb" href="${esc(link)}" target="_blank" rel="noopener noreferrer" title="Abrir comprobante ${idx + 1}"><i class="fas fa-file-lines" style="font-size:18px;"></i>Archivo ${idx + 1}${preview ? `<img src="${esc(preview)}" alt="Comprobante ${idx + 1}" onerror="this.remove()">` : ""}</a>`;
             }).join("")}</div>` : `<p class="ayuda">El cliente aún no envía comprobante.</p>`;
-            const bloquePago = `<div class="bloque"><h4>Pago y facturación</h4>${dato("Forma de pago", esc(metodoTxt))}${linkPago ? dato("Enlace", `<a href="${esc(linkPago)}" target="_blank" rel="noopener noreferrer">Abrir enlace de pago <i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i></a>`) : ""}${dato("Factura a", esc(d.facturacion?.nombre || "Consumidor final"))}${dato("NIT factura", esc(d.facturacion?.nit || "C/F"))}</div><div class="bloque"><h4>Comprobantes</h4>${adjuntos}</div>`;
+            const bloquePago = `<div class="bloque"><h4>Pago y facturación</h4>${dato("Forma de pago", esc(metodoTxt))}${listaLinks ? listaLinks.map((x, i) => dato(`Link ${i + 1}`, `${x.concepto ? esc(x.concepto) + " · " : ""}<b class="num">Q ${fmtQ(x.monto)}</b>${safeUrl(x.link) ? ` · <a href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener noreferrer">Abrir <i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i></a>` : " · sin link"}`)).join("") : (linkPago ? dato("Enlace", `<a href="${esc(linkPago)}" target="_blank" rel="noopener noreferrer">Abrir enlace de pago <i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i></a>`) : "")}${dato("Factura a", esc(d.facturacion?.nombre || "Consumidor final"))}${dato("NIT factura", esc(d.facturacion?.nit || "C/F"))}</div><div class="bloque"><h4>Comprobantes</h4>${adjuntos}</div>`;
 
             // Revisión manual: el agente dueño o quien revisa registra lo que el cliente contestó en Soporte ST.
             let bloqueRegistro = "";
