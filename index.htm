@@ -580,6 +580,43 @@
             .bubble { max-width: 92%; }
             .aviso-global { padding: 10px 12px; }
         }
+
+        /* =============================================================
+           TONO MÁS VIVO (nov. 2026): azul más brillante, un acento
+           cálido (sol) y un color por paso del formulario.
+           ============================================================= */
+        :root {
+            --azul: #0A7CC2; --azul-hover: #0868A3; --azul-suave: #E2F1FB;
+            --sol: #F5A623; --sol-suave: #FFF3DB; --turquesa: #0E9F9A; --turquesa-suave: #E0F5F4;
+            --papel: #EDF2F8;
+            --sombra: 0 1px 3px rgba(10,60,110,.08), 0 1px 2px rgba(10,60,110,.05);
+        }
+        .sidebar { background: linear-gradient(180deg, #0F3B6E 0%, #0B2C55 100%); }
+        .nav-item { transition: background .15s ease, color .15s ease; }
+        .nav-item.active { background: rgba(255,255,255,.14); box-shadow: inset 3px 0 0 var(--sol); }
+        .nav-item.active i { color: var(--sol); }
+        .sidebar-marca .ticket { background: var(--sol); color: #0B2C55; }
+        header.topbar { box-shadow: inset 0 -3px 0 0 transparent; border-bottom: 0; background: var(--superficie); position: sticky; }
+        header.topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, var(--azul) 0%, var(--turquesa) 55%, var(--sol) 100%); }
+        .btn-primary { background: var(--azul); } .btn-primary:hover:not(:disabled) { background: var(--azul-hover); }
+        .card-titulo .paso { background: var(--azul); }
+        #sec-2 .cobro-grid > div:first-child > .card:nth-of-type(2) .paso, #sec-2 .card .card-titulo .paso { box-shadow: 0 0 0 4px var(--azul-suave); }
+        #sec-2 .card:has(#cli-contacto) { border-top: 3px solid var(--turquesa); }
+        #sec-2 .card:has(#cli-contacto) .paso { background: var(--turquesa); box-shadow: 0 0 0 4px var(--turquesa-suave); }
+        #sec-2 .card:has(#pago-metodo) { border-top: 3px solid var(--sol); }
+        #sec-2 .card:has(#pago-metodo) .paso { background: var(--sol); color: #3B2600; box-shadow: 0 0 0 4px var(--sol-suave); }
+        #sec-2 .card.solo-completo:has(#gc-tipo), #sec-2 .card.solo-rapido { border-top: 3px solid var(--azul); }
+        .resumen-total { background: linear-gradient(135deg, #0F3B6E 0%, #0A7CC2 100%); border-color: transparent; box-shadow: 0 10px 24px rgba(10,124,194,.25); }
+        .resumen-total .etiqueta, .resumen-total .lineas { color: #D3E7F6; }
+        .resumen-total .monto { color: #fff; }
+        .segmentado .seg-op.active { background: var(--azul); color: #fff; box-shadow: 0 2px 6px rgba(10,124,194,.3); }
+        .segmentado .seg-op.active .num { color: #D3E7F6; }
+        .kpi .lbl i { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--c, var(--azul)) 14%, white); color: var(--c, var(--azul)); font-size: 13px; }
+        .kpi .value { color: var(--c, var(--ink)); }
+        .turno-chip.mio { background: var(--sol); border-color: var(--sol); color: #3B2600; }
+        .turno-chip.mio b { color: #2A1B00; }
+        .f-pill.active { background: var(--azul); border-color: var(--azul); }
+        .ticket { background: #0F3B6E; }
     </style>
 </head>
 <body>
