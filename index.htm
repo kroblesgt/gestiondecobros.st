@@ -711,7 +711,7 @@
                         <div class="card" id="card-cliente">
                             <h3 class="card-titulo"><span class="paso">2</span> Cliente</h3>
                             <div class="form-grid">
-                                <div class="input-group"><label for="cli-orden" id="lbl-cli-orden">Orden de servicio</label><input type="text" id="cli-orden" maxlength="40" autocomplete="off" placeholder="No. de orden en el sistema de servicio"></div>
+                                <div class="input-group"><label for="cli-orden" id="lbl-cli-orden">Orden de servicio</label><input type="text" id="cli-orden" maxlength="200" autocomplete="off" placeholder="Si son varias, sepáralas con coma"></div>
                             </div>
                             <div class="form-grid">
                                 <div class="input-group"><label for="cli-contacto">Nombre <span class="req">*</span></label><input type="text" id="cli-contacto" class="campo-cliente" autocomplete="off"></div>
@@ -1406,9 +1406,12 @@
         const plantillaAsunto = () => String(window.configSistema?.correo_asunto || "").trim() || ASUNTO_DEFECTO;
         // El número interno (ST-######) no se muestra: se identifica por la orden de servicio.
         const ordenDe = (d) => String(d?.orden_servicio || "").trim();
+        // Una solicitud puede tener varias órdenes: se escriben separadas por coma y se guardan como "111, 222".
+        const normalizarOrdenes = (txt) => [...new Set(String(txt || "").split(/[,;\n\/]+|\s{2,}|\s+y\s+/i).map(x => x.trim()).filter(Boolean))];
+        const textoOrdenes = (txt) => normalizarOrdenes(txt).join(", ");
         const etiquetaSol = (d) => ordenDe(d) ? `Orden ${ordenDe(d)}` : (d?.cliente?.contacto ? `cobro de ${d.cliente.contacto}` : "la solicitud");
         const etiquetaPorTicket = (t) => { const d = (window.allDashboardData || []).find(x => x.ticket === t || x.id === t); return d ? (ordenDe(d) ? `Orden ${ordenDe(d)}` : (d.cliente?.contacto || "Solicitud")) : (t ? "Solicitud" : ""); };
-        const talon = (d, extra = "") => ordenDe(d) ? `<span class="ticket ${extra}" title="Orden de servicio">${esc(ordenDe(d))}</span>` : `<span class="ticket sin-orden ${extra}" title="La orden de servicio todavía no se ha registrado">Orden pendiente</span>`;
+        const talon = (d, extra = "") => ordenDe(d) ? (() => { const l = normalizarOrdenes(ordenDe(d)); return `<span class="ticket ${extra}" title="${l.length > 1 ? "Órdenes de servicio: " : "Orden de servicio: "}${esc(l.join(", "))}">${esc(l[0])}${l.length > 1 ? ` +${l.length - 1}` : ""}</span>`; })() : `<span class="ticket sin-orden ${extra}" title="La orden de servicio todavía no se ha registrado">Orden pendiente</span>`;
         // La orden puede no existir aún (se crea con los datos que se envían): solo es obligatoria si el administrador lo pide.
         const ordenObligatoria = () => !!camposObligatorios().orden;
         window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nOrden de servicio: {{orden}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
@@ -1753,7 +1756,7 @@
         // Cierre: para completar es obligatoria la orden de servicio.
         window.pedirOrdenCierre = (d) => new Promise((resolve) => {
             const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
-            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cierre-titulo" style="max-width:480px;"><div class="modal-head"><h3 id="cierre-titulo">Completar solicitud</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)}</p><div class="input-group"><label for="cierre-orden">Orden de servicio <span class="req">*</span></label><input type="text" id="cierre-orden" maxlength="40" value="${esc(d.orden_servicio || "")}" placeholder="No. de orden en el sistema de servicio"><p class="ayuda">Sin orden no se puede completar. Si el cobro no siguió, anúlalo con su motivo.</p></div></div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-success" data-r="1"><i class="fas fa-circle-check"></i> Completar</button></div></div>`;
+            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cierre-titulo" style="max-width:480px;"><div class="modal-head"><h3 id="cierre-titulo">Completar solicitud</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)}</p><div class="input-group"><label for="cierre-orden">Orden(es) de servicio <span class="req">*</span></label><input type="text" id="cierre-orden" maxlength="200" value="${esc(d.orden_servicio || "")}" placeholder="Si son varias, sepáralas con coma"><p class="ayuda">Si son varias, sepáralas con coma. Sin orden no se puede completar; si el cobro no siguió, anúlalo con su motivo.</p></div></div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-success" data-r="1"><i class="fas fa-circle-check"></i> Completar</button></div></div>`;
             document.body.appendChild(ov);
             const cerrar = (v) => { document.removeEventListener("keydown", tecla); ov.remove(); resolve(v); };
             const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
@@ -1762,23 +1765,23 @@
                 const b = e.target.closest("[data-r]");
                 if (e.target === ov || (b && b.dataset.r === "0")) return cerrar(null);
                 if (!b) return;
-                const orden = ov.querySelector("#cierre-orden").value.trim();
+                const orden = textoOrdenes(ov.querySelector("#cierre-orden").value);
                 if (!orden) { ov.querySelector("#cierre-orden").focus(); return mostrarToast("Escribe la orden de servicio para completar.", "warning"); }
                 cerrar({ orden });
             });
             setTimeout(() => ov.querySelector("#cierre-orden").focus(), 30);
         });
         const aplicarCierre = (d, r, act, hist, quien) => {
-            if (r.orden !== (d.orden_servicio || "")) act.orden_servicio = r.orden;
-            hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: quien, mensaje: `🧾 Completada con orden de servicio ${r.orden}.`, enviado_por_correo: false });
+            if (r.orden !== (d.orden_servicio || "")) { act.orden_servicio = r.orden; act.ordenes_servicio = normalizarOrdenes(r.orden); }
+            hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: quien, mensaje: `🧾 Completada con ${r.orden.includes(",") ? "órdenes de servicio" : "orden de servicio"} ${r.orden}.`, enviado_por_correo: false });
         };
         window.guardarOrdenServicio = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
-            const v = (document.getElementById("v-orden")?.value || "").trim();
+            const v = textoOrdenes(document.getElementById("v-orden")?.value || "");
             if (!v) return mostrarToast("Escribe el número de orden.", "warning");
             if (v === (d.orden_servicio || "")) return mostrarToast("No hay cambios.", "info");
-            const hist = [...(d.historial_respuestas || []), { tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: d.orden_servicio ? `📝 Orden de servicio cambiada: ${d.orden_servicio} → ${v}.` : `📝 Orden de servicio registrada: ${v}.`, enviado_por_correo: false, ...(window.visorModoRevision === id ? { revision: "NOTA" } : {}) }];
-            try { await updateDoc(doc(db, "Cobros", id), { orden_servicio: v, historial_respuestas: hist, ultima_actividad: new Date(), actualizado_por: window.userName, fecha_actualizacion: new Date() }); mostrarToast("Orden de servicio registrada.", "success"); }
+            const hist = [...(d.historial_respuestas || []), { tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: d.orden_servicio ? `📝 Órdenes de servicio: ${d.orden_servicio} → ${v}.` : `📝 ${v.includes(",") ? "Órdenes de servicio registradas" : "Orden de servicio registrada"}: ${v}.`, enviado_por_correo: false, ...(window.visorModoRevision === id ? { revision: "NOTA" } : {}) }];
+            try { await updateDoc(doc(db, "Cobros", id), { orden_servicio: v, ordenes_servicio: normalizarOrdenes(v), historial_respuestas: hist, ultima_actividad: new Date(), actualizado_por: window.userName, fecha_actualizacion: new Date() }); mostrarToast("Orden de servicio registrada.", "success"); }
             catch (e) { console.error(e); mostrarToast("No se pudo guardar la orden.", "error"); }
         };
         window.procesarCobro = async (metodo) => {
@@ -1832,7 +1835,7 @@
 
                 let estatusFinal = "ENVIADO"; if (metodo === "Pausa") estatusFinal = "PAUSADO"; if (metodo === "Anular") estatusFinal = "ANULADO";
                 const datos = {
-                    ticket: ticketId, servicios: serviciosTemporales, total, orden_servicio: document.getElementById("cli-orden").value.trim(),
+                    ticket: ticketId, servicios: serviciosTemporales, total, orden_servicio: textoOrdenes(document.getElementById("cli-orden").value), ordenes_servicio: normalizarOrdenes(document.getElementById("cli-orden").value),
                     prioridad: { temperamento: document.getElementById("cli-temperamento").value, observaciones_internas: document.getElementById("cli-obs-internas").value },
                     cliente: { nit: document.getElementById("cli-nit").value, contacto: clienteNombre, tel: document.getElementById("cli-tel").value, dir: document.getElementById("cli-dir").value, correo: correoCliente, obs_tec: document.getElementById("cli-obs-tec").value },
                     facturacion: { nit: document.getElementById("fac-nit").value, nombre: document.getElementById("fac-nombre").value },
@@ -1994,8 +1997,8 @@
             ].join("");
             const puedeOrden = !esLectura && !["ANULADO"].includes(d.estatus);
             const campoOrden = puedeOrden
-                ? `<div class="dato"><span>Orden de servicio</span><div class="orden-editar"><input type="text" id="v-orden" maxlength="40" value="${esc(d.orden_servicio || "")}" placeholder="Pendiente"><button class="btn btn-outline btn-sm" onclick="guardarOrdenServicio(${js(id)})">Guardar</button></div></div>`
-                : dato("Orden de servicio", d.orden_servicio ? `<b>${esc(d.orden_servicio)}</b>` : "Pendiente");
+                ? `<div class="dato"><span>Orden(es) de servicio</span><div class="orden-editar"><input type="text" id="v-orden" maxlength="200" value="${esc(d.orden_servicio || "")}" placeholder="Pendiente" title="Si son varias, sepáralas con coma"><button class="btn btn-outline btn-sm" onclick="guardarOrdenServicio(${js(id)})">Guardar</button></div></div>`
+                : dato(normalizarOrdenes(d.orden_servicio).length > 1 ? "Órdenes de servicio" : "Orden de servicio", d.orden_servicio ? `<b>${esc(d.orden_servicio)}</b>` : "Pendiente");
             const bloqueCliente = `<div class="bloque"><h4>Cliente${d.tipo_cobro === "RAPIDO" ? ' <span class="chip-rapido"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</h4>${campoOrden}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
 
             const servList = (d.servicios || []).map(s => `<li><div><b>${esc(s.tipo)}</b><small>${esc([s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—")} · ${esc(s.detalle)}</small></div><span class="num">Q ${fmtQ(s.precio)}</span></li>`).join("") || `<li><span class="muted">Sin servicios</span></li>`;
@@ -2688,7 +2691,7 @@
                 const bW = document.getElementById("btn-enviar-wa"); if (bW) bW.style.display = cfg.wa_habilitado === false ? "none" : "";
                 const bC = document.getElementById("btn-enviar-correo"); if (bC) bC.style.display = cfg.correo_habilitado === false ? "none" : "";
                 const marcaReq = (id, txt, on) => { const l = document.getElementById(id); if (l) l.innerHTML = esc(txt) + (on ? ' <span class="req">*</span>' : ""); };
-                marcaReq("lbl-cli-orden", "Orden de servicio", ordenObligatoria()); marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
+                marcaReq("lbl-cli-orden", "Orden(es) de servicio", ordenObligatoria()); marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
                 ["lbl-producto", "lbl-marca", "lbl-modelo"].forEach((id, i) => marcaReq(id, ["Producto", "Marca", "Modelo"][i], req.equipo));
                 const lI = document.getElementById("pago-link");
                 if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Link de Pago deshabilitado"; } else window.toggleLinkPago();
