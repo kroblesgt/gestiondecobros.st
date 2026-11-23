@@ -257,6 +257,18 @@
         .resumen-total .monto { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0 6px; line-height: 1.1; }
         .resumen-total .lineas { font-size: 13px; color: #B9C7D6; }
         .resumen-total .editando { display: none; margin-top: 10px; }
+        .resumen-total .desglose { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.22); font-size: 13px; color: #D3E7F6; }
+        .resumen-total .desglose div { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+        .resumen-total .desglose .rebaja { color: #FFE0A3; font-weight: 600; }
+        .descuento-card .desc-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .descuento-card .desc-cab .card-titulo { margin: 0; }
+        .descuento-card .desc-fila { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-bottom: 12px; }
+        .descuento-card .desc-tipo { display: inline-flex; border: 1px solid var(--linea, #CBD5E1); border-radius: 8px; overflow: hidden; }
+        .descuento-card .desc-tipo button { border: 0; background: transparent; padding: 0 14px; font-weight: 700; cursor: pointer; color: inherit; min-height: 40px; }
+        .descuento-card .desc-tipo button.active { background: var(--sol, #F5A623); color: #3B2600; }
+        .descuento-card .desc-tipo button:focus-visible { outline: 2px solid var(--azul, #0A7CC2); outline-offset: -2px; }
+        .descuento-card .ayuda.mal { color: #B42318; }
+        input.num[readonly] { background: #EEF2F7; color: #334155; cursor: not-allowed; }
         .resumen-acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .resumen-acciones .btn { width: 100%; }
         .resumen-acciones .ancho { grid-column: 1 / -1; }
@@ -747,7 +759,7 @@
                                 <div class="input-group"><label for="gc-producto" id="lbl-producto">Producto</label><input type="text" id="gc-producto" placeholder="Ej: Refrigerador"></div>
                                 <div class="input-group"><label for="gc-marca" id="lbl-marca">Marca</label><input type="text" id="gc-marca"></div>
                                 <div class="input-group"><label for="gc-modelo" id="lbl-modelo">Modelo</label><input type="text" id="gc-modelo"></div>
-                                <div class="input-group"><label for="gc-precio">Precio (Q) <span class="req">*</span></label><input type="number" id="gc-precio" min="0" step="0.01" class="num" placeholder="0.00"></div>
+                                <div class="input-group"><label for="gc-precio">Precio (Q) <span class="req">*</span></label><input type="number" id="gc-precio" min="0" step="0.01" class="num" placeholder="0.00" oninput="delete this.dataset.auto"></div>
                             </div>
                             <div class="servicio-agregar"><button class="btn btn-outline" onclick="agregarServicio()"><i class="fas fa-plus"></i> Agregar servicio</button></div>
                             <div class="table-responsive"><table class="tabla-servicios"><thead><tr><th>Servicio</th><th>Equipo</th><th>Detalle</th><th style="text-align:right;">Precio</th><th></th></tr></thead><tbody id="lista-servicios"></tbody></table></div>
@@ -805,7 +817,21 @@
                             <span class="etiqueta">Total a cobrar</span>
                             <div class="monto">Q <span id="total-cobro">0.00</span></div>
                             <div class="lineas" id="resumen-lineas">Sin servicios agregados</div>
+                            <div class="desglose" id="resumen-desglose"></div>
                             <div class="editando" id="resumen-editando"><span class="ticket claro" id="resumen-ticket"></span> <span class="lineas">Retomando gestión</span></div>
+                        </div>
+
+                        <div class="card descuento-card" id="card-descuento">
+                            <button type="button" class="btn btn-ghost btn-sm" id="btn-descuento" onclick="toggleDescuento(true)"><i class="fas fa-tag"></i> Aplicar descuento</button>
+                            <div id="descuento-campos" style="display:none;">
+                                <div class="desc-cab"><h3 class="card-titulo"><i class="fas fa-tag" style="color:var(--sol, #F5A623);"></i> Descuento</h3><button type="button" class="btn btn-ghost btn-sm" onclick="toggleDescuento(false)">Quitar</button></div>
+                                <div class="desc-fila">
+                                    <div class="desc-tipo" role="group" aria-label="Tipo de descuento"><button type="button" data-tipo="MONTO" class="active" aria-pressed="true" onclick="tipoDescuento('MONTO')" title="Monto en quetzales">Q</button><button type="button" data-tipo="PORCENTAJE" aria-pressed="false" onclick="tipoDescuento('PORCENTAJE')" title="Porcentaje">%</button></div>
+                                    <input type="number" id="desc-valor" min="0" step="0.01" class="num" placeholder="0.00" aria-label="Valor del descuento" oninput="pintarTotal()">
+                                </div>
+                                <div class="input-group" style="margin-bottom:6px;"><label for="desc-motivo">Motivo <span class="req">*</span></label><input type="text" id="desc-motivo" list="motivos-descuento" maxlength="150" placeholder="Ej: Autorizado por supervisor"><datalist id="motivos-descuento"><option value="Autorizado por supervisor"><option value="Cliente frecuente"><option value="Compensación por inconveniente"><option value="Promoción vigente"><option value="Garantía parcial"></datalist></div>
+                                <p class="ayuda" id="desc-ayuda">El cliente ve el descuento en el correo. El motivo solo lo ve el equipo.</p>
+                            </div>
                         </div>
 
                         <div class="card" id="card-prioridad" data-temp="Normal">
@@ -1703,14 +1729,12 @@
             if (!varios) { filas[0]?.querySelector(".lp-quitar")?.remove(); filas[0]?.querySelector(".lp-link") && (filas[0].querySelector(".lp-link").id = "pago-link"); }
             document.getElementById("lbl-links").innerText = varios ? "Links de pago (uno por monto)" : "Link de Pago";
             const ay = document.getElementById("links-ayuda");
-            if (!varios) { ay.style.display = "none"; document.getElementById("rp-monto").readOnly = false; return; }
+            if (!varios) { ay.style.display = "none"; return; }
             const suma = filas.reduce((a, f) => a + (parseFloat(f.querySelector(".lp-monto").value) || 0), 0);
-            document.getElementById("rp-monto").readOnly = varios && window.modoCobro === "RAPIDO";
-            if (window.modoCobro === "RAPIDO") { document.getElementById("rp-monto").value = suma ? suma.toFixed(2) : ""; window.actualizarResumenRapido(); }
-            const total = window.modoCobro === "RAPIDO" ? suma : totalServicios();
+            const total = totalAPagar();
             const ok = Math.abs(suma - total) < 0.005;
             ay.style.display = ""; ay.classList.toggle("mal", !ok);
-            ay.innerText = window.modoCobro === "RAPIDO" ? `El monto a pagar es la suma de los links: Q ${fmtQ(suma)}.` : (ok ? `Los links suman Q ${fmtQ(suma)}, igual al total.` : `Los links suman Q ${fmtQ(suma)} y el total es Q ${fmtQ(total)}. Deben coincidir.`);
+            ay.innerText = ok ? `Los links suman Q ${fmtQ(suma)}, igual al total a pagar.` : `Los links suman Q ${fmtQ(suma)} y el total a pagar es Q ${fmtQ(total)}. Deben coincidir.`;
         };
         const leerLinksPago = () => filasLink().map(f => ({ concepto: f.querySelector(".lp-concepto").value.trim(), monto: Math.round((parseFloat(f.querySelector(".lp-monto").value) || 0) * 100) / 100, link: safeUrl(f.querySelector(".lp-link").value) || "" }));
         const ponerLinksPago = (d) => {
@@ -1729,11 +1753,18 @@
             else if (window.configSistema?.neonet_habilitado === false) { input.disabled = true; input.value = ""; input.placeholder = "Link de Pago deshabilitado por el administrador"; }
             else { input.disabled = false; input.placeholder = "https://..."; }
         };
+        // Mismo comportamiento en Cobro completo y Pago rápido: el diagnóstico tiene precio fijo (se rebaja con descuento);
+        // otro concepto borra ese precio, pero respeta un monto escrito a mano.
+        const precioDiagnostico = () => { const v = Number(window.configSistema?.precio_diagnostico); return v > 0 ? v : 175; };
+        const aplicarPrecioConcepto = (input, concepto) => {
+            if (/diagn/i.test(concepto || "")) { input.value = precioDiagnostico(); input.readOnly = true; input.dataset.auto = "1"; input.title = "Precio fijo del diagnóstico (se cambia en Ajustes). Para rebajarlo usa Aplicar descuento."; }
+            else { input.readOnly = false; input.title = ""; if (input.dataset.auto === "1") { input.value = ""; delete input.dataset.auto; } }
+        };
         window.cambioTipoServicio = () => {
             const t = document.getElementById("gc-tipo").value;
             document.getElementById("lbl-falla").innerHTML = (t === "Diagnóstico") ? 'Falla reportada <span class="req">*</span>' : 'Servicio a realizar <span class="req">*</span>';
             const esPresupuesto = (t === "Presupuesto"); const precio = document.getElementById("gc-precio");
-            if (t === "Diagnóstico") { precio.value = window.configSistema?.precio_diagnostico || 175; precio.disabled = true; } else { precio.value = ""; precio.disabled = false; }
+            precio.disabled = false; aplicarPrecioConcepto(precio, t);
             document.querySelectorAll(".campo-cliente").forEach(input => { if (input.id !== "cli-correo") { input.disabled = esPresupuesto; if (esPresupuesto) input.value = ""; } });
         };
         window.agregarServicio = () => {
@@ -1741,12 +1772,51 @@
             if (!serv.detalle || serv.precio <= 0) return mostrarToast("Escribe el detalle y un precio mayor a 0.", "warning");
             if (camposObligatorios().equipo && (!serv.producto || !serv.marca || !serv.modelo)) return mostrarToast("Escribe producto, marca y modelo del equipo.", "warning");
             serviciosTemporales.push(serv); renderServicios();
-            ["gc-detalle", "gc-producto", "gc-marca", "gc-modelo"].forEach(id => document.getElementById(id).value = "");
+            ["gc-detalle", "gc-producto", "gc-marca", "gc-modelo", "gc-precio"].forEach(id => document.getElementById(id).value = "");
             window.cambioTipoServicio();
         };
         // CORREGIDO: antes el onclick llamaba variables del módulo que no son globales.
         window.quitarServicio = (i) => { serviciosTemporales.splice(i, 1); renderServicios(); };
         const totalServicios = () => serviciosTemporales.reduce((a, s) => a + (Number(s.precio) || 0), 0);
+        // ---- Descuento (igual en Cobro completo y Pago rápido) ----
+        window.descTipo = "MONTO";
+        const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+        const subtotalActual = () => window.modoCobro === "RAPIDO" ? (parseFloat(document.getElementById("rp-monto").value) || 0) : totalServicios();
+        const descuentoActual = (sub = subtotalActual()) => {
+            if (document.getElementById("descuento-campos")?.style.display === "none") return null;
+            const valor = parseFloat(document.getElementById("desc-valor").value) || 0; if (!(valor > 0)) return null;
+            const monto = r2(window.descTipo === "PORCENTAJE" ? sub * valor / 100 : valor);
+            return { tipo: window.descTipo, valor: r2(valor), monto, motivo: document.getElementById("desc-motivo").value.trim() };
+        };
+        const totalAPagar = () => { const sub = subtotalActual(); return r2(sub - (descuentoActual(sub)?.monto || 0)); };
+        window.toggleDescuento = (on) => {
+            document.getElementById("descuento-campos").style.display = on ? "" : "none";
+            document.getElementById("btn-descuento").style.display = on ? "none" : "";
+            if (!on) { document.getElementById("desc-valor").value = ""; document.getElementById("desc-motivo").value = ""; window.tipoDescuento("MONTO", true); }
+            else setTimeout(() => document.getElementById("desc-valor").focus(), 0);
+            window.pintarTotal();
+        };
+        window.tipoDescuento = (t, silencioso) => {
+            window.descTipo = t;
+            document.querySelectorAll("#card-descuento .desc-tipo button").forEach(b => { const a = b.dataset.tipo === t; b.classList.toggle("active", a); b.setAttribute("aria-pressed", a); });
+            document.getElementById("desc-valor").placeholder = t === "PORCENTAJE" ? "0 %" : "0.00";
+            if (!silencioso) window.pintarTotal();
+        };
+        const ponerDescuento = (desc) => {
+            const on = !!(desc && desc.monto > 0);
+            window.toggleDescuento(on);
+            if (on) { window.tipoDescuento(desc.tipo === "PORCENTAJE" ? "PORCENTAJE" : "MONTO", true); document.getElementById("desc-valor").value = desc.valor ?? desc.monto; document.getElementById("desc-motivo").value = desc.motivo || ""; window.pintarTotal(); }
+        };
+        window.pintarTotal = () => {
+            const sub = subtotalActual(); const d = descuentoActual(sub);
+            document.getElementById("total-cobro").innerText = fmtQ(r2(sub - (d?.monto || 0)));
+            const box = document.getElementById("resumen-desglose");
+            if (d) { box.style.display = "block"; box.innerHTML = `<div><span>Subtotal</span><span>Q ${fmtQ(sub)}</span></div><div class="rebaja"><span>Descuento${d.tipo === "PORCENTAJE" ? ` (${d.valor}%)` : ""}</span><span>− Q ${fmtQ(d.monto)}</span></div>`; }
+            else box.style.display = "none";
+            const ay = document.getElementById("desc-ayuda");
+            if (ay) { const mal = d && (d.monto >= sub || (d.tipo === "PORCENTAJE" && d.valor >= 100)); ay.classList.toggle("mal", !!mal); ay.innerText = mal ? (sub > 0 ? "El descuento no puede ser igual o mayor al total." : "Primero agrega el monto o los servicios.") : "El cliente ve el descuento en el correo. El motivo solo lo ve el equipo."; }
+            if (typeof window.sumarLinks === "function") window.sumarLinks();
+        };
         function renderServicios() {
             const tb = document.getElementById("lista-servicios");
             tb.innerHTML = serviciosTemporales.length === 0
@@ -1755,7 +1825,7 @@
                     const equipo = `${s.producto || ""} ${s.marca || ""} ${s.modelo || ""}`.trim() || "—";
                     return `<tr><td><b>${esc(s.tipo)}</b></td><td>${esc(equipo)}</td><td>${esc(s.detalle)}</td><td class="precio">Q ${fmtQ(s.precio)}</td><td class="acciones"><button class="btn-action-sm peligro" title="Quitar servicio" aria-label="Quitar servicio" onclick="quitarServicio(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
                 }).join("");
-            document.getElementById("total-cobro").innerText = fmtQ(totalServicios());
+            if (window.modoCobro !== "RAPIDO") window.pintarTotal?.();
             const n = serviciosTemporales.length;
             document.getElementById("resumen-lineas").innerText = n === 0 ? "Sin servicios agregados" : `${n} servicio${n === 1 ? "" : "s"}`;
             const ed = document.getElementById("resumen-editando");
@@ -1766,7 +1836,7 @@
             serviciosTemporales = []; window.currentTicketEditing = null; renderServicios();
             document.querySelectorAll('#sec-2 input:not([type="checkbox"]):not([type="radio"]), #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; });
             if (window.modoCobro === "RAPIDO") setTimeout(() => window.cambioConceptoRapido(), 0);
-            ponerLinksPago({});
+            ponerLinksPago({}); ponerDescuento(null);
             document.getElementById("check-confirmar").checked = false;
             const selTemp = document.getElementById("cli-temperamento"); selTemp.value = "Normal"; cambiarColorTemperamento(selTemp);
             const selTipo = document.getElementById("gc-tipo"); if (selTipo.options.length > 0) selTipo.selectedIndex = 0;
@@ -1845,16 +1915,12 @@
             if (!silencioso) window.actualizarResumenRapido();
         };
         window.cambioConceptoRapido = () => {
-            const c = document.getElementById("rp-concepto").value; const m = document.getElementById("rp-monto");
-            if (m.readOnly) return window.actualizarResumenRapido(); // con varios links el monto es la suma de los links
-            if (/diagn/i.test(c)) { m.value = window.configSistema?.precio_diagnostico ?? 175; m.dataset.auto = "1"; }
-            else if (m.dataset.auto === "1") { m.value = ""; delete m.dataset.auto; m.focus(); } // el precio del diagnóstico no aplica a otro concepto
+            aplicarPrecioConcepto(document.getElementById("rp-monto"), document.getElementById("rp-concepto").value);
             window.actualizarResumenRapido();
         };
         window.actualizarResumenRapido = () => {
             if (window.modoCobro !== "RAPIDO") { if (typeof renderServicios === "function") renderServicios(); return; }
-            const m = parseFloat(document.getElementById("rp-monto").value) || 0;
-            document.getElementById("total-cobro").innerText = m.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            window.pintarTotal?.();
             document.getElementById("resumen-lineas").innerText = `Pago rápido · ${document.getElementById("rp-concepto").value || "Pago"}`;
         };
         // Registrar la orden de servicio después del envío (visor).
@@ -1897,7 +1963,13 @@
                 if (!(monto > 0)) return mostrarToast("Escribe el monto a pagar.", "warning");
                 serviciosTemporales = [{ tipo: document.getElementById("rp-concepto").value || "Pago", detalle: document.getElementById("rp-detalle").value.trim(), producto: "", marca: "", modelo: "", precio: monto }];
             }
-            const total = totalServicios();
+            const subtotal = r2(totalServicios());
+            const descuento = metodo === "Anular" ? null : descuentoActual(subtotal);
+            if (descuento) {
+                if (!descuento.motivo) { document.getElementById("desc-motivo").focus(); return mostrarToast("Escribe el motivo del descuento.", "warning"); }
+                if (descuento.monto >= subtotal) return mostrarToast("El descuento no puede ser igual o mayor al total.", "warning");
+            }
+            const total = r2(subtotal - (descuento?.monto || 0));
             const esEnvio = metodo === "WhatsApp" || metodo === "Correo";
             if (esEnvio && !document.getElementById("check-confirmar").checked) return mostrarToast("Debes confirmar los datos.", "warning");
             if (metodo !== "Anular" && serviciosTemporales.length === 0) return mostrarToast("Agrega un servicio.", "warning");
@@ -1948,7 +2020,7 @@
 
                 let estatusFinal = "ENVIADO"; if (metodo === "Pausa") estatusFinal = "PAUSADO"; if (metodo === "Anular") estatusFinal = "ANULADO";
                 const datos = {
-                    ticket: ticketId, servicios: serviciosTemporales, total, orden_servicio: textoOrdenes(document.getElementById("cli-orden").value), ordenes_servicio: normalizarOrdenes(document.getElementById("cli-orden").value),
+                    ticket: ticketId, servicios: serviciosTemporales, subtotal, descuento: descuento ? { ...descuento, aplicado_por: window.userName } : null, total, orden_servicio: textoOrdenes(document.getElementById("cli-orden").value), ordenes_servicio: normalizarOrdenes(document.getElementById("cli-orden").value),
                     prioridad: { temperamento: document.getElementById("cli-temperamento").value, observaciones_internas: document.getElementById("cli-obs-internas").value },
                     cliente: { nit: document.getElementById("cli-nit").value, contacto: clienteNombre, tel: document.getElementById("cli-tel").value, dir: document.getElementById("cli-dir").value, correo: correoCliente, obs_tec: document.getElementById("cli-obs-tec").value },
                     facturacion: { nit: document.getElementById("fac-nit").value, nombre: document.getElementById("fac-nombre").value },
@@ -1964,6 +2036,7 @@
                 }
                 // Quién envió y por qué canal (Dashboard → Productividad). El servidor lo confirma al enviar el correo.
                 if (esEnvio) { datos.enviado_por = window.userName; datos.enviado_en = ahora; datos.canal_envio = metodo; }
+                if (esEnvio && descuento) datos.historial_respuestas.push({ tipo: "agente", fecha: ahora.toISOString(), agente: window.userName, mensaje: `🏷️ Descuento de Q ${fmtQ(descuento.monto)}${descuento.tipo === "PORCENTAJE" ? ` (${descuento.valor}%)` : ""} sobre Q ${fmtQ(subtotal)}. Total a pagar: Q ${fmtQ(total)}.\nMotivo: ${descuento.motivo}`, enviado_por_correo: false });
                 if (metodo === "WhatsApp") datos.motivo_whatsapp = motivoWa.trim();
                 if (metodo === "Pausa") datos.motivo_pausa = motivoPausa.trim();
                 if (metodo === "Anular") { datos.motivo_anulacion = motivoAnulacion.trim(); datos.historial_respuestas.push({ tipo: "agente", fecha: ahora.toISOString(), agente: window.userName, mensaje: `🚫 SOLICITUD ANULADA DESDE LA PANTALLA DE GESTIÓN.\nMotivo: ${motivoAnulacion.trim()}`, enviado_por_correo: false }); }
@@ -1979,7 +2052,7 @@
                         mostrarToast(mensajeError(e, "La solicitud se guardó, pero el correo NO se envió."), "error");
                     }
                 } else if (metodo === "WhatsApp") {
-                    const rServ = serviciosTemporales.map(s => `* ${s.tipo} (${[s.producto, s.marca, s.modelo].filter(Boolean).join(" ")}): ${s.detalle} - Q${Number(s.precio).toFixed(2)}`).join("\n");
+                    const rServ = serviciosTemporales.map(s => `* ${s.tipo} (${[s.producto, s.marca, s.modelo].filter(Boolean).join(" ")}): ${s.detalle} - Q${Number(s.precio).toFixed(2)}`).join("\n") + (descuento ? `\nSubtotal: Q ${subtotal.toFixed(2)}\nDescuento${descuento.tipo === "PORCENTAJE" ? ` (${descuento.valor}%)` : ""}: -Q ${descuento.monto.toFixed(2)}` : "");
                     const reemplazos = { solicitud: datos.orden_servicio || "", orden: datos.orden_servicio || "", cliente: clienteNombre, telefono: datos.cliente.tel || "N/A", correo: correoCliente || "N/A", direccion: datos.cliente.dir || "N/A", temperamento: datos.prioridad.temperamento || "Normal", obs_internas: datos.prioridad.observaciones_internas || "Ninguna", razon_social: datos.facturacion.nombre || "C/F", nit: datos.facturacion.nit || "C/F", servicios: rServ, total: total.toFixed(2), link_pago: textoPagoWhatsApp(metodoPago, linkNeoNet, datos.pago_links), motivo: motivoWa.trim() };
                     const msg = (window.configPlantillas?.whatsapp || "").replace(/\{\{(\w+)\}\}/g, (m, k) => (k in reemplazos ? reemplazos[k] : m));
                     const link = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
@@ -2010,6 +2083,8 @@
             document.getElementById("pago-metodo").value = d.pago_metodo || "AMBOS"; window.sincronizarMetodoPago(); window.toggleLinkPago();
             ponerLinksPago(d);
             serviciosTemporales = [...(d.servicios || [])]; renderServicios();
+            if (d.tipo_cobro === "RAPIDO") document.getElementById("rp-monto").readOnly = /diagn/i.test(d.servicios?.[0]?.tipo || "");
+            ponerDescuento(d.descuento);
             showSec("sec-2"); mostrarToast("Gestión recuperada.", "info");
         };
 
@@ -2115,7 +2190,7 @@
             const bloqueCliente = `<div class="bloque"><h4>Cliente${d.tipo_cobro === "RAPIDO" ? ' <span class="chip-rapido"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</h4>${campoOrden}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
 
             const servList = (d.servicios || []).map(s => `<li><div><b>${esc(s.tipo)}</b><small>${esc([s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—")} · ${esc(s.detalle)}</small></div><span class="num">Q ${fmtQ(s.precio)}</span></li>`).join("") || `<li><span class="muted">Sin servicios</span></li>`;
-            const bloqueServicios = `<div class="bloque"><h4>Servicios</h4><ul class="lista-serv">${servList}</ul><div class="total-visor"><span>Total</span><span class="num">Q ${fmtQ(d.total)}</span></div></div>`;
+            const bloqueServicios = `<div class="bloque"><h4>Servicios</h4><ul class="lista-serv">${servList}</ul>${d.descuento?.monto > 0 ? `<div class="dato"><span>Subtotal</span><span class="num">Q ${fmtQ(d.subtotal ?? (Number(d.total) + d.descuento.monto))}</span></div><div class="dato"><span>Descuento${d.descuento.tipo === "PORCENTAJE" ? ` (${esc(String(d.descuento.valor))}%)` : ""}</span><span><b class="num">− Q ${fmtQ(d.descuento.monto)}</b><br><small class="muted">${esc(d.descuento.motivo || "Sin motivo")}${d.descuento.aplicado_por ? ` · ${esc(d.descuento.aplicado_por)}` : ""}</small></span></div>` : ""}<div class="total-visor"><span>Total</span><span class="num">Q ${fmtQ(d.total)}</span></div></div>`;
 
             const metodoTxt = { AMBOS: "Link de Pago y transferencia", NEONET: "Solo Link de Pago", TRANSFERENCIA: "Solo transferencia" }[d.pago_metodo] || "—";
             const linkPago = safeUrl(d.pago_link);
@@ -2809,7 +2884,7 @@
                 ["lbl-producto", "lbl-marca", "lbl-modelo"].forEach((id, i) => marcaReq(id, ["Producto", "Marca", "Modelo"][i], req.equipo));
                 const lI = document.getElementById("pago-link");
                 if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Link de Pago deshabilitado"; } else window.toggleLinkPago();
-                if (document.getElementById("gc-tipo")?.value === "Diagnóstico" && !window.currentTicketEditing) document.getElementById("gc-precio").value = cfg.precio_diagnostico ?? 175;
+                if (!window.currentTicketEditing) { const gp = document.getElementById("gc-precio"), rm = document.getElementById("rp-monto"); if (gp && gp.dataset.auto === "1") gp.value = precioDiagnostico(); if (rm && rm.dataset.auto === "1") { rm.value = precioDiagnostico(); window.actualizarResumenRapido?.(); } }
 
                 // Respuestas y revisión
                 const pRev = document.getElementById("aj-revision");
@@ -3350,7 +3425,7 @@
                 const serv = (d.servicios || []).map(s => `[${s.tipo}] ${s.producto || ""} ${s.marca || ""} ${s.modelo || ""} - ${s.detalle} (Q${s.precio})`).join(" | ");
                 const marcas = [...new Set((d.servicios || []).map(s => s.marca).filter(Boolean))].join(", ");
                 const comp = comprobantesDe(d);
-                return { "ORDEN DE SERVICIO": ordenDe(d) || "Pendiente", "TIPO": d.tipo_cobro === "RAPIDO" ? "Pago rápido" : "Cobro completo", "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : "N/A", "ÚLTIMA ACTIVIDAD": fmtFecha(d.ultima_actividad), "ESTATUS": d.estatus || "N/A", "CATEGORÍA": window.configCatalogos?.estatus_categorias?.[d.estatus] || "Sin categoría", "MOTOR": motorDe(d.estatus), "AGENTE": d.agente || "N/A", "CAMPAÑA": d.campaña || "N/A", "TEMPERAMENTO": d.prioridad?.temperamento || "Normal", "OBS. INTERNAS": d.prioridad?.observaciones_internas || "Ninguna", "CLIENTE": d.cliente?.contacto || "N/A", "NIT CLIENTE": d.cliente?.nit || "C/F", "TELÉFONO": d.cliente?.tel || "N/A", "CORREO": d.cliente?.correo || "N/A", "DIRECCIÓN": d.cliente?.dir || "N/A", "OBS. TÉCNICO": d.cliente?.obs_tec || "Ninguna", "SERVICIOS": serv || "Sin servicios", "MARCAS": marcas || "N/A", "TOTAL (Q)": Number(d.total) || 0, "RAZÓN SOCIAL": d.facturacion?.nombre || "C/F", "NIT FACTURA": d.facturacion?.nit || "C/F", "MÉTODO ENVÍO": d.metodoEnvio || "N/A", "MÉTODO PAGO": d.pago_metodo || "N/A", "MOTIVO": d.motivo_anulacion || d.motivo_pausa || "N/A", "LINK DE PAGO": (Array.isArray(d.pago_links) && d.pago_links.length > 1 ? d.pago_links.map(x => `Q ${(Number(x.monto) || 0).toFixed(2)} ${x.link}`).join(" | ") : d.pago_link) || "N/A", "COMPROBANTES": comp.length ? comp.join(", ") : "N/A", "HISTORIAL MSJS": (d.historial_respuestas || []).length };
+                return { "ORDEN DE SERVICIO": ordenDe(d) || "Pendiente", "TIPO": d.tipo_cobro === "RAPIDO" ? "Pago rápido" : "Cobro completo", "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : "N/A", "ÚLTIMA ACTIVIDAD": fmtFecha(d.ultima_actividad), "ESTATUS": d.estatus || "N/A", "CATEGORÍA": window.configCatalogos?.estatus_categorias?.[d.estatus] || "Sin categoría", "MOTOR": motorDe(d.estatus), "AGENTE": d.agente || "N/A", "CAMPAÑA": d.campaña || "N/A", "TEMPERAMENTO": d.prioridad?.temperamento || "Normal", "OBS. INTERNAS": d.prioridad?.observaciones_internas || "Ninguna", "CLIENTE": d.cliente?.contacto || "N/A", "NIT CLIENTE": d.cliente?.nit || "C/F", "TELÉFONO": d.cliente?.tel || "N/A", "CORREO": d.cliente?.correo || "N/A", "DIRECCIÓN": d.cliente?.dir || "N/A", "OBS. TÉCNICO": d.cliente?.obs_tec || "Ninguna", "SERVICIOS": serv || "Sin servicios", "MARCAS": marcas || "N/A", "SUBTOTAL (Q)": Number(d.subtotal ?? d.total) || 0, "DESCUENTO (Q)": Number(d.descuento?.monto) || 0, "MOTIVO DESCUENTO": d.descuento?.motivo || "N/A", "TOTAL (Q)": Number(d.total) || 0, "RAZÓN SOCIAL": d.facturacion?.nombre || "C/F", "NIT FACTURA": d.facturacion?.nit || "C/F", "MÉTODO ENVÍO": d.metodoEnvio || "N/A", "MÉTODO PAGO": d.pago_metodo || "N/A", "MOTIVO": d.motivo_anulacion || d.motivo_pausa || "N/A", "LINK DE PAGO": (Array.isArray(d.pago_links) && d.pago_links.length > 1 ? d.pago_links.map(x => `Q ${(Number(x.monto) || 0).toFixed(2)} ${x.link}`).join(" | ") : d.pago_link) || "N/A", "COMPROBANTES": comp.length ? comp.join(", ") : "N/A", "HISTORIAL MSJS": (d.historial_respuestas || []).length };
             });
             const ws = XLSX.utils.json_to_sheet(filas); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Dashboard"); XLSX.writeFile(wb, `Reporte_Dashboard_${Date.now()}.xlsx`); mostrarToast("Exportado a Excel.", "success");
         };
