@@ -214,10 +214,14 @@ exports.gestionarUsuario = onCall(async (request) => {
 function htmlPago(d, general) {
   const b = { ...CUENTA_DEFECTO, ...(general.cuenta_bancaria || {}) };
   const metodo = d.pago_metodo || "AMBOS";
-  const link = safeUrl(d.pago_link);
-  const btn = link
-    ? `<div style="text-align:center; margin:15px 0;"><a href="${esc(link)}" target="_blank" style="background-color:#059669; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:6px; font-weight:bold; display:inline-block;">💳 CLICK PARA PROCEDER AL PAGO EN LÍNEA</a></div>`
-    : "";
+  // Varios links (ej. uno por servicio): un botón por monto.
+  const lista = Array.isArray(d.pago_links) ? d.pago_links.filter((x) => safeUrl(x.link)) : [];
+  const varios = lista.length > 1;
+  const link = varios ? safeUrl(lista[0].link) : safeUrl(d.pago_link);
+  const boton = (url, texto) => `<div style="text-align:center; margin:12px 0;"><a href="${esc(url)}" target="_blank" style="background-color:#059669; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:6px; font-weight:bold; display:inline-block;">${texto}</a></div>`;
+  const btn = varios
+    ? `<p style="text-align:center; color:#475569; margin:8px 0 0;">Realice un pago por cada enlace:</p>` + lista.map((x) => boton(safeUrl(x.link), `💳 PAGAR Q ${(Number(x.monto) || 0).toFixed(2)}${x.concepto ? ` · ${esc(x.concepto)}` : ""}`)).join("")
+    : link ? boton(link, "💳 CLICK PARA PROCEDER AL PAGO EN LÍNEA") : "";
   const caja = `<div style="background-color:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:15px; margin:15px 0; text-align:center; color:#1e293b; font-size:13px;"><p style="margin:0 0 5px 0;"><b>Banco:</b> ${esc(b.banco)}</p><p style="margin:0 0 5px 0;"><b>Tipo:</b> ${esc(b.tipo)}</p><p style="margin:0 0 5px 0;"><b>Cuenta:</b> ${esc(b.numero)}</p><p style="margin:0;"><b>A nombre de:</b> ${esc(b.titular)}</p></div>`;
   const titulo = (t, extra = "") => `<div style="text-align:center; font-weight:bold; color:#002244;${extra}">${t}</div>`;
 
