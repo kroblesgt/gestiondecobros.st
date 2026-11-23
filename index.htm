@@ -860,11 +860,7 @@
                         <i class="fas fa-search"></i>
                         <input type="search" id="rev-buscar" class="search-input-dynamic" placeholder="Buscar por orden, cliente, correo o agente" oninput="renderBandejaRevision()" aria-label="Buscar en la bandeja">
                     </div>
-                    <select id="rev-canal" onchange="renderBandejaRevision()" style="width:auto;" aria-label="Canal de envío">
-                        <option value="Correo">Enviadas por correo</option>
-                        <option value="WhatsApp">Enviadas por WhatsApp</option>
-                        <option value="TODOS">Todos los canales</option>
-                    </select>
+                    <select id="rev-canal" style="display:none;" aria-hidden="true"><option value="Correo">Enviadas por correo</option></select>
                     <select id="rev-agente" onchange="renderBandejaRevision()" style="width:auto;" aria-label="Agente"><option value="TODOS">Todos los agentes</option></select>
                 </div>
 
@@ -1727,6 +1723,13 @@
 
 
         // ---- Pago rápido: el cliente pide la cuenta o el Link de Pago mientras espera en línea ----
+        // "ALL" es un permiso (ver todas), no una campaña: una solicitud nueva siempre va a una campaña real.
+        const campanaParaNueva = () => {
+            const reales = (window.userCamp || []).filter(c => c && c !== "ALL");
+            if (reales.length) return reales[0];
+            const todas = Object.keys(window.adminData?.["campañas"] || {}).filter(c => c !== "ALL");
+            return todas.includes("ST DISTELSA") ? "ST DISTELSA" : (todas[0] || "ST DISTELSA");
+        };
         window.modoCobro = "COMPLETO";
         window.cambiarModoCobro = (modo, silencioso) => {
             window.modoCobro = modo;
@@ -1844,7 +1847,7 @@
                 };
                 // CORREGIDO: al retomar una gestión ya NO se pisan fecha de creación, agente ni campaña.
                 if (esNuevo) {
-                    datos.fecha = ahora; datos.agente = window.userName; datos.campaña = window.userCamp[0] || "";
+                    datos.fecha = ahora; datos.agente = window.userName; datos.campaña = campanaParaNueva();
                     datos.historial_respuestas = [{ tipo: "agente", fecha: ahora.toISOString(), agente: "SISTEMA", mensaje: `✨ Solicitud creada originalmente por ${window.userName}.`, enviado_por_correo: false }];
                 } else {
                     datos.historial_respuestas = [...(existente?.historial_respuestas || [])];
