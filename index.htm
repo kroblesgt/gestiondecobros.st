@@ -709,17 +709,17 @@
                             <div class="input-group" style="margin-bottom:14px;">
                                 <span class="etiqueta">Opciones de pago que verá el cliente</span>
                                 <select id="pago-metodo" onchange="toggleLinkPago(); sincronizarMetodoPago();" class="sr-only" tabindex="-1" aria-hidden="true">
-                                    <option value="AMBOS">Tarjeta y transferencia</option>
-                                    <option value="NEONET">Solo tarjeta (NeoLink)</option>
+                                    <option value="AMBOS">Link de Pago y transferencia</option>
+                                    <option value="NEONET">Solo Link de Pago</option>
                                     <option value="TRANSFERENCIA">Solo transferencia</option>
                                 </select>
                                 <div class="metodo-pago" role="radiogroup" aria-label="Opciones de pago">
-                                    <label><input type="radio" name="metodo-pago-ui" value="AMBOS" checked onchange="elegirMetodoPago(this.value)"><b><i class="fas fa-credit-card"></i> + <i class="fas fa-building-columns"></i> Ambas</b>Tarjeta y transferencia</label>
-                                    <label><input type="radio" name="metodo-pago-ui" value="NEONET" onchange="elegirMetodoPago(this.value)"><b><i class="fas fa-credit-card"></i> Tarjeta</b>Solo enlace NeoLink</label>
+                                    <label><input type="radio" name="metodo-pago-ui" value="AMBOS" checked onchange="elegirMetodoPago(this.value)"><b><i class="fas fa-link"></i> + <i class="fas fa-building-columns"></i> Ambas</b>Link de Pago y transferencia</label>
+                                    <label><input type="radio" name="metodo-pago-ui" value="NEONET" onchange="elegirMetodoPago(this.value)"><b><i class="fas fa-link"></i> Link de Pago</b>Solo Link de Pago</label>
                                     <label><input type="radio" name="metodo-pago-ui" value="TRANSFERENCIA" onchange="elegirMetodoPago(this.value)"><b><i class="fas fa-building-columns"></i> Transferencia</b>Solo cuenta bancaria</label>
                                 </div>
                             </div>
-                            <div class="input-group" id="grupo-link-pago"><label for="pago-link">Enlace de pago NeoNet</label><input type="url" id="pago-link" placeholder="https://..."></div>
+                            <div class="input-group" id="grupo-link-pago"><label for="pago-link">Link de Pago</label><input type="url" id="pago-link" placeholder="https://..."></div>
                         </div>
                     </div>
 
@@ -1038,11 +1038,11 @@
                         <!-- Pagos -->
                         <div class="panel-ajuste" id="aj-pagos">
                             <div class="card">
-                                <h3 class="card-titulo">Pagos con tarjeta (NeoNet)</h3>
+                                <h3 class="card-titulo">Link de Pago</h3>
                                 <div class="form-grid">
                                     <div class="input-group"><label for="conf-neonet-estado">Estado</label><select id="conf-neonet-estado"><option value="true">Habilitado</option><option value="false">Deshabilitado (mantenimiento)</option></select></div>
                                 </div>
-                                <div class="input-group"><label for="conf-neonet-msg">Mensaje cuando está deshabilitado</label><textarea id="conf-neonet-msg" rows="3" placeholder="Ej: Por el momento no recibimos pagos con tarjeta. Puedes pagar por transferencia."></textarea><p class="ayuda">Se muestra en el correo y en WhatsApp en lugar del enlace de pago.</p></div>
+                                <div class="input-group"><label for="conf-neonet-msg">Mensaje cuando está deshabilitado</label><textarea id="conf-neonet-msg" rows="3" placeholder="Ej: Por el momento el Link de Pago no está disponible. Puedes pagar por transferencia."></textarea><p class="ayuda">Se muestra en el correo y en WhatsApp en lugar del enlace de pago.</p></div>
                             </div>
                             <div class="card">
                                 <h3 class="card-titulo">Cuenta para transferencias</h3>
@@ -1591,7 +1591,7 @@
             const met = document.getElementById("pago-metodo").value; const input = document.getElementById("pago-link");
             document.getElementById("grupo-link-pago").style.display = met === "TRANSFERENCIA" ? "none" : "";
             if (met === "TRANSFERENCIA") { input.disabled = true; input.value = ""; }
-            else if (window.configSistema?.neonet_habilitado === false) { input.disabled = true; input.value = ""; input.placeholder = "Pagos con tarjeta deshabilitados por el administrador"; }
+            else if (window.configSistema?.neonet_habilitado === false) { input.disabled = true; input.value = ""; input.placeholder = "Link de Pago deshabilitado por el administrador"; }
             else { input.disabled = false; input.placeholder = "https://..."; }
         };
         window.cambioTipoServicio = () => {
@@ -1676,7 +1676,7 @@
         function textoPagoWhatsApp(metodoPago, linkNeoNet) {
             const b = cuentaBancaria(); const cuenta = `${b.banco} | ${b.tipo} | ${b.numero} a nombre de ${b.titular}`;
             if (window.configSistema?.neonet_habilitado === false && metodoPago !== "TRANSFERENCIA") {
-                const alt = window.configSistema.neonet_mensaje_alterno || "Pagos con tarjeta deshabilitados.";
+                const alt = window.configSistema.neonet_mensaje_alterno || "El Link de Pago no está disponible por el momento.";
                 return metodoPago === "AMBOS" ? `${alt}\n\nPuedes depositar a:\n${cuenta}` : alt;
             }
             if (metodoPago === "AMBOS") return `${linkNeoNet}\n\nO también puedes depositar a:\n${cuenta}`;
@@ -1892,7 +1892,7 @@
             const servList = (d.servicios || []).map(s => `<li><div><b>${esc(s.tipo)}</b><small>${esc([s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—")} · ${esc(s.detalle)}</small></div><span class="num">Q ${fmtQ(s.precio)}</span></li>`).join("") || `<li><span class="muted">Sin servicios</span></li>`;
             const bloqueServicios = `<div class="bloque"><h4>Servicios</h4><ul class="lista-serv">${servList}</ul><div class="total-visor"><span>Total</span><span class="num">Q ${fmtQ(d.total)}</span></div></div>`;
 
-            const metodoTxt = { AMBOS: "Tarjeta y transferencia", NEONET: "Solo tarjeta", TRANSFERENCIA: "Solo transferencia" }[d.pago_metodo] || "—";
+            const metodoTxt = { AMBOS: "Link de Pago y transferencia", NEONET: "Solo Link de Pago", TRANSFERENCIA: "Solo transferencia" }[d.pago_metodo] || "—";
             const linkPago = safeUrl(d.pago_link);
             const links = comprobantesDe(d).map(safeUrl).filter(Boolean);
             const adjuntos = links.length ? `<div class="adjuntos-grid">${links.map((link, idx) => {
@@ -2578,7 +2578,7 @@
                 marcaReq("lbl-cli-orden", "Orden de servicio", ordenObligatoria()); marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
                 ["lbl-producto", "lbl-marca", "lbl-modelo"].forEach((id, i) => marcaReq(id, ["Producto", "Marca", "Modelo"][i], req.equipo));
                 const lI = document.getElementById("pago-link");
-                if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Pagos con tarjeta deshabilitados"; } else window.toggleLinkPago();
+                if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Link de Pago deshabilitado"; } else window.toggleLinkPago();
                 if (document.getElementById("gc-tipo")?.value === "Diagnóstico" && !window.currentTicketEditing) document.getElementById("gc-precio").value = cfg.precio_diagnostico ?? 175;
 
                 // Respuestas y revisión
