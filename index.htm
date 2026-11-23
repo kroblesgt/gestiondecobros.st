@@ -1750,10 +1750,10 @@
         };
         // Registrar la orden de servicio después del envío (visor).
 
-        // Cierre: para completar es obligatoria la orden de servicio; la referencia del pago es opcional.
+        // Cierre: para completar es obligatoria la orden de servicio.
         window.pedirOrdenCierre = (d) => new Promise((resolve) => {
             const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
-            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cierre-titulo" style="max-width:480px;"><div class="modal-head"><h3 id="cierre-titulo">Completar solicitud</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)}</p><div class="input-group"><label for="cierre-orden">Orden de servicio <span class="req">*</span></label><input type="text" id="cierre-orden" maxlength="40" value="${esc(d.orden_servicio || "")}" placeholder="No. de orden en el sistema de servicio"><p class="ayuda">Sin orden no se puede completar. Si el cobro no siguió, anúlalo con su motivo.</p></div><div class="input-group" style="margin-top:12px;"><label for="cierre-ref">Referencia del pago (opcional)</label><input type="text" id="cierre-ref" maxlength="80" value="${esc(d.comprobante_referencia || "")}" placeholder="No. de boleta o autorización"></div></div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-success" data-r="1"><i class="fas fa-circle-check"></i> Completar</button></div></div>`;
+            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cierre-titulo" style="max-width:480px;"><div class="modal-head"><h3 id="cierre-titulo">Completar solicitud</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)}</p><div class="input-group"><label for="cierre-orden">Orden de servicio <span class="req">*</span></label><input type="text" id="cierre-orden" maxlength="40" value="${esc(d.orden_servicio || "")}" placeholder="No. de orden en el sistema de servicio"><p class="ayuda">Sin orden no se puede completar. Si el cobro no siguió, anúlalo con su motivo.</p></div></div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-success" data-r="1"><i class="fas fa-circle-check"></i> Completar</button></div></div>`;
             document.body.appendChild(ov);
             const cerrar = (v) => { document.removeEventListener("keydown", tecla); ov.remove(); resolve(v); };
             const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
@@ -1764,14 +1764,13 @@
                 if (!b) return;
                 const orden = ov.querySelector("#cierre-orden").value.trim();
                 if (!orden) { ov.querySelector("#cierre-orden").focus(); return mostrarToast("Escribe la orden de servicio para completar.", "warning"); }
-                cerrar({ orden, ref: ov.querySelector("#cierre-ref").value.trim() });
+                cerrar({ orden });
             });
             setTimeout(() => ov.querySelector("#cierre-orden").focus(), 30);
         });
         const aplicarCierre = (d, r, act, hist, quien) => {
             if (r.orden !== (d.orden_servicio || "")) act.orden_servicio = r.orden;
-            if (r.ref) act.comprobante_referencia = r.ref;
-            hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: quien, mensaje: `🧾 Completada con orden de servicio ${r.orden}${r.ref ? ` · referencia de pago ${r.ref}` : ""}.`, enviado_por_correo: false });
+            hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: quien, mensaje: `🧾 Completada con orden de servicio ${r.orden}.`, enviado_por_correo: false });
         };
         window.guardarOrdenServicio = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
