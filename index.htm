@@ -1749,6 +1749,30 @@
             document.getElementById("resumen-lineas").innerText = `Pago rápido · ${document.getElementById("rp-concepto").value || "Pago"}`;
         };
         // Registrar la orden de servicio después del envío (visor).
+
+        // Cierre: para completar es obligatoria la orden de servicio; la referencia del pago es opcional.
+        window.pedirOrdenCierre = (d) => new Promise((resolve) => {
+            const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
+            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cierre-titulo" style="max-width:480px;"><div class="modal-head"><h3 id="cierre-titulo">Completar solicitud</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)}</p><div class="input-group"><label for="cierre-orden">Orden de servicio <span class="req">*</span></label><input type="text" id="cierre-orden" maxlength="40" value="${esc(d.orden_servicio || "")}" placeholder="No. de orden en el sistema de servicio"><p class="ayuda">Sin orden no se puede completar. Si el cobro no siguió, anúlalo con su motivo.</p></div><div class="input-group" style="margin-top:12px;"><label for="cierre-ref">Referencia del pago (opcional)</label><input type="text" id="cierre-ref" maxlength="80" value="${esc(d.comprobante_referencia || "")}" placeholder="No. de boleta o autorización"></div></div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-success" data-r="1"><i class="fas fa-circle-check"></i> Completar</button></div></div>`;
+            document.body.appendChild(ov);
+            const cerrar = (v) => { document.removeEventListener("keydown", tecla); ov.remove(); resolve(v); };
+            const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
+            document.addEventListener("keydown", tecla);
+            ov.addEventListener("click", (e) => {
+                const b = e.target.closest("[data-r]");
+                if (e.target === ov || (b && b.dataset.r === "0")) return cerrar(null);
+                if (!b) return;
+                const orden = ov.querySelector("#cierre-orden").value.trim();
+                if (!orden) { ov.querySelector("#cierre-orden").focus(); return mostrarToast("Escribe la orden de servicio para completar.", "warning"); }
+                cerrar({ orden, ref: ov.querySelector("#cierre-ref").value.trim() });
+            });
+            setTimeout(() => ov.querySelector("#cierre-orden").focus(), 30);
+        });
+        const aplicarCierre = (d, r, act, hist, quien) => {
+            if (r.orden !== (d.orden_servicio || "")) act.orden_servicio = r.orden;
+            if (r.ref) act.comprobante_referencia = r.ref;
+            hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: quien, mensaje: `🧾 Completada con orden de servicio ${r.orden}${r.ref ? ` · referencia de pago ${r.ref}` : ""}.`, enviado_por_correo: false });
+        };
         window.guardarOrdenServicio = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             const v = (document.getElementById("v-orden")?.value || "").trim();
@@ -2046,8 +2070,12 @@
             if (nE !== d.estatus && nE !== "ANULADO") hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: `🔁 Estatus: ${d.estatus} → ${nE}.`, enviado_por_correo: false, ...(enRevision ? { revision: "ESTATUS" } : {}) });
             if (nE === d.estatus && !(sA && sA.value !== d.agente)) return mostrarToast("No hay cambios que aplicar.", "info");
             if (sA && sA.value !== d.agente) { act.agente = sA.value; hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: "SISTEMA", mensaje: `🔄 Reasignada de ${d.agente || "N/A"} a ${sA.value} por ${window.userName}.`, enviado_por_correo: false }); }
+            if (motorDe(nE) === "EXITO" && motorDe(d.estatus) !== "EXITO") {
+                const r = await window.pedirOrdenCierre(d); if (!r) return;
+                aplicarCierre(d, r, act, hE, window.userName);
+            }
             if (nE === "ANULADO" && d.estatus !== "ANULADO") {
-                const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${etiquetaSol(d)}`, boton: "Anular", claseBoton: "btn-danger" }); if (!r) return;
+                const r = await window.pedirMotivo({ tipo: "anulacion", titulo: `Anular ${etiquetaSol(d)}`, texto: "Explica por qué no se completó el cobro.", boton: "Anular", claseBoton: "btn-danger" }); if (!r) return;
                 const m = r.motivo;
                 hE.push({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: `🚫 ANULADA. \nMotivo: ${m.trim()}`, enviado_por_correo: false }); act.motivo_anulacion = m.trim();
             }
@@ -3044,8 +3072,10 @@
         window.registrarRespuesta = async (id, accion) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             const a = ACCION_REV[accion]; if (!a) return;
+            let cierre = null;
+            if (accion === "COMPLETAR") { cierre = await window.pedirOrdenCierre(d); if (!cierre) return; }
             if (!enTurnoHoy()) return mostrarToast("Solo quien tiene el turno de hoy puede registrar. Toca \"Tomar el turno de hoy\".", "warning");
-            const datos = await new Promise((resolve) => {
+            const datos = cierre ? { nota: "", ref: "" } : await new Promise((resolve) => {
                 const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
                 const campoRef = accion === "COMPROBANTE" ? `<div class="input-group" style="margin-top:12px;"><label for="rev-ref">Enlace del comprobante o número de boleta (opcional)</label><input type="text" id="rev-ref" maxlength="500" placeholder="https://… o No. 123456"></div>` : "";
                 ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rev-titulo" style="max-width:520px;"><div class="modal-head"><h3 id="rev-titulo">${esc(a.titulo)} · ${esc(etiquetaSol(d))}</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · Q ${fmtQ(d.total)} · agente ${esc(d.agente || "sin asignar")}</p><div class="input-group"><label for="rev-nota">${accion === "COMPLETAR" ? "Nota (opcional)" : "Qué dijo el cliente (opcional)"}</label><textarea id="rev-nota" rows="3" maxlength="1500"></textarea><p class="ayuda">${esc(a.ayuda)}</p></div>${campoRef}</div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn ${accion === "COMPLETAR" ? "btn-success" : "btn-primary"}" data-r="1">${esc(a.boton)}</button></div></div>`;
@@ -3069,7 +3099,7 @@
                 const url = safeUrl(datos.ref);
                 if (url) act.comprobantes = [...new Set([...comprobantesDe(d), url])]; else if (datos.ref) act.comprobante_referencia = datos.ref;
             }
-            if (accion === "COMPLETAR") { act.estatus = "COMPLETADO"; act.completado_en = ahora; act.nueva_respuesta_cliente = false; }
+            if (accion === "COMPLETAR") { act.estatus = "COMPLETADO"; act.completado_en = ahora; act.nueva_respuesta_cliente = false; aplicarCierre(d, cierre, act, act.historial_respuestas, window.userName); }
             try {
                 await updateDoc(doc(db, "Cobros", id), act);
                 if (accion !== "COMPLETAR" && d.agente && d.agente !== window.userName) window.crearNotificacionSistema(d.ticket, d.campaña, d.agente, accion === "COMPROBANTE" ? "COMPROBANTE" : "NUEVA_RESPUESTA", accion === "COMPROBANTE" ? `${window.userName} registró el comprobante de ${etiquetaSol(d)}.` : `${d.cliente?.contacto || "El cliente"} respondió. Lo registró ${window.userName}.`);
