@@ -278,11 +278,28 @@ function htmlNuevoCobro(d, general, agente, perfil) {
   const vars = { cliente: c.contacto || "cliente", solicitud: d.orden_servicio || "", orden: d.orden_servicio || "" };
   return envolver(
     `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
-    `<p>${conVariables(textos.introduccion, vars)}</p>` + datosCliente +
+    `<p>${conVariables(d.orden_servicio ? textos.introduccion : textos.introduccion.replace(/(?:su\s+)?orden\s+de\s+servicio\s+\{\{(?:orden|solicitud)\}\}/gi, "su solicitud").replace(/\s*\{\{(?:orden|solicitud)\}\}/g, ""), vars)}</p>` + datosCliente +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:15px 0; font-size:13px;"><tr style="background:#e2e8f0; color:#002244;"><th align="left" style="padding:8px;">Servicio</th><th align="left" style="padding:8px;">Equipo</th><th align="left" style="padding:8px;">Detalle</th><th align="right" style="padding:8px;">Precio</th></tr>${filas}<tr><td colspan="3" style="padding:10px 8px; text-align:right; font-weight:bold;">TOTAL</td><td style="padding:10px 8px; text-align:right; font-weight:bold; font-size:16px; color:#002244; white-space:nowrap;">Q ${(Number(d.total) || 0).toFixed(2)}</td></tr></table>` +
     `<p style="font-size:12px; color:#475569; margin:0 0 15px 0;"><b>Facturar a:</b> ${esc(fac.nombre || "Consumidor Final")} · <b>NIT:</b> ${esc(fac.nit || "C/F")}</p>` +
     htmlPago(d, general) +
     `<p>${conVariables(textos.instruccion, vars)}</p>` +
+    htmlFirma(agente, perfil),
+    textos
+  );
+}
+
+// Pago rápido: el cliente pidió la cuenta o el Link de Pago mientras espera en línea. Solo monto y formas de pago.
+function htmlPagoRapido(d, general, agente, perfil) {
+  const c = d.cliente || {};
+  const sv = (d.servicios || [])[0] || {};
+  const textos = textosCorreo(general);
+  const fila = (k, v) => (v ? `<tr><td style="padding:3px 10px 3px 0; color:#64748b; white-space:nowrap; vertical-align:top;">${k}</td><td style="padding:3px 0; color:#1e293b;">${esc(v)}</td></tr>` : "");
+  const resumen = `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin:15px 0; font-size:13px;"><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${fila("Nombre", c.contacto)}${fila("Teléfono", c.tel)}${fila("Orden de servicio", d.orden_servicio)}${fila("Concepto", [sv.tipo, sv.detalle].filter(Boolean).join(" · "))}</table><div style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:15px; color:#002244;"><b>Monto a pagar: Q ${(Number(d.total) || 0).toFixed(2)}</b></div></div>`;
+  return envolver(
+    `<p style="margin-top:0;">Estimado(a) <b>${esc(c.contacto || "cliente")}</b>:</p>` +
+    `<p>Como lo solicitó, le compartimos los datos para realizar su pago.</p>` + resumen +
+    htmlPago(d, general) +
+    `<p>${conVariables(textos.instruccion, { cliente: c.contacto || "cliente", solicitud: d.orden_servicio || "", orden: d.orden_servicio || "" })}</p>` +
     htmlFirma(agente, perfil),
     textos
   );
@@ -321,7 +338,10 @@ function asuntoCobro(d, general) {
   const orden = String(d.orden_servicio || "").trim();
   // El número interno ST no se muestra: {{solicitud}} (plantillas viejas) también muestra la orden.
   const vars = { solicitud: orden, orden, cliente: String(d.cliente?.contacto || "").trim(), total: `Q ${(Number(d.total) || 0).toFixed(2)}` };
-  let a = plantilla.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : ""));
+  // Sin orden todavía: quita también la palabra que la acompaña ("Orden {{orden}}" → "").
+  let base = plantilla;
+  if (!vars.orden) base = base.replace(/(?:\b(?:orden(?:\s+de\s+servicio)?|OS|No\.?)\s*[:#]?\s*)?\{\{orden\}\}/gi, "");
+  let a = base.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : ""));
   // Limpia separadores que quedan sueltos cuando una variable viene vacía (ej. "OS  - ").
   a = a.replace(/[\r\n\t]+/g, " ").replace(/\(\s*\)|\[\s*\]/g, "").replace(/(\s*[-–|·:,]\s*){2,}/g, " - ").replace(/\s{2,}/g, " ").replace(/^[\s\-–|·:,]+|[\s\-–|·:,]+$/g, "").trim();
   if (!a) a = "Solicitud de pago - Distelsa Servicio Técnico";
@@ -429,7 +449,7 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
 
   if (tipo === "NUEVO_COBRO") {
     const asunto = asuntoCobro({ ...d, ticket }, general);
-    const mime = await armarMime({ para: correo, asunto, html: htmlNuevoCobro({ ...d, ticket }, general, agente, perfil), copiaMake });
+    const mime = await armarMime({ para: correo, asunto, html: (d.tipo_cobro === "RAPIDO" ? htmlPagoRapido : htmlNuevoCobro)({ ...d, ticket }, general, agente, perfil), copiaMake });
     await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
     // Registro de quién envió (para el Dashboard de productividad).
     await ref.update({
