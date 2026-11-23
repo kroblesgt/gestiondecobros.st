@@ -1624,7 +1624,7 @@
             const n = serviciosTemporales.length;
             document.getElementById("resumen-lineas").innerText = n === 0 ? "Sin servicios agregados" : `${n} servicio${n === 1 ? "" : "s"}`;
             const ed = document.getElementById("resumen-editando");
-            if (window.currentTicketEditing) { ed.style.display = "block"; document.getElementById("resumen-ticket").innerText = window.currentTicketEditing; } else ed.style.display = "none";
+            if (window.currentTicketEditing) { ed.style.display = "block"; document.getElementById("resumen-ticket").innerText = etiquetaPorTicket(window.currentTicketEditing); } else ed.style.display = "none";
         }
         const fmtQ = (v) => (Number(v) || 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         window.limpiarGestorCobro = () => {
