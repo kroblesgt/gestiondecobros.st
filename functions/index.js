@@ -114,7 +114,10 @@ async function guardarUsuario(datos, llamanteEsAdmin, { soloSiNuevoPassword = fa
     if (!rolSnap.exists) throw new HttpsError("invalid-argument", `El rol "${rol}" no existe.`);
   }
 
-  const email = `${id.toLowerCase()}@${DOMINIO_LOGIN}`;
+  // Correo real opcional: con él la persona entra y puede recuperar su contraseña. Sin él, se usa el ID.
+  const correo = String(datos.correo || "").trim().toLowerCase();
+  if (correo && !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(correo)) throw new HttpsError("invalid-argument", "El correo no es válido.");
+  const email = correo || `${id.toLowerCase()}@${DOMINIO_LOGIN}`;
   let existente = null;
   try { existente = await admin.auth().getUser(id); } catch (e) { if (e.code !== "auth/user-not-found") throw e; }
 
@@ -132,7 +135,10 @@ async function guardarUsuario(datos, llamanteEsAdmin, { soloSiNuevoPassword = fa
   if (existente) {
     const cambios = { displayName: nombre, email };
     if (password && !soloSiNuevoPassword) cambios.password = password;
-    await admin.auth().updateUser(id, cambios);
+    // La importación no trae correo: no se toca el que ya tenga.
+    if (soloSiNuevoPassword && !correo) delete cambios.email;
+    try { await admin.auth().updateUser(id, cambios); }
+    catch (e) { if (e.code === "auth/email-already-exists") throw new HttpsError("already-exists", `El correo ${email} ya lo usa otro usuario.`); throw e; }
   } else {
     if (!password && datos.nuevo === false) {
       throw new HttpsError("failed-precondition", "Este usuario todavía no tiene acceso con el nuevo sistema: escribe una contraseña para activarlo.");
@@ -141,7 +147,7 @@ async function guardarUsuario(datos, llamanteEsAdmin, { soloSiNuevoPassword = fa
     try {
       await admin.auth().createUser({ uid: id, email, password, displayName: nombre });
     } catch (e) {
-      if (e.code === "auth/email-already-exists") throw new HttpsError("already-exists", `Ya existe otro usuario con el ID "${id}" (las mayúsculas no cuentan).`);
+      if (e.code === "auth/email-already-exists") throw new HttpsError("already-exists", correo ? `El correo ${correo} ya lo usa otro usuario.` : `Ya existe otro usuario con el ID "${id}" (las mayúsculas no cuentan).`);
       throw e;
     }
   }
@@ -151,6 +157,7 @@ async function guardarUsuario(datos, llamanteEsAdmin, { soloSiNuevoPassword = fa
   await admin.auth().setCustomUserClaims(id, claims);
 
   const perfil = { nombre, rol, "campaña": campanas, password: FieldValue.delete() };
+  if (!soloSiNuevoPassword || correo) perfil.correo = correo || FieldValue.delete();
   if (datos.firma !== undefined) perfil.firma = String(datos.firma || "");
   if (datos.firma_img !== undefined) perfil.firma_img = safeUrl(datos.firma_img);
   await db.doc(`Usuarios/${id}`).set(perfil, { merge: true });
