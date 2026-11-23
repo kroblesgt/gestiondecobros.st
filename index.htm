@@ -402,6 +402,14 @@
         .dash-bloques > .card { margin: 0; }
         .dash-bloques > .ancho { grid-column: 1 / -1; }
         .w-oculto { display: none !important; }
+        .modo-cobro { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+        .modo-ayuda { font-size: 13px; margin: 0; max-width: 70ch; }
+        #sec-2 .solo-rapido { display: none; }
+        #sec-2.rapido .solo-rapido { display: block; }
+        #sec-2.rapido .solo-completo { display: none !important; }
+        .chip-rapido { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #7A4C06; background: var(--ambar-suave); border-radius: 10px; padding: 1px 8px; margin-top: 6px; }
+        .orden-editar { display: flex; gap: 6px; align-items: center; }
+        .orden-editar input { flex: 1; min-width: 0; }
         .cols-seg { width: auto; min-width: 150px; }
         #cols-seg-lista { position: absolute; top: calc(100% + 4px); right: 0; min-width: 230px; background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--radio); padding: 8px; z-index: 1000; box-shadow: var(--sombra-flotante); display: flex; flex-direction: column; gap: 2px; }
         .perso-lista { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 16px; }
@@ -665,9 +673,26 @@
                     <div id="lista-pausados" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
                 </div>
 
+                <div class="modo-cobro">
+                    <div class="segmentado" role="tablist" aria-label="Tipo de envío">
+                        <button class="seg-op modo-op active" data-modo="COMPLETO" onclick="cambiarModoCobro('COMPLETO')"><i class="fas fa-file-invoice"></i> Cobro completo</button>
+                        <button class="seg-op modo-op" data-modo="RAPIDO" onclick="cambiarModoCobro('RAPIDO')"><i class="fas fa-bolt"></i> Pago rápido</button>
+                    </div>
+                    <p class="muted modo-ayuda" id="modo-ayuda">Detalle de servicios y datos del cliente para crear la orden. La orden de servicio se puede agregar después.</p>
+                </div>
+
                 <div class="cobro-grid">
                     <div>
-                        <div class="card">
+                        <div class="card solo-rapido">
+                            <h3 class="card-titulo"><span class="paso">1</span> Monto a pagar</h3>
+                            <div class="form-grid">
+                                <div class="input-group"><label for="rp-concepto">Concepto</label><select id="rp-concepto" onchange="cambioConceptoRapido()"></select></div>
+                                <div class="input-group"><label for="rp-monto">Monto (Q) <span class="req">*</span></label><input type="number" id="rp-monto" min="0" step="0.01" class="num" oninput="actualizarResumenRapido()"></div>
+                                <div class="input-group"><label for="rp-detalle">Detalle (opcional)</label><input type="text" id="rp-detalle" placeholder="Ej: Lavadora, no enciende"></div>
+                            </div>
+                            <p class="ayuda">El cliente recibe solo el monto y las formas de pago, mientras espera en línea. Cuando tengas la orden de servicio, regístrala en el visor.</p>
+                        </div>
+                        <div class="card solo-completo">
                             <h3 class="card-titulo"><span class="paso">1</span> Servicios</h3>
                             <div class="form-grid">
                                 <div class="input-group"><label for="gc-tipo">Tipo de servicio <span class="req">*</span></label><select id="gc-tipo" onchange="cambioTipoServicio()"></select></div>
@@ -691,18 +716,18 @@
                             <div class="form-grid">
                                 <div class="input-group"><label for="cli-contacto">Nombre <span class="req">*</span></label><input type="text" id="cli-contacto" class="campo-cliente" autocomplete="off"></div>
                                 <div class="input-group"><label for="cli-tel">Teléfono <span class="req">*</span></label><input type="tel" id="cli-tel" class="campo-cliente" autocomplete="off"></div>
-                                <div class="input-group"><label for="cli-nit" id="lbl-cli-nit">NIT</label><input type="text" id="cli-nit" class="campo-cliente" autocomplete="off"></div>
+                                <div class="input-group solo-completo"><label for="cli-nit" id="lbl-cli-nit">NIT</label><input type="text" id="cli-nit" class="campo-cliente" autocomplete="off"></div>
                             </div>
                             <div class="form-grid">
                                 <div class="input-group"><label for="cli-correo" id="lbl-cli-correo">Correo</label><input type="email" id="cli-correo" class="campo-cliente" autocomplete="off" placeholder="cliente@correo.com"></div>
-                                <div class="input-group" style="grid-column: span 2;"><label for="cli-dir" id="lbl-cli-dir">Dirección</label><input type="text" id="cli-dir" class="campo-cliente" autocomplete="off"></div>
+                                <div class="input-group solo-completo" style="grid-column: span 2;"><label for="cli-dir" id="lbl-cli-dir">Dirección</label><input type="text" id="cli-dir" class="campo-cliente" autocomplete="off"></div>
                             </div>
-                            <div class="input-group"><label for="cli-obs-tec">Observaciones para el técnico</label><input type="text" id="cli-obs-tec" class="campo-cliente"></div>
+                            <div class="input-group solo-completo"><label for="cli-obs-tec">Observaciones para el técnico</label><input type="text" id="cli-obs-tec" class="campo-cliente"></div>
                         </div>
 
                         <div class="card">
                             <h3 class="card-titulo"><span class="paso">3</span> Facturación y forma de pago</h3>
-                            <div class="form-grid dos">
+                            <div class="form-grid dos solo-completo">
                                 <div class="input-group"><label for="fac-nit">NIT para factura</label><input type="text" id="fac-nit" placeholder="C/F"></div>
                                 <div class="input-group"><label for="fac-nombre">Nombre en factura</label><input type="text" id="fac-nombre" placeholder="Consumidor final"></div>
                             </div>
@@ -1030,7 +1055,7 @@
                                 <div class="switch"><div><b>NIT del cliente</b></div><label class="toggle"><input type="checkbox" id="conf-req-nit"><span></span></label></div>
                                 <div class="switch"><div><b>Dirección</b></div><label class="toggle"><input type="checkbox" id="conf-req-dir"><span></span></label></div>
                                 <div class="switch"><div><b>Producto, marca y modelo</b><small>En cada servicio que se agregue.</small></div><label class="toggle"><input type="checkbox" id="conf-req-equipo"><span></span></label></div>
-                                <div class="switch"><div><b>Orden de servicio</b><small>Siempre es obligatoria si el asunto del correo usa {{orden}}.</small></div><label class="toggle"><input type="checkbox" id="conf-req-orden"><span></span></label></div>
+                                <div class="switch"><div><b>Orden de servicio</b><small>Si está apagado, se puede enviar sin orden y registrarla después en el visor.</small></div><label class="toggle"><input type="checkbox" id="conf-req-orden"><span></span></label></div>
                                 <div class="panel-pie"><button class="btn btn-primary" onclick="guardarReglasOperacion()"><i class="fas fa-check"></i> Guardar reglas</button></div>
                             </div>
                         </div>
@@ -1383,8 +1408,9 @@
         const ordenDe = (d) => String(d?.orden_servicio || "").trim();
         const etiquetaSol = (d) => ordenDe(d) ? `Orden ${ordenDe(d)}` : (d?.cliente?.contacto ? `cobro de ${d.cliente.contacto}` : "la solicitud");
         const etiquetaPorTicket = (t) => { const d = (window.allDashboardData || []).find(x => x.ticket === t || x.id === t); return d ? (ordenDe(d) ? `Orden ${ordenDe(d)}` : (d.cliente?.contacto || "Solicitud")) : (t ? "Solicitud" : ""); };
-        const talon = (d, extra = "") => ordenDe(d) ? `<span class="ticket ${extra}" title="Orden de servicio">${esc(ordenDe(d))}</span>` : `<span class="ticket sin-orden ${extra}" title="Sin orden de servicio">Sin orden</span>`;
-        const ordenObligatoria = () => camposObligatorios().orden || plantillaAsunto().includes("{{orden}}");
+        const talon = (d, extra = "") => ordenDe(d) ? `<span class="ticket ${extra}" title="Orden de servicio">${esc(ordenDe(d))}</span>` : `<span class="ticket sin-orden ${extra}" title="La orden de servicio todavía no se ha registrado">Orden pendiente</span>`;
+        // La orden puede no existir aún (se crea con los datos que se envían): solo es obligatoria si el administrador lo pide.
+        const ordenObligatoria = () => !!camposObligatorios().orden;
         window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nOrden de servicio: {{orden}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
 
         // =====================================================================
@@ -1641,6 +1667,7 @@
         window.limpiarGestorCobro = () => {
             serviciosTemporales = []; window.currentTicketEditing = null; renderServicios();
             document.querySelectorAll('#sec-2 input:not([type="checkbox"]):not([type="radio"]), #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; });
+            if (window.modoCobro === "RAPIDO") setTimeout(() => window.cambioConceptoRapido(), 0);
             document.getElementById("check-confirmar").checked = false;
             const selTemp = document.getElementById("cli-temperamento"); selTemp.value = "Normal"; cambiarColorTemperamento(selTemp);
             const selTipo = document.getElementById("gc-tipo"); if (selTipo.options.length > 0) selTipo.selectedIndex = 0;
@@ -1695,7 +1722,49 @@
             return linkNeoNet;
         }
 
+
+        // ---- Pago rápido: el cliente pide la cuenta o el Link de Pago mientras espera en línea ----
+        window.modoCobro = "COMPLETO";
+        window.cambiarModoCobro = (modo, silencioso) => {
+            window.modoCobro = modo;
+            document.getElementById("sec-2").classList.toggle("rapido", modo === "RAPIDO");
+            document.querySelectorAll(".modo-op").forEach(b => b.classList.toggle("active", b.dataset.modo === modo));
+            document.getElementById("modo-ayuda").innerText = modo === "RAPIDO" ? "Solo el monto y las formas de pago, para que el cliente pague mientras espera en línea. La orden de servicio se registra después." : "Detalle de servicios y datos del cliente para crear la orden. La orden de servicio se puede agregar después.";
+            if (modo === "RAPIDO") {
+                const sel = document.getElementById("rp-concepto");
+                if (!sel.options.length) sel.innerHTML = Array.from(document.getElementById("gc-tipo").options).map(o => `<option value="${esc(o.value)}">${esc(o.text)}</option>`).join("");
+                if (!document.getElementById("rp-monto").value) window.cambioConceptoRapido();
+            }
+            if (!silencioso) window.actualizarResumenRapido();
+        };
+        window.cambioConceptoRapido = () => {
+            const c = document.getElementById("rp-concepto").value;
+            if (/diagn/i.test(c)) document.getElementById("rp-monto").value = window.configSistema?.precio_diagnostico ?? 175;
+            window.actualizarResumenRapido();
+        };
+        window.actualizarResumenRapido = () => {
+            if (window.modoCobro !== "RAPIDO") { if (typeof renderServicios === "function") renderServicios(); return; }
+            const m = parseFloat(document.getElementById("rp-monto").value) || 0;
+            document.getElementById("total-cobro").innerText = m.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById("resumen-lineas").innerText = `Pago rápido · ${document.getElementById("rp-concepto").value || "Pago"}`;
+        };
+        // Registrar la orden de servicio después del envío (visor).
+        window.guardarOrdenServicio = async (id) => {
+            const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
+            const v = (document.getElementById("v-orden")?.value || "").trim();
+            if (!v) return mostrarToast("Escribe el número de orden.", "warning");
+            if (v === (d.orden_servicio || "")) return mostrarToast("No hay cambios.", "info");
+            const hist = [...(d.historial_respuestas || []), { tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: d.orden_servicio ? `📝 Orden de servicio cambiada: ${d.orden_servicio} → ${v}.` : `📝 Orden de servicio registrada: ${v}.`, enviado_por_correo: false, ...(window.visorModoRevision === id ? { revision: "NOTA" } : {}) }];
+            try { await updateDoc(doc(db, "Cobros", id), { orden_servicio: v, historial_respuestas: hist, ultima_actividad: new Date(), actualizado_por: window.userName, fecha_actualizacion: new Date() }); mostrarToast("Orden de servicio registrada.", "success"); }
+            catch (e) { console.error(e); mostrarToast("No se pudo guardar la orden.", "error"); }
+        };
         window.procesarCobro = async (metodo) => {
+            const rapido = window.modoCobro === "RAPIDO";
+            if (rapido && metodo !== "Anular") {
+                const monto = parseFloat(document.getElementById("rp-monto").value);
+                if (!(monto > 0)) return mostrarToast("Escribe el monto a pagar.", "warning");
+                serviciosTemporales = [{ tipo: document.getElementById("rp-concepto").value || "Pago", detalle: document.getElementById("rp-detalle").value.trim(), producto: "", marca: "", modelo: "", precio: monto }];
+            }
             const total = totalServicios();
             const esEnvio = metodo === "WhatsApp" || metodo === "Correo";
             if (esEnvio && !document.getElementById("check-confirmar").checked) return mostrarToast("Debes confirmar los datos.", "warning");
@@ -1709,10 +1778,10 @@
             if (esEnvio && !camposClienteBloqueados) {
                 const req = camposObligatorios();
                 const faltan = [];
-                if (req.nit && !document.getElementById("cli-nit").value.trim()) faltan.push("NIT");
-                if (req.direccion && !document.getElementById("cli-dir").value.trim()) faltan.push("dirección");
+                if (!rapido && req.nit && !document.getElementById("cli-nit").value.trim()) faltan.push("NIT");
+                if (!rapido && req.direccion && !document.getElementById("cli-dir").value.trim()) faltan.push("dirección");
                 if (req.correo && !correoCliente) faltan.push("correo");
-                if ((req.orden || (metodo === "Correo" && plantillaAsunto().includes("{{orden}}"))) && !document.getElementById("cli-orden").value.trim()) faltan.push("orden de servicio");
+                if (req.orden && !document.getElementById("cli-orden").value.trim()) faltan.push("orden de servicio");
                 if (faltan.length) return mostrarToast(`Falta: ${faltan.join(", ")} del cliente.`, "warning");
             }
             if (correoCliente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoCliente)) return mostrarToast("El correo del cliente no es válido.", "warning");
@@ -1744,7 +1813,7 @@
                     prioridad: { temperamento: document.getElementById("cli-temperamento").value, observaciones_internas: document.getElementById("cli-obs-internas").value },
                     cliente: { nit: document.getElementById("cli-nit").value, contacto: clienteNombre, tel: document.getElementById("cli-tel").value, dir: document.getElementById("cli-dir").value, correo: correoCliente, obs_tec: document.getElementById("cli-obs-tec").value },
                     facturacion: { nit: document.getElementById("fac-nit").value, nombre: document.getElementById("fac-nombre").value },
-                    pago_link: linkNeoNet, pago_metodo: metodoPago, estatus: estatusFinal, metodoEnvio: metodo,
+                    pago_link: linkNeoNet, pago_metodo: metodoPago, estatus: estatusFinal, metodoEnvio: metodo, tipo_cobro: rapido ? "RAPIDO" : "COMPLETO",
                     ultima_actividad: ahora, alerta_sla_creada: false
                 };
                 // CORREGIDO: al retomar una gestión ya NO se pisan fecha de creación, agente ni campaña.
@@ -1795,6 +1864,8 @@
             const sTemp = document.getElementById("cli-temperamento"); sTemp.value = d.prioridad?.temperamento || "Normal"; cambiarColorTemperamento(sTemp);
             document.getElementById("cli-obs-internas").value = d.prioridad?.observaciones_internas || "";
             const c = d.cliente || {};
+            window.cambiarModoCobro(d.tipo_cobro === "RAPIDO" ? "RAPIDO" : "COMPLETO", true);
+            if (d.tipo_cobro === "RAPIDO") { const sv = (d.servicios || [])[0] || {}; document.getElementById("rp-concepto").value = sv.tipo || ""; document.getElementById("rp-monto").value = sv.precio ?? ""; document.getElementById("rp-detalle").value = sv.detalle || ""; }
             document.getElementById("cli-orden").value = d.orden_servicio || ""; document.getElementById("cli-nit").value = c.nit || ""; document.getElementById("cli-contacto").value = c.contacto || ""; document.getElementById("cli-tel").value = c.tel || ""; document.getElementById("cli-dir").value = c.dir || ""; document.getElementById("cli-correo").value = c.correo || ""; document.getElementById("cli-obs-tec").value = c.obs_tec || "";
             document.getElementById("fac-nit").value = d.facturacion?.nit || ""; document.getElementById("fac-nombre").value = d.facturacion?.nombre || "";
             document.getElementById("pago-metodo").value = d.pago_metodo || "AMBOS"; window.sincronizarMetodoPago(); window.toggleLinkPago();
@@ -1898,7 +1969,11 @@
                 d.motivo_pausa && d.estatus === "PAUSADO" ? `<div class="nota-motivo int"><i class="fas fa-pause"></i> <b>Pausada:</b> ${esc(d.motivo_pausa)}</div>` : "",
                 d.motivo_anulacion ? `<div class="nota-motivo anul"><i class="fas fa-ban"></i> <b>Anulada:</b> ${esc(d.motivo_anulacion)}</div>` : ""
             ].join("");
-            const bloqueCliente = `<div class="bloque"><h4>Cliente</h4>${d.orden_servicio ? dato("Orden de servicio", `<b>${esc(d.orden_servicio)}</b>`) : ""}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
+            const puedeOrden = !esLectura && !["ANULADO"].includes(d.estatus);
+            const campoOrden = puedeOrden
+                ? `<div class="dato"><span>Orden de servicio</span><div class="orden-editar"><input type="text" id="v-orden" maxlength="40" value="${esc(d.orden_servicio || "")}" placeholder="Pendiente"><button class="btn btn-outline btn-sm" onclick="guardarOrdenServicio(${js(id)})">Guardar</button></div></div>`
+                : dato("Orden de servicio", d.orden_servicio ? `<b>${esc(d.orden_servicio)}</b>` : "Pendiente");
+            const bloqueCliente = `<div class="bloque"><h4>Cliente${d.tipo_cobro === "RAPIDO" ? ' <span class="chip-rapido"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</h4>${campoOrden}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
 
             const servList = (d.servicios || []).map(s => `<li><div><b>${esc(s.tipo)}</b><small>${esc([s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—")} · ${esc(s.detalle)}</small></div><span class="num">Q ${fmtQ(s.precio)}</span></li>`).join("") || `<li><span class="muted">Sin servicios</span></li>`;
             const bloqueServicios = `<div class="bloque"><h4>Servicios</h4><ul class="lista-serv">${servList}</ul><div class="total-visor"><span>Total</span><span class="num">Q ${fmtQ(d.total)}</span></div></div>`;
@@ -2462,7 +2537,7 @@
                     adjuntos: `<td style="text-align:center;">${aH}</td>`,
                     actividad: `<td class="seg-fecha">${fAct ? `${esc(fAct.toLocaleDateString())}<small>${esc(fAct.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</small>` : "—"}</td>`
                 };
-                return `<tr class="row-card" style="--borde:${borde};"><td>${talon(d)}${eS2}</td>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c]) => celdas[c]).join("")}<td class="acciones">${bH}</td></tr>`;
+                return `<tr class="row-card" style="--borde:${borde};"><td>${talon(d)}${d.tipo_cobro === "RAPIDO" ? '<span class="chip-rapido" style="display:flex; width:max-content;"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}${eS2}</td>${COLUMNAS_SEG.filter(([c]) => colOn(c)).map(([c]) => celdas[c]).join("")}<td class="acciones">${bH}</td></tr>`;
             });
             const pista = window.estadoSeg === "ABIERTAS" && nCerradas > 0 ? `<br><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="cambiarEstadoSeg('CERRADAS')">Ver ${nCerradas} ${nCerradas === 1 ? "cerrada" : "cerradas"} con estos filtros</button>` : "";
             const thS = { total: ' style="text-align:right;"', adjuntos: ' style="text-align:center;"' };
@@ -2961,7 +3036,7 @@
                 const botones = !miTurno ? `<span class="muted" style="font-size:12px;">Toma el turno para registrar</span>` : d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
-                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td>${ordenDe(d) ? `<button class="ticket ticket-copiar" title="Copiar la orden para buscarla en Outlook" onclick="copiarTicket(${js(ordenDe(d))})">${esc(ordenDe(d))}</button>` : talon(d)}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
+                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td>${ordenDe(d) ? `<button class="ticket ticket-copiar" title="Copiar la orden para buscarla en Outlook" onclick="copiarTicket(${js(ordenDe(d))})">${esc(ordenDe(d))}</button>` : talon(d)}${d.tipo_cobro === "RAPIDO" ? '<span class="chip-rapido" style="display:flex; width:max-content;"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
             }).join("");
         };
 
@@ -3129,7 +3204,7 @@
                 const serv = (d.servicios || []).map(s => `[${s.tipo}] ${s.producto || ""} ${s.marca || ""} ${s.modelo || ""} - ${s.detalle} (Q${s.precio})`).join(" | ");
                 const marcas = [...new Set((d.servicios || []).map(s => s.marca).filter(Boolean))].join(", ");
                 const comp = comprobantesDe(d);
-                return { "ORDEN DE SERVICIO": ordenDe(d) || "Sin orden", "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : "N/A", "ÚLTIMA ACTIVIDAD": fmtFecha(d.ultima_actividad), "ESTATUS": d.estatus || "N/A", "CATEGORÍA": window.configCatalogos?.estatus_categorias?.[d.estatus] || "Sin categoría", "MOTOR": motorDe(d.estatus), "AGENTE": d.agente || "N/A", "CAMPAÑA": d.campaña || "N/A", "TEMPERAMENTO": d.prioridad?.temperamento || "Normal", "OBS. INTERNAS": d.prioridad?.observaciones_internas || "Ninguna", "CLIENTE": d.cliente?.contacto || "N/A", "NIT CLIENTE": d.cliente?.nit || "C/F", "TELÉFONO": d.cliente?.tel || "N/A", "CORREO": d.cliente?.correo || "N/A", "DIRECCIÓN": d.cliente?.dir || "N/A", "OBS. TÉCNICO": d.cliente?.obs_tec || "Ninguna", "SERVICIOS": serv || "Sin servicios", "MARCAS": marcas || "N/A", "TOTAL (Q)": Number(d.total) || 0, "RAZÓN SOCIAL": d.facturacion?.nombre || "C/F", "NIT FACTURA": d.facturacion?.nit || "C/F", "MÉTODO ENVÍO": d.metodoEnvio || "N/A", "MÉTODO PAGO": d.pago_metodo || "N/A", "MOTIVO": d.motivo_anulacion || d.motivo_pausa || "N/A", "LINK NEO-NET": d.pago_link || "N/A", "COMPROBANTES": comp.length ? comp.join(", ") : "N/A", "HISTORIAL MSJS": (d.historial_respuestas || []).length };
+                return { "ORDEN DE SERVICIO": ordenDe(d) || "Pendiente", "TIPO": d.tipo_cobro === "RAPIDO" ? "Pago rápido" : "Cobro completo", "FECHA": d.fechaFormateada ? d.fechaFormateada.toLocaleString() : "N/A", "ÚLTIMA ACTIVIDAD": fmtFecha(d.ultima_actividad), "ESTATUS": d.estatus || "N/A", "CATEGORÍA": window.configCatalogos?.estatus_categorias?.[d.estatus] || "Sin categoría", "MOTOR": motorDe(d.estatus), "AGENTE": d.agente || "N/A", "CAMPAÑA": d.campaña || "N/A", "TEMPERAMENTO": d.prioridad?.temperamento || "Normal", "OBS. INTERNAS": d.prioridad?.observaciones_internas || "Ninguna", "CLIENTE": d.cliente?.contacto || "N/A", "NIT CLIENTE": d.cliente?.nit || "C/F", "TELÉFONO": d.cliente?.tel || "N/A", "CORREO": d.cliente?.correo || "N/A", "DIRECCIÓN": d.cliente?.dir || "N/A", "OBS. TÉCNICO": d.cliente?.obs_tec || "Ninguna", "SERVICIOS": serv || "Sin servicios", "MARCAS": marcas || "N/A", "TOTAL (Q)": Number(d.total) || 0, "RAZÓN SOCIAL": d.facturacion?.nombre || "C/F", "NIT FACTURA": d.facturacion?.nit || "C/F", "MÉTODO ENVÍO": d.metodoEnvio || "N/A", "MÉTODO PAGO": d.pago_metodo || "N/A", "MOTIVO": d.motivo_anulacion || d.motivo_pausa || "N/A", "LINK NEO-NET": d.pago_link || "N/A", "COMPROBANTES": comp.length ? comp.join(", ") : "N/A", "HISTORIAL MSJS": (d.historial_respuestas || []).length };
             });
             const ws = XLSX.utils.json_to_sheet(filas); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Dashboard"); XLSX.writeFile(wb, `Reporte_Dashboard_${Date.now()}.xlsx`); mostrarToast("Exportado a Excel.", "success");
         };
