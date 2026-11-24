@@ -1,0 +1,126 @@
+rules_version = '2';
+
+// =====================================================================
+// Reglas de seguridad - Cobros ST
+//
+// Identidad: Firebase Auth. Los "custom claims" del token traen:
+//   rol      -> "ADMIN", "ADMINISTRADOR", "LIDER", "AGENTE", ...
+//   campanas -> lista de campañas del usuario
+//   nombre   -> nombre visible (se usa en Cobros.agente y en Notificaciones)
+//   loginId  -> ID de login (= id del documento en Usuarios)
+// Los claims solo los puede escribir el servidor (Cloud Function o script).
+//
+// Las Cloud Functions usan el Admin SDK y NO pasan por estas reglas.
+// =====================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()   { return request.auth != null && request.auth.token.get('rol', null) is string; }
+    function rol()        { return request.auth.token.rol; }
+    function isAdmin()    { return signedIn() && rol() in ['ADMIN', 'ADMINISTRADOR']; }
+    function isLider()    { return signedIn() && rol() in ['LIDER', 'LÍDER']; }
+    function campanas()   { return request.auth.token.get('campanas', []); }
+    function nombre()     { return request.auth.token.get('nombre', ''); }
+    function enMiCampana(c) { return c is string && c != '' && c in campanas(); }
+
+    // ¿El rol del usuario tiene habilitado este módulo en la colección Roles?
+    function tieneModulo(modulo) {
+      let ruta = /databases/$(database)/documents/Roles/$(rol());
+      return signedIn() && exists(ruta) && (
+        get(ruta).data.get('permisos', '') == 'ALL' ||
+        modulo in get(ruta).data.get('permisos', '').split(',')
+      );
+    }
+
+    function soloCambia(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+
+    // ---------------- Usuarios ----------------
+    // Lectura para todo usuario autenticado (monitor, avisos, reasignación).
+    // Ya NO contienen contraseña: la migración las borra.
+    // Altas/bajas/cambios de rol solo vía Cloud Function "gestionarUsuario".
+    match /Usuarios/{id} {
+      allow read: if signedIn();
+      allow update: if signedIn()
+                    && request.auth.token.get('loginId', '') == id
+                    && soloCambia(['is_online', 'last_login', 'preferencias']);
+      allow create, delete: if false;
+    }
+
+    // ---------------- Roles ----------------
+    match /Roles/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin()
+                   || (tieneModulo('0') && !(id.upper() in ['ADMIN', 'ADMINISTRADOR']));
+    }
+
+    // ---------------- Campañas ----------------
+    // (se usa comodín para no depender de la "ñ" en la ruta)
+    match /{coleccion}/{id} {
+      allow read: if coleccion == 'Campañas' && signedIn();
+      allow write: if coleccion == 'Campañas' && (isAdmin() || tieneModulo('0-1'));
+    }
+
+    // ---------------- Configuración ----------------
+    match /Configuracion/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+      // Turno del día: quien tiene la "Bandeja de revisión" (módulo 8) puede tomarlo o dejarlo.
+      allow write: if id == 'Turno' && tieneModulo('8')
+                   && request.resource.data.keys().hasOnly(['fecha', 'revisores', 'actualizado_por', 'actualizado'])
+                   && request.resource.data.revisores is list && request.resource.data.revisores.size() <= 20
+                   && request.resource.data.actualizado_por == nombre();
+    }
+
+    // ---------------- Cobros ----------------
+    // Cada usuario solo ve y modifica solicitudes de SUS campañas.
+    // Nadie (salvo admin) puede mover una solicitud a otra campaña.
+    match /Cobros/{id} {
+      allow read: if isAdmin()
+                  || (signedIn() && (resource == null || enMiCampana(resource.data.get('campaña', ''))));
+      allow create: if isAdmin()
+                    || (signedIn()
+                        && request.resource.data.ticket == id
+                        && enMiCampana(request.resource.data.get('campaña', '')));
+      allow update: if isAdmin()
+                    || (signedIn()
+                        && enMiCampana(resource.data.get('campaña', ''))
+                        && request.resource.data.get('campaña', '') == resource.data.get('campaña', ''));
+      allow delete: if isAdmin();
+    }
+
+    // ---------------- Notificaciones ----------------
+    match /Notificaciones/{id} {
+      function puedeVer(d) {
+        return isAdmin()
+            || d.get('destinatario', '') == nombre()
+            || d.get('remitente', '') == nombre()
+            || (isLider() && enMiCampana(d.get('campaña', '')));
+      }
+      allow read: if signedIn() && puedeVer(resource.data);
+      allow create: if signedIn() && request.resource.data.leido == false && (
+        // Avisos internos: solo líderes/admin, y firmados con su propio nombre
+        (request.resource.data.tipo == 'MENSAJE'
+          && (isAdmin() || isLider())
+          && request.resource.data.remitente == nombre())
+        ||
+        // Avisos del sistema generados desde la app (ej. comprobante recibido)
+        (request.resource.data.tipo == 'SISTEMA'
+          && (isAdmin() || enMiCampana(request.resource.data.get('campaña', ''))))
+      );
+      allow update: if signedIn() && puedeVer(resource.data) && soloCambia(['leido']);
+      allow delete: if isAdmin() || isLider();
+    }
+
+    // ---------------- Sistema ----------------
+    // Contadores internos (consumo de Make, última revisión del correo). Solo lectura para admin;
+    // los escriben las Cloud Functions.
+    match /Sistema/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Todo lo demás queda cerrado.
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+*.csv
+respaldo-firestore-*.json
+clave*.json
+*-debug.log
+.secret.local
