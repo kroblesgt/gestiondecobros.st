@@ -769,8 +769,9 @@
 
                         <div class="card" id="card-cliente">
                             <h3 class="card-titulo"><span class="paso">2</span> Cliente</h3>
-                            <div class="form-grid">
-                                <div class="input-group"><label for="cli-orden" id="lbl-cli-orden">Orden de servicio</label><input type="text" id="cli-orden" maxlength="200" autocomplete="off" placeholder="Si son varias, sepáralas con coma"></div>
+                            <button type="button" class="btn btn-ghost btn-sm" id="btn-mostrar-orden" onclick="mostrarCampoOrden(true)" style="margin-bottom:12px;"><i class="fas fa-plus"></i> Ya tengo la orden de servicio</button>
+                            <div class="form-grid" id="grupo-orden" style="display:none;">
+                                <div class="input-group"><label for="cli-orden" id="lbl-cli-orden">Orden de servicio</label><input type="text" id="cli-orden" maxlength="200" autocomplete="off" placeholder="Si son varias, sepáralas con coma"><p class="ayuda" id="ayuda-orden">Si aún no existe, déjalo vacío: se registra después en el visor o al completar.</p></div>
                             </div>
                             <div class="form-grid">
                                 <div class="input-group"><label for="cli-contacto">Nombre <span class="req">*</span></label><input type="text" id="cli-contacto" class="campo-cliente" autocomplete="off"></div>
@@ -1490,6 +1491,15 @@
         const talon = (d, extra = "") => ordenDe(d) ? (() => { const l = normalizarOrdenes(ordenDe(d)); return `<span class="ticket ${extra}" title="${l.length > 1 ? "Órdenes de servicio: " : "Orden de servicio: "}${esc(l.join(", "))}">${esc(l[0])}${l.length > 1 ? ` +${l.length - 1}` : ""}</span>`; })() : `<span class="ticket sin-orden ${extra}" title="La orden de servicio todavía no se ha registrado">Orden pendiente</span>`;
         // La orden puede no existir aún (se crea con los datos que se envían): solo es obligatoria si el administrador lo pide.
         const ordenObligatoria = () => !!camposObligatorios().orden;
+        // La orden casi nunca existe al cobrar (primero paga, luego se genera): el campo queda oculto tras un enlace,
+        // salvo que el administrador la haga obligatoria o la solicitud ya tenga orden.
+        window.mostrarCampoOrden = (on, enfocar = true) => {
+            const ver = on || ordenObligatoria() || !!document.getElementById("cli-orden")?.value.trim();
+            const g = document.getElementById("grupo-orden"), b = document.getElementById("btn-mostrar-orden"); if (!g || !b) return;
+            g.style.display = ver ? "" : "none"; b.style.display = ver ? "none" : "";
+            const ay = document.getElementById("ayuda-orden"); if (ay) ay.style.display = ordenObligatoria() ? "none" : "";
+            if (on && enfocar) setTimeout(() => document.getElementById("cli-orden").focus(), 0);
+        };
         window.configPlantillas = { whatsapp: "NUEVA SOLICITUD DE COBRO 🛠️\n\nOrden de servicio: {{orden}}\nCLIENTE: {{cliente}}\nTOTAL: Q {{total}}" };
 
         // =====================================================================
@@ -1838,7 +1848,7 @@
             serviciosTemporales = []; window.currentTicketEditing = null; renderServicios();
             document.querySelectorAll('#sec-2 input:not([type="checkbox"]):not([type="radio"]), #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; });
             if (window.modoCobro === "RAPIDO") setTimeout(() => window.cambioConceptoRapido(), 0);
-            ponerLinksPago({}); ponerDescuento(null);
+            ponerLinksPago({}); ponerDescuento(null); window.mostrarCampoOrden(false);
             document.getElementById("check-confirmar").checked = false;
             const selTemp = document.getElementById("cli-temperamento"); selTemp.value = "Normal"; cambiarColorTemperamento(selTemp);
             const selTipo = document.getElementById("gc-tipo"); if (selTipo.options.length > 0) selTipo.selectedIndex = 0;
@@ -2107,7 +2117,7 @@
             const c = d.cliente || {};
             window.cambiarModoCobro(d.tipo_cobro === "RAPIDO" ? "RAPIDO" : "COMPLETO", true);
             if (d.tipo_cobro === "RAPIDO") { const sv = (d.servicios || [])[0] || {}; document.getElementById("rp-concepto").value = sv.tipo || ""; document.getElementById("rp-monto").value = sv.precio ?? ""; delete document.getElementById("rp-monto").dataset.auto; document.getElementById("rp-detalle").value = sv.detalle || ""; }
-            document.getElementById("cli-orden").value = d.orden_servicio || ""; document.getElementById("cli-nit").value = c.nit || ""; document.getElementById("cli-contacto").value = c.contacto || ""; document.getElementById("cli-tel").value = c.tel || ""; document.getElementById("cli-dir").value = c.dir || ""; document.getElementById("cli-correo").value = c.correo || ""; document.getElementById("cli-obs-tec").value = c.obs_tec || "";
+            document.getElementById("cli-orden").value = d.orden_servicio || ""; window.mostrarCampoOrden(false); document.getElementById("cli-nit").value = c.nit || ""; document.getElementById("cli-contacto").value = c.contacto || ""; document.getElementById("cli-tel").value = c.tel || ""; document.getElementById("cli-dir").value = c.dir || ""; document.getElementById("cli-correo").value = c.correo || ""; document.getElementById("cli-obs-tec").value = c.obs_tec || "";
             document.getElementById("fac-nit").value = d.facturacion?.nit || ""; document.getElementById("fac-nombre").value = d.facturacion?.nombre || "";
             document.getElementById("pago-metodo").value = d.pago_metodo || "AMBOS"; window.sincronizarMetodoPago(); window.toggleLinkPago();
             ponerLinksPago(d);
@@ -2910,7 +2920,7 @@
                 const bW = document.getElementById("btn-enviar-wa"); if (bW) bW.style.display = cfg.wa_habilitado === false ? "none" : "";
                 const bC = document.getElementById("btn-enviar-correo"); if (bC) bC.style.display = cfg.correo_habilitado === false ? "none" : "";
                 const marcaReq = (id, txt, on) => { const l = document.getElementById(id); if (l) l.innerHTML = esc(txt) + (on ? ' <span class="req">*</span>' : ""); };
-                marcaReq("lbl-cli-orden", "Orden(es) de servicio", ordenObligatoria()); marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
+                marcaReq("lbl-cli-orden", "Orden(es) de servicio", ordenObligatoria()); window.mostrarCampoOrden?.(false); marcaReq("lbl-cli-nit", "NIT", req.nit); marcaReq("lbl-cli-dir", "Dirección", req.direccion); marcaReq("lbl-cli-correo", "Correo", req.correo);
                 ["lbl-producto", "lbl-marca", "lbl-modelo"].forEach((id, i) => marcaReq(id, ["Producto", "Marca", "Modelo"][i], req.equipo));
                 const lI = document.getElementById("pago-link");
                 if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Link de Pago deshabilitado"; } else window.toggleLinkPago();
