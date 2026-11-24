@@ -444,15 +444,20 @@ async function armarMime({ para, asunto, html, responderA, copiaMake = false }) 
 exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }, async (request) => {
   const t = requireAuth(request);
   const { ticketId, tipo } = request.data || {};
-  if (!ticketId || !["NUEVO_COBRO", "NUEVA_RESPUESTA"].includes(tipo)) throw new HttpsError("invalid-argument", "Datos incompletos.");
+  if (!ticketId || !["NUEVO_COBRO", "NUEVA_RESPUESTA", "REENVIO"].includes(tipo)) throw new HttpsError("invalid-argument", "Datos incompletos.");
 
   const ref = db.doc(`Cobros/${ticketId}`);
   const snap = await ref.get();
   if (!snap.exists) throw new HttpsError("not-found", "La solicitud no existe.");
   const d = snap.data();
   if (!esAdminRol(t.rol) && !(t.campanas || []).includes(d["campaña"])) throw new HttpsError("permission-denied", "La solicitud no es de tu campaña.");
-  const correo = String(d.cliente?.correo || "").trim();
-  if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(correo)) throw new HttpsError("failed-precondition", "La solicitud no tiene un correo válido.");
+  // REENVIO: se corrige el correo del cliente y se le manda otra vez la misma solicitud (sin abrir otra).
+  const esReenvio = tipo === "REENVIO";
+  const correoAnterior = String(d.cliente?.correo || "").trim();
+  const correo = esReenvio ? String(request.data.correo || "").trim() : correoAnterior;
+  if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(correo)) throw new HttpsError(esReenvio ? "invalid-argument" : "failed-precondition", esReenvio ? "El correo nuevo no es válido." : "La solicitud no tiene un correo válido.");
+  if (esReenvio && ["ANULADO", "PAUSADO"].includes(d.estatus)) throw new HttpsError("failed-precondition", "Esta solicitud está pausada o anulada; no se puede reenviar.");
+  const motivoReenvio = String(request.data.motivo || "").trim().slice(0, 120);
 
   const [perfilSnap, generalSnap] = await Promise.all([db.doc(`Usuarios/${t.loginId}`).get(), db.doc("Configuracion/General").get()]);
   const perfil = perfilSnap.exists ? perfilSnap.data() : {};
@@ -463,6 +468,31 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
   const ticket = d.ticket || ticketId;
   const copiaMake = modoAutomatico(general);
   const contarEnvio = async () => { await contarConsumo("envio"); if (copiaMake) await contarConsumo("copia"); };
+
+  if (esReenvio) {
+    // Mismo contenido y asunto que el envío original, al correo corregido. No cambia quién lo envió (productividad).
+    const asunto = d.correo_asunto || asuntoCobro({ ...d, ticket }, general);
+    const dd = { ...d, ticket, cliente: { ...(d.cliente || {}), correo } };
+    const mime = await armarMime({ para: correo, asunto, html: (d.tipo_cobro === "RAPIDO" ? htmlPagoRapido : htmlNuevoCobro)(dd, general, agente, perfil), copiaMake });
+    await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "reenvío");
+    await db.runTransaction(async (tx) => {
+      const actual = (await tx.get(ref)).data() || {};
+      const hist = [...(actual.historial_respuestas || [])];
+      const cambio = correoAnterior.toLowerCase() !== correo.toLowerCase() ? ` (antes: ${correoAnterior || "sin correo"})` : "";
+      hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente, mensaje: `✉️ Solicitud reenviada por correo a ${correo}${cambio}.${motivoReenvio ? `\nMotivo: ${motivoReenvio}` : ""}`, enviado_por_correo: false });
+      const act = {
+        "cliente.correo": correo, correo_asunto: asunto, historial_respuestas: hist,
+        reenviado_por: agente, reenviado_en: FieldValue.serverTimestamp(), envios_correo: FieldValue.increment(1),
+        ultima_actividad: FieldValue.serverTimestamp(), actualizado_por: agente, fecha_actualizacion: FieldValue.serverTimestamp(),
+      };
+      if (actual.estatus === "ERROR EN ENVÍO") act.estatus = "ENVIADO";
+      if (!actual.correo_enviado_en) act.correo_enviado_en = FieldValue.serverTimestamp();
+      tx.update(ref, act);
+    });
+    await contarEnvio();
+    logger.info("Solicitud reenviada", { ticket, por: t.loginId, cambioCorreo: correoAnterior !== correo });
+    return { ok: true };
+  }
 
   if (tipo === "NUEVO_COBRO") {
     const asunto = asuntoCobro({ ...d, ticket }, general);
