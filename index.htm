@@ -429,6 +429,8 @@
         #sec-2.rapido .solo-completo { display: none !important; }
         .chip-rapido { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #7A4C06; background: var(--ambar-suave); border-radius: 10px; padding: 1px 8px; margin-top: 6px; }
         .orden-editar { display: flex; gap: 6px; align-items: center; }
+        .btn-reenviar { margin-top: 6px; }
+        .dato.error-envio { background: #FEF3F2; border-radius: 8px; padding: 6px 8px; }
         .orden-editar input { flex: 1; min-width: 0; }
         .cols-seg { width: auto; min-width: 150px; }
         #cols-seg-lista { position: absolute; top: calc(100% + 4px); right: 0; min-width: 230px; background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--radio); padding: 8px; z-index: 1000; box-shadow: var(--sombra-flotante); display: flex; flex-direction: column; gap: 2px; }
@@ -1947,6 +1949,33 @@
             if (r.orden !== (d.orden_servicio || "")) { act.orden_servicio = r.orden; act.ordenes_servicio = normalizarOrdenes(r.orden); }
             hist.push({ tipo: "agente", fecha: new Date().toISOString(), agente: quien, mensaje: `🧾 Completada con ${r.orden.includes(",") ? "órdenes de servicio" : "orden de servicio"} ${r.orden}.`, enviado_por_correo: false });
         };
+        // ---- Corregir correo y reenviar la MISMA solicitud (sin abrir otro seguimiento) ----
+        const pedirReenvio = (d) => new Promise((resolve) => {
+            const motivos = ["Correo mal escrito", "Rebotó: \"No se puede entregar\"", "Error al enviar", "El cliente pidió otro correo", "El cliente no lo recibió"];
+            const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
+            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="reenvio-titulo" style="max-width:480px;"><div class="modal-head"><h3 id="reenvio-titulo">Corregir y reenviar</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="muted" style="margin:0 0 14px;">${esc(d.cliente?.contacto || "Cliente")} · ${esc(etiquetaSol(d))} · Q ${fmtQ(d.total)}</p>${d.cliente?.correo ? `<p style="margin:0 0 12px; font-size:13px;">Correo actual: <b>${esc(d.cliente.correo)}</b></p>` : ""}<div class="input-group"><label for="reenvio-correo">Correo correcto <span class="req">*</span></label><input type="email" id="reenvio-correo" maxlength="150" value="${esc(d.cliente?.correo || "")}" placeholder="cliente@correo.com" autocomplete="off"><p class="ayuda">Confírmalo con el cliente, letra por letra.</p></div><div class="input-group"><label for="reenvio-motivo">Motivo <span class="req">*</span></label><select id="reenvio-motivo"><option value="">Elige un motivo…</option>${motivos.map(m => `<option>${esc(m)}</option>`).join("")}</select></div><p class="ayuda" style="margin:0;">Se envía otra vez esta misma solicitud, con el mismo asunto, servicios, total y links. Queda anotado en el historial.</p></div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-primary" data-r="1"><i class="fas fa-paper-plane"></i> Reenviar</button></div></div>`;
+            document.body.appendChild(ov);
+            const cerrar = (v) => { document.removeEventListener("keydown", tecla); ov.remove(); resolve(v); };
+            const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
+            document.addEventListener("keydown", tecla);
+            ov.addEventListener("click", (e) => {
+                const b = e.target.closest("[data-r]");
+                if (e.target === ov || (b && b.dataset.r === "0")) return cerrar(null);
+                if (!b) return;
+                const correo = ov.querySelector("#reenvio-correo").value.trim(); const motivo = ov.querySelector("#reenvio-motivo").value;
+                if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(correo)) { ov.querySelector("#reenvio-correo").focus(); return mostrarToast("Escribe un correo válido.", "warning"); }
+                if (!motivo) { ov.querySelector("#reenvio-motivo").focus(); return mostrarToast("Elige el motivo del reenvío.", "warning"); }
+                cerrar({ correo, motivo });
+            });
+            setTimeout(() => { const i = ov.querySelector("#reenvio-correo"); i.focus(); i.select(); }, 30);
+        });
+        window.reenviarSolicitud = async (id) => {
+            const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
+            const r = await pedirReenvio(d); if (!r) return;
+            const btn = document.querySelector(".btn-reenviar"); if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reenviando…'; }
+            try { await fnEnviarCorreo({ ticketId: id, tipo: "REENVIO", correo: r.correo, motivo: r.motivo }); mostrarToast(`Solicitud reenviada a ${r.correo}.`, "success"); }
+            catch (e) { console.error(e); mostrarToast(mensajeError(e, "No se pudo reenviar. El correo no se cambió."), "error"); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Corregir y reenviar'; } }
+        };
         window.guardarOrdenServicio = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             const v = textoOrdenes(document.getElementById("v-orden")?.value || "");
@@ -2184,10 +2213,11 @@
                 d.motivo_anulacion ? `<div class="nota-motivo anul"><i class="fas fa-ban"></i> <b>Anulada:</b> ${esc(d.motivo_anulacion)}</div>` : ""
             ].join("");
             const puedeOrden = !esLectura && !["ANULADO"].includes(d.estatus);
+            const puedeReenviar = !esLectura && correoHabilitado() && !["ANULADO", "PAUSADO", "COMPLETADO"].includes(d.estatus);
             const campoOrden = puedeOrden
                 ? `<div class="dato"><span>Orden(es) de servicio</span><div class="orden-editar"><input type="text" id="v-orden" maxlength="200" value="${esc(d.orden_servicio || "")}" placeholder="Pendiente" title="Si son varias, sepáralas con coma"><button class="btn btn-outline btn-sm" onclick="guardarOrdenServicio(${js(id)})">Guardar</button></div></div>`
                 : dato(normalizarOrdenes(d.orden_servicio).length > 1 ? "Órdenes de servicio" : "Orden de servicio", d.orden_servicio ? `<b>${esc(d.orden_servicio)}</b>` : "Pendiente");
-            const bloqueCliente = `<div class="bloque"><h4>Cliente${d.tipo_cobro === "RAPIDO" ? ' <span class="chip-rapido"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</h4>${campoOrden}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—")}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
+            const bloqueCliente = `<div class="bloque"><h4>Cliente${d.tipo_cobro === "RAPIDO" ? ' <span class="chip-rapido"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</h4>${campoOrden}${dato("Nombre", esc(c.contacto || "—"))}${dato("Teléfono", tel ? `<a href="tel:${esc(tel)}">${esc(c.tel)}</a>` : "—")}${dato("Correo", `${c.correo ? `<a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a>` : "—"}${puedeReenviar ? `<br><button class="btn btn-outline btn-sm btn-reenviar" onclick="reenviarSolicitud(${js(id)})" title="Corrige el correo del cliente y envíale otra vez esta misma solicitud"><i class="fas fa-paper-plane"></i> ${c.correo ? "Corregir y reenviar" : "Enviar por correo"}</button>` : ""}`)}${dato("NIT", esc(c.nit || "C/F"))}${dato("Dirección", esc(c.dir || "—"))}${dato("Temperamento", `${tempIco} ${esc(temp)}`)}${c.obs_tec ? dato("Para técnico", esc(c.obs_tec)) : ""}${notas}</div>`;
 
             const servList = (d.servicios || []).map(s => `<li><div><b>${esc(s.tipo)}</b><small>${esc([s.producto, s.marca, s.modelo].filter(Boolean).join(" ") || "—")} · ${esc(s.detalle)}</small></div><span class="num">Q ${fmtQ(s.precio)}</span></li>`).join("") || `<li><span class="muted">Sin servicios</span></li>`;
             const bloqueServicios = `<div class="bloque"><h4>Servicios</h4><ul class="lista-serv">${servList}</ul>${d.descuento?.monto > 0 ? `<div class="dato"><span>Subtotal</span><span class="num">Q ${fmtQ(d.subtotal ?? (Number(d.total) + d.descuento.monto))}</span></div><div class="dato"><span>Descuento${d.descuento.tipo === "PORCENTAJE" ? ` (${esc(String(d.descuento.valor))}%)` : ""}</span><span><b class="num">− Q ${fmtQ(d.descuento.monto)}</b><br><small class="muted">${esc(d.descuento.motivo || "Sin motivo")}${d.descuento.aplicado_por ? ` · ${esc(d.descuento.aplicado_por)}` : ""}</small></span></div>` : ""}<div class="total-visor"><span>Total</span><span class="num">Q ${fmtQ(d.total)}</span></div></div>`;
