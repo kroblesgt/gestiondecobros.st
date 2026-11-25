@@ -239,9 +239,39 @@ function htmlPago(d, general) {
   return titulo("Opción 1: Link de Pago:") + btn + titulo("Opción 2: Transferencia:", " margin-top:25px;") + caja;
 }
 
+// ---- Firma con imagen ----
+// La imagen va DENTRO del correo (adjunto en línea, "cid"): el cliente la ve sin "descargar imágenes"
+// y no depende de Google Drive. Las firmas de Drive (GIF animados de varios MB) tienen una versión
+// liviana publicada con la app en /firmas/<id de Drive>.png.
+const APP_URL = "https://gestiondecobros-st.vercel.app";
+const CID_FIRMA = "firma@cobros-st";
+const cacheFirmas = new Map();
+async function bajarImagen(url, max) {
+  const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal, redirect: "follow" });
+    if (!r.ok) return null;
+    const tipo = String(r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (!/^image\/(png|jpe?g|gif)$/.test(tipo)) return null;
+    if (Number(r.headers.get("content-length") || 0) > max) return null;
+    const content = Buffer.from(await r.arrayBuffer());
+    return content.length && content.length <= max ? { content, contentType: tipo } : null;
+  } catch (e) { return null; } finally { clearTimeout(tm); }
+}
+async function cargarFirma(perfil) {
+  const url = safeUrl(perfil.firma_img); if (!url) return null;
+  if (cacheFirmas.has(url)) return cacheFirmas.get(url);
+  const driveId = (url.match(/[?&]id=([\w-]{10,})/) || url.match(/\/d\/([\w-]{10,})/) || [])[1];
+  let img = driveId ? await bajarImagen(`${APP_URL}/firmas/${driveId}.png`, 400000) : null;
+  if (!img) img = await bajarImagen(url, 600000); // enlace propio a una imagen liviana (PNG/JPG)
+  if (img) cacheFirmas.set(url, img); else logger.warn("Firma sin imagen utilizable", { url });
+  return img;
+}
+const adjuntosFirma = (img) => img ? [{ filename: `firma.${img.contentType.endsWith("png") ? "png" : img.contentType.endsWith("gif") ? "gif" : "jpg"}`, content: img.content, contentType: img.contentType, cid: CID_FIRMA, contentDisposition: "inline" }] : [];
+
 function htmlFirma(agente, perfil) {
-  const img = safeUrl(perfil.firma_img);
-  return `<div style="margin-top:25px; font-size:13px; color:#475569;"><p style="margin:0 0 5px 0;">Atentamente,</p><p style="margin:0; font-weight:bold; color:#002244; font-size:15px;">${esc(agente)}</p><p style="margin:2px 0 10px 0; color:#0077A3;">${escBr(perfil.firma || "Servicio Técnico")}</p>${img ? `<img src="${esc(img)}" style="max-height:80px;" alt="">` : ""}</div>`;
+  const img = perfil.__firmaCid ? `cid:${CID_FIRMA}` : "";
+  return `<div style="margin-top:25px; font-size:13px; color:#475569;"><p style="margin:0 0 5px 0;">Atentamente,</p><p style="margin:0; font-weight:bold; color:#002244; font-size:15px;">${esc(agente)}</p><p style="margin:2px 0 10px 0; color:#0077A3;">${escBr(perfil.firma || "Servicio Técnico")}</p>${img ? `<img src="${img}" width="400" height="80" style="display:block; width:400px; max-width:100%; height:auto; border:0;" alt="${esc(agente)}">` : ""}</div>`;
 }
 
 // Textos editables desde Ajustes → Correo al cliente (Configuracion/General.correo_textos).
@@ -421,7 +451,7 @@ async function llamarMake(secreto, payload, etiqueta) {
 // El correo se arma completo (MIME) aquí y Make solo lo entrega a Outlook con "Send a MIME message".
 // Así se pueden poner los encabezados In-Reply-To / References: la respuesta del agente queda
 // en la MISMA conversación que el correo del cliente, usando solo el permiso de enviar.
-async function armarMime({ para, asunto, html, responderA, copiaMake = false }) {
+async function armarMime({ para, asunto, html, responderA, copiaMake = false, adjuntos = [] }) {
   const idValido = /^<[^<>\s]+@[^<>\s]+>$/.test(String(responderA || "")) ? responderA : "";
   const soporte = SOPORTE_CORREO.value() || "soportest@distelsa.com.gt";
   // Solo en modo automático: el Mailhook va en copia para que Make lea la respuesta del cliente.
@@ -435,6 +465,7 @@ async function armarMime({ para, asunto, html, responderA, copiaMake = false }) 
     messageId: `<${crypto.randomUUID()}@${(SOPORTE_CORREO.value() || "soportest@distelsa.com.gt").split("@")[1]}>`,
     text: htmlATexto(html, { wordwrap: 100, selectors: [{ selector: "img", format: "skip" }] }),
     textEncoding: "quoted-printable",
+    ...(adjuntos.length ? { attachments: adjuntos } : {}),
   };
   if (idValido) { opciones.inReplyTo = idValido; opciones.references = [idValido]; }
   const buffer = await new MailComposer(opciones).compile().build();
@@ -462,6 +493,9 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
   const [perfilSnap, generalSnap] = await Promise.all([db.doc(`Usuarios/${t.loginId}`).get(), db.doc("Configuracion/General").get()]);
   const perfil = perfilSnap.exists ? perfilSnap.data() : {};
   const general = generalSnap.exists ? generalSnap.data() : {};
+  const imgFirma = await cargarFirma(perfil);
+  perfil.__firmaCid = !!imgFirma;
+  const adjuntos = adjuntosFirma(imgFirma);
   // El administrador puede pausar los correos desde Ajustes → Aviso y canales.
   if (general.correo_habilitado === false) throw new HttpsError("failed-precondition", "El envío por correo está pausado por el administrador.");
   const agente = t.nombre || t.loginId;
@@ -473,7 +507,7 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
     // Mismo contenido y asunto que el envío original, al correo corregido. No cambia quién lo envió (productividad).
     const asunto = d.correo_asunto || asuntoCobro({ ...d, ticket }, general);
     const dd = { ...d, ticket, cliente: { ...(d.cliente || {}), correo } };
-    const mime = await armarMime({ para: correo, asunto, html: (d.tipo_cobro === "RAPIDO" ? htmlPagoRapido : htmlNuevoCobro)(dd, general, agente, perfil), copiaMake });
+    const mime = await armarMime({ para: correo, asunto, html: (d.tipo_cobro === "RAPIDO" ? htmlPagoRapido : htmlNuevoCobro)(dd, general, agente, perfil), copiaMake, adjuntos });
     await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "reenvío");
     await db.runTransaction(async (tx) => {
       const actual = (await tx.get(ref)).data() || {};
@@ -496,7 +530,7 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
 
   if (tipo === "NUEVO_COBRO") {
     const asunto = asuntoCobro({ ...d, ticket }, general);
-    const mime = await armarMime({ para: correo, asunto, html: (d.tipo_cobro === "RAPIDO" ? htmlPagoRapido : htmlNuevoCobro)({ ...d, ticket }, general, agente, perfil), copiaMake });
+    const mime = await armarMime({ para: correo, asunto, html: (d.tipo_cobro === "RAPIDO" ? htmlPagoRapido : htmlNuevoCobro)({ ...d, ticket }, general, agente, perfil), copiaMake, adjuntos });
     await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
     // Registro de quién envió (para el Dashboard de productividad).
     await ref.update({
@@ -521,7 +555,7 @@ exports.enviarCorreoCobro = onCall({ secrets: [MAKE_WEBHOOK_ENVIO, MAKE_TOKEN] }
     : htmlRespuesta({ ...d, ticket }, agente, mensaje, perfil, general);
   // Usa el asunto con que se envió el cobro, para que quede en la misma conversación del cliente.
   const asunto = "RE: " + (d.correo_asunto || asuntoCobro({ ...d, ticket }, general));
-  const mime = await armarMime({ para: correo, asunto, html, responderA, copiaMake });
+  const mime = await armarMime({ para: correo, asunto, html, responderA, copiaMake, adjuntos });
   await llamarMake(MAKE_WEBHOOK_ENVIO, { ticket, correo, asunto, mime }, "envío");
   await contarEnvio();
   await db.runTransaction(async (tx) => {
