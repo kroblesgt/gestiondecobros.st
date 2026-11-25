@@ -2100,7 +2100,7 @@
                 } else if (metodo === "Pausa") { mostrarToast("Pausada.", "success"); }
                 else if (metodo === "Anular") { mostrarToast("Anulada.", "success"); }
 
-                limpiarGestorCobro(); if (esEnvio) showSec("sec-3");
+                limpiarGestorCobro(); if (esEnvio) { const m = document.querySelector("main, .main, #main-content"); (m && m.scrollHeight > m.clientHeight ? m : window).scrollTo({ top: 0, behavior: "smooth" }); } // se queda en Nuevo cobro, listo para el siguiente
             } catch (e) {
                 console.error(e); if (waWindow) waWindow.close();
                 mostrarToast("No se pudo guardar la solicitud. Revisa tu conexión e intenta de nuevo.", "error");
