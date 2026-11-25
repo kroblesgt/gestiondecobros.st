@@ -430,6 +430,8 @@
         .chip-rapido { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #7A4C06; background: var(--ambar-suave); border-radius: 10px; padding: 1px 8px; margin-top: 6px; }
         .orden-editar { display: flex; gap: 6px; align-items: center; }
         .btn-reenviar { margin-top: 6px; }
+        .rev-persona { font-size: 14px; } .rev-persona small { display: block; color: var(--gris, #64748B); font-size: 12px; margin-top: 2px; }
+        .asignacion small.ingreso { display: block; margin-top: 6px; font-size: 12.5px; }
         .dato.error-envio { background: #FEF3F2; border-radius: 8px; padding: 6px 8px; }
         .orden-editar input { flex: 1; min-width: 0; }
         .cols-seg { width: auto; min-width: 150px; }
@@ -956,7 +958,7 @@
                 <div class="card tabla-card">
                     <div class="table-responsive">
                         <table class="tabla-rev">
-                            <thead><tr><th style="padding-left:18px;">Orden</th><th>Enviada</th><th>Cliente</th><th style="text-align:right;">Total</th><th>Última anotación</th><th>Registrar</th></tr></thead>
+                            <thead><tr><th style="padding-left:18px;">Orden</th><th>Enviada</th><th>Ingresó</th><th>La tiene</th><th>Cliente</th><th style="text-align:right;">Total</th><th>Última anotación</th><th>Registrar</th></tr></thead>
                             <tbody id="lista-revision"></tbody>
                         </table>
                     </div>
@@ -1470,6 +1472,8 @@
         const correoHabilitado = () => window.configSistema?.correo_habilitado !== false;
         // Respuestas de clientes: "MANUAL" (una persona las registra) o "AUTOMATICO" (Make las lee).
         const modoManual = () => String(window.configSistema?.modo_respuestas || "MANUAL").toUpperCase() !== "AUTOMATICO";
+        // Quién ingresó la gestión (no cambia aunque otro tome el seguimiento).
+        const creadorDe = (d) => d.enviado_por || ((d.historial_respuestas || []).map(h => String(h.mensaje || "").match(/creada originalmente por (.+?)\.?$/)).find(Boolean) || [])[1] || d.agente || "Sin registro";
         // Turno de hoy = turno fijo del día (Ajustes) + quienes tomaron el turno hoy desde la Bandeja (Configuracion/Turno).
         const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
         window.turnoHoy = { fecha: "", revisores: [] };
@@ -2195,6 +2199,8 @@
                 ? `<div class="composer composer-rev"><div class="rev-banda"><i class="fas fa-inbox"></i> Modo revisión: lo que escribas queda como <b>nota interna</b>; no se envía al cliente.</div><textarea id="chat-input-${esc(id)}" rows="3" placeholder="Ej. El cliente respondió que paga mañana por transferencia"></textarea><div class="composer-pie">${selRR}<button class="btn btn-primary btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'interna')"><i class="fas fa-lock"></i> Guardar nota interna</button></div></div>`
                 : esLectura
                 ? `<div class="composer"><div class="lectura"><div><b><i class="fas fa-eye"></i> Solo lectura</b><br><span style="font-size:13px;">Asignada a ${esc(d.agente || "nadie")}.</span></div><button class="btn btn-warning btn-sm" onclick="tomarSeguimiento(${js(id)})"><i class="fas fa-hand"></i> Tomar seguimiento</button></div></div>`
+                : modoManual()
+                ? `<div class="composer"><textarea id="chat-input-${esc(id)}" rows="3" placeholder="Escribe una nota interna (solo la ve el equipo)"></textarea><div class="composer-pie">${selRR}<button class="btn btn-primary btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'interna')" title="Solo la ve el equipo"><i class="fas fa-lock"></i> Guardar nota</button></div></div>`
                 : `<div class="composer"><textarea id="chat-input-${esc(id)}" rows="3" placeholder="Escribe una respuesta para el cliente o una nota interna"></textarea><div class="composer-pie">${selRR}<div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn btn-outline btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'interna')" title="Solo la ve el equipo"><i class="fas fa-lock"></i> Guardar nota</button><button class="btn btn-accent btn-sm btn-chat" onclick="enviarMensajeChat(${js(id)}, 'correo')" ${puedeCorreo ? "" : `disabled title="${esc(motivoSinCorreo)}"`}><i class="fas fa-paper-plane"></i> Enviar por correo</button></div></div></div>`;
 
             // ---- Lateral: asignación, cliente, servicios, pago ----
@@ -2208,10 +2214,10 @@
             let opcionesEstatus = catalogo.map(e => `<option value="${esc(e)}" ${d.estatus === e ? "selected" : ""}>${iconoMotor[motorDe(e)] || ""} ${esc(e)}</option>`).join("");
             if (!catalogo.includes(d.estatus)) opcionesEstatus += `<option value="${esc(d.estatus)}" selected>${esc(d.estatus)} (ya no existe)</option>`;
             const asignacion = modoRev
-                ? `<div class="asignacion"><div class="input-group"><label for="v-nuevo-estatus">Estatus</label><select id="v-nuevo-estatus">${opcionesEstatus}</select></div><div class="input-group"><label>Agente</label><b>${esc(d.agente || "Sin asignar")}</b></div><button class="btn btn-primary" onclick="guardarEstatus(${js(id)})"><i class="fas fa-check"></i> Cambiar estatus</button></div>`
+                ? `<div class="asignacion"><div class="input-group"><label for="v-nuevo-estatus">Estatus</label><select id="v-nuevo-estatus">${opcionesEstatus}</select></div><div class="input-group"><label>La tiene</label><b>${esc(d.agente || "Sin asignar")}</b><small class="muted ingreso">Ingresó: ${esc(creadorDe(d))}</small></div><button class="btn btn-primary" onclick="guardarEstatus(${js(id)})"><i class="fas fa-check"></i> Cambiar estatus</button></div>`
                 : esLectura
-                ? `<div class="bloque"><h4>Asignación</h4>${dato("Agente", esc(d.agente || "Sin asignar"))}${dato("Campaña", esc(d.campaña || "—"))}</div>`
-                : `<div class="asignacion"><div class="input-group"><label for="v-nuevo-estatus">Estatus</label><select id="v-nuevo-estatus">${opcionesEstatus}</select></div><div class="input-group"><label${esLiderOAdmin() ? ' for="v-nuevo-agente"' : ""}>Agente</label>${selectorAgenteHTML}</div><button class="btn btn-primary" onclick="guardarEstatus(${js(id)})"><i class="fas fa-check"></i> Aplicar cambios</button></div>`;
+                ? `<div class="bloque"><h4>Asignación</h4>${dato("Ingresó", esc(creadorDe(d)))}${dato("La tiene", esc(d.agente || "Sin asignar"))}${dato("Campaña", esc(d.campaña || "—"))}</div>`
+                : `<div class="asignacion"><div class="input-group"><label for="v-nuevo-estatus">Estatus</label><select id="v-nuevo-estatus">${opcionesEstatus}</select></div><div class="input-group"><label${esLiderOAdmin() ? ' for="v-nuevo-agente"' : ""}>La tiene</label>${selectorAgenteHTML}<small class="muted ingreso">Ingresó: ${esc(creadorDe(d))}</small></div><button class="btn btn-primary" onclick="guardarEstatus(${js(id)})"><i class="fas fa-check"></i> Aplicar cambios</button></div>`;
 
             const c = d.cliente || {};
             const tel = String(c.tel || "").replace(/[^\d+]/g, "");
@@ -3267,8 +3273,8 @@
             const base = window.allDashboardData.filter(d => {
                 if (!["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) return false;
                 if (canal !== "TODOS" && canalDe(d) !== canal) return false;
-                if (ag !== "TODOS" && d.agente !== ag) return false;
-                if (q && ![d.ticket, d.orden_servicio, d.cliente?.contacto, d.cliente?.correo, d.cliente?.nit, d.agente, d.enviado_por].some(v => String(v || "").toLowerCase().includes(q))) return false;
+                if (ag !== "TODOS" && d.agente !== ag && creadorDe(d) !== ag) return false;
+                if (q && ![d.ticket, d.orden_servicio, d.cliente?.contacto, d.cliente?.correo, d.cliente?.nit, d.agente, d.enviado_por, creadorDe(d)].some(v => String(v || "").toLowerCase().includes(q))) return false;
                 return true;
             });
             const horas = (d) => (ahora - fechaActividad(d)) / 36e5;
@@ -3284,7 +3290,7 @@
             const filas = base.filter(d => d.estatus === window.etapaBandeja).sort((a, b) => (enviadoEn(a) || 0) - (enviadoEn(b) || 0));
             document.getElementById("rev-info").innerText = filas.length ? `${filas.length} ${filas.length === 1 ? "solicitud" : "solicitudes"}, la más antigua primero` : "";
             const vacio = { ENVIADO: "No hay cobros esperando respuesta.", RECIBIDO: "No hay clientes pendientes de enviar comprobante.", "COMPROBANTE RECIBIDO": "No hay comprobantes por verificar." }[window.etapaBandeja];
-            tb.innerHTML = filas.length === 0 ? `<tr><td colspan="6" class="vacio"><i class="fas fa-inbox"></i>${vacio}</td></tr>` : filas.map(d => {
+            tb.innerHTML = filas.length === 0 ? `<tr><td colspan="8" class="vacio"><i class="fas fa-inbox"></i>${vacio}</td></tr>` : filas.map(d => {
                 const h = horas(d); const tarde = d.estatus !== "COMPROBANTE RECIBIDO" && h > sla;
                 const env = enviadoEn(d); const c = canalDe(d);
                 const ico = c === "WhatsApp" ? '<i class="fab fa-whatsapp" title="Enviado por WhatsApp"></i>' : '<i class="fas fa-envelope" title="Enviado por correo"></i>';
@@ -3295,7 +3301,7 @@
                 const botones = !miTurno ? `<span class="muted" style="font-size:12px;">Toma el turno para registrar</span>` : d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
-                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td>${ordenDe(d) ? `<button class="ticket ticket-copiar" title="Copiar la orden para buscarla en Outlook" onclick="copiarTicket(${js(ordenDe(d))})">${esc(ordenDe(d))}</button>` : talon(d)}${d.tipo_cobro === "RAPIDO" ? '<span class="chip-rapido" style="display:flex; width:max-content;"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")} · ${esc(d.enviado_por || d.agente || "Sin agente")}</small></td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
+                return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td>${ordenDe(d) ? `<button class="ticket ticket-copiar" title="Copiar la orden para buscarla en Outlook" onclick="copiarTicket(${js(ordenDe(d))})">${esc(ordenDe(d))}</button>` : talon(d)}${d.tipo_cobro === "RAPIDO" ? '<span class="chip-rapido" style="display:flex; width:max-content;"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")}</small></td><td class="rev-persona">${esc(creadorDe(d))}</td><td class="rev-persona">${d.agente && d.agente !== creadorDe(d) ? `<b>${esc(d.agente)}</b><small><i class="fas fa-arrow-right-arrow-left"></i> la tomó</small>` : esc(d.agente || "Sin asignar")}</td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
             }).join("");
         };
 
