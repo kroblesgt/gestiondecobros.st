@@ -2012,6 +2012,75 @@
             try { await fnEnviarCorreo({ ticketId: id, tipo: "REENVIO", correo: r.correo, motivo: r.motivo }); mostrarToast(`Solicitud reenviada a ${r.correo}.`, "success"); }
             catch (e) { console.error(e); mostrarToast(mensajeError(e, "No se pudo reenviar. El correo no se cambió."), "error"); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Corregir y reenviar'; } }
         };
+        // ---- Respuesta lista para Outlook: comprobante recibido ----
+        const nombrePropio = (t) => String(t || "").trim().toLowerCase().replace(/(^|\s)([a-záéíóúñü])/g, (m, a, b) => a + b.toUpperCase());
+        const saludoHora = () => { const h = new Date().getHours(); return h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches"; };
+        const fechaLarga = (iso) => { const [y, m, dd] = String(iso).split("-").map(Number); if (!y || !m || !dd) return ""; return new Date(y, m - 1, dd).toLocaleDateString("es-GT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(",", ""); };
+        const listaY = (a) => a.length <= 1 ? (a[0] || "") : `${a.slice(0, -1).join(", ")} y ${a[a.length - 1]}`;
+        const textoRespuestaComprobante = ({ nombre, ordenes, fecha }) => {
+            const varias = ordenes.length > 1; const f = fecha ? fechaLarga(fecha) : "";
+            return [
+                `${saludoHora()}${nombre ? `, ${nombrePropio(nombre)}` : ""}:`, "",
+                "Confirmamos la recepción de su comprobante de pago. ¡Muchas gracias!", "",
+                `Lo agregamos a ${varias ? "sus órdenes de servicio No." : "su orden de servicio No."} ${listaY(ordenes)}${f ? `, ${varias ? "programadas" : "programada"} para el ${f}. Antes de la visita, nuestro equipo se comunicará con usted para confirmarla.` : ". Nuestro equipo se comunicará con usted para coordinar la fecha de la visita técnica."}`, "",
+                "Además, ya solicitamos al área encargada la factura correspondiente a su pago.", "",
+                "Quedamos a sus órdenes para cualquier consulta, por este medio o al PBX 2419-8888.", "",
+                "Atentamente,",
+            ].join("\n");
+        };
+        const copiarParaOutlook = async (texto) => {
+            const html = `<div style="font-family:Calibri,Arial,sans-serif; font-size:11pt;">${texto.split(/\n{2,}/).map(p => `<p style="margin:0 0 12px 0;">${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}</div>`;
+            try { if (window.ClipboardItem && navigator.clipboard?.write) { await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([texto], { type: "text/plain" }) })]); return true; } } catch (e) { /* sigue con texto simple */ }
+            try { await navigator.clipboard.writeText(texto); return true; } catch (e) { /* último recurso */ }
+            const ta = document.createElement("textarea"); ta.value = texto; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; } ta.remove(); return ok;
+        };
+        window.respuestaComprobante = (id, puedeGuardar) => {
+            const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
+            const ordenGuardada = d.orden_servicio || ""; const fechaGuardada = d.prioridad?.fecha_ofrecida === "SI" ? (d.prioridad.fecha_establecida || "") : "";
+            const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
+            ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rc-titulo" style="max-width:640px;"><div class="modal-head"><h3 id="rc-titulo">Respuesta: comprobante recibido</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body">
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:12px;"><div class="input-group"><label for="rc-orden">Orden(es) de servicio <span class="req">*</span></label><input type="text" id="rc-orden" value="${esc(ordenGuardada)}" placeholder="Si son varias, sepáralas con coma" autocomplete="off"></div><div class="input-group"><label for="rc-fecha">Fecha programada</label><input type="date" id="rc-fecha" value="${esc(fechaGuardada)}"></div></div>
+                ${puedeGuardar ? `<label class="checkbox-wrapper" id="rc-guardar-wrap" style="display:none; margin:-4px 0 12px;"><input type="checkbox" id="rc-guardar" checked> Guardar la orden y la fecha en esta solicitud</label>` : ""}
+                <div class="input-group"><label for="rc-texto">Respuesta <small class="muted">(puedes editarla antes de copiar)</small></label><textarea id="rc-texto" rows="13" style="font-family:inherit; line-height:1.5;"></textarea></div>
+                <button type="button" class="btn btn-ghost btn-sm" id="rc-restablecer" style="display:none;"><i class="fas fa-rotate-left"></i> Volver al texto sugerido</button>
+            </div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-primary" data-r="1"><i class="fas fa-copy"></i> Copiar respuesta</button></div></div>`;
+            document.body.appendChild(ov);
+            const $ = (q) => ov.querySelector(q); let editado = false;
+            const datosRC = () => ({ nombre: d.cliente?.contacto || "", ordenes: normalizarOrdenes($("#rc-orden").value), fecha: $("#rc-fecha").value });
+            const pintar = () => {
+                if (!editado) $("#rc-texto").value = textoRespuestaComprobante(datosRC());
+                const cambia = textoOrdenes($("#rc-orden").value) !== ordenGuardada || $("#rc-fecha").value !== fechaGuardada;
+                const w = $("#rc-guardar-wrap"); if (w) w.style.display = cambia && textoOrdenes($("#rc-orden").value) ? "" : "none";
+            };
+            $("#rc-orden").addEventListener("input", pintar); $("#rc-fecha").addEventListener("input", pintar);
+            $("#rc-texto").addEventListener("input", () => { editado = true; $("#rc-restablecer").style.display = ""; });
+            $("#rc-restablecer").addEventListener("click", () => { editado = false; $("#rc-restablecer").style.display = "none"; pintar(); });
+            const cerrar = () => { document.removeEventListener("keydown", tecla); ov.remove(); };
+            const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(); } };
+            document.addEventListener("keydown", tecla);
+            ov.addEventListener("click", async (e) => {
+                const b = e.target.closest("[data-r]");
+                if (e.target === ov || (b && b.dataset.r === "0")) return cerrar();
+                if (!b) return;
+                const ords = textoOrdenes($("#rc-orden").value);
+                if (!ords) { $("#rc-orden").focus(); return mostrarToast("Escribe la orden de servicio.", "warning"); }
+                const texto = $("#rc-texto").value.trim();
+                if (!(await copiarParaOutlook(texto))) return mostrarToast("No se pudo copiar. Selecciona el texto y cópialo con Ctrl+C.", "error");
+                const fecha = $("#rc-fecha").value; const guardar = puedeGuardar && $("#rc-guardar")?.checked && $("#rc-guardar-wrap")?.style.display !== "none";
+                cerrar(); mostrarToast("Respuesta copiada. Pégala en Outlook con Ctrl+V.", "success");
+                if (!puedeGuardar) return;
+                const act = { ultima_actividad: new Date(), actualizado_por: window.userName, fecha_actualizacion: new Date() };
+                const notas = [`📋 Respuesta de comprobante recibido copiada para Outlook (orden ${ords}${fecha ? `, fecha ${fecha.split("-").reverse().join("/")}` : ""}).`];
+                if (guardar) {
+                    if (ords !== ordenGuardada) { act.orden_servicio = ords; act.ordenes_servicio = normalizarOrdenes(ords); notas.push(ordenGuardada ? `📝 Órdenes de servicio: ${ordenGuardada} → ${ords}.` : `📝 ${ords.includes(",") ? "Órdenes de servicio registradas" : "Orden de servicio registrada"}: ${ords}.`); }
+                    if (fecha && fecha !== fechaGuardada) { act["prioridad.fecha_ofrecida"] = "SI"; act["prioridad.fecha_establecida"] = fecha; }
+                }
+                const rev = window.visorModoRevision === id ? { revision: "NOTA" } : {};
+                act.historial_respuestas = [...(d.historial_respuestas || []), ...notas.map(m => ({ tipo: "agente", fecha: new Date().toISOString(), agente: window.userName, mensaje: m, enviado_por_correo: false, ...rev }))];
+                try { await updateDoc(doc(db, "Cobros", id), act); } catch (err) { console.error(err); mostrarToast("La respuesta se copió, pero no se pudo anotar en el historial.", "warning"); }
+            });
+            pintar(); setTimeout(() => (ordenGuardada ? $("#rc-texto") : $("#rc-orden")).focus(), 30);
+        };
         window.guardarOrdenServicio = async (id) => {
             const d = window.allDashboardData.find(x => x.id === id); if (!d) return;
             const v = textoOrdenes(document.getElementById("v-orden")?.value || "");
@@ -2282,7 +2351,7 @@
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> Respondió</button><button class="btn-rev comp" onclick="registrarRespuesta(${js(id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Envió comprobante</button>`;
                 bloqueRegistro = `<div class="registro-cliente"><p><b>¿El cliente contestó en Soporte ST?</b> Regístralo aquí; queda en el historial.</p><div class="acciones">${bR}</div></div>`;
             }
-            document.getElementById("v-cuerpo").innerHTML = `<div class="visor-chat"><div class="chat-area">${chatHTML}</div>${composer}</div><div class="visor-lateral">${bloqueRegistro}${asignacion}${bloqueCliente}${bloqueServicios}${bloquePago}</div>`;
+            document.getElementById("v-cuerpo").innerHTML = `<div class="visor-chat"><div class="chat-area">${chatHTML}</div>${composer}</div><div class="visor-lateral">${bloqueRegistro}${asignacion}${d.estatus !== "ANULADO" ? `<div class="bloque bloque-outlook"><h4>Respuesta para Outlook</h4><button class="btn btn-outline btn-sm" onclick="respuestaComprobante(${js(id)}, ${esLectura ? "false" : "true"})"><i class="fas fa-receipt"></i> Comprobante recibido</button><p class="ayuda">Arma la respuesta con la orden y la fecha, lista para pegar en Outlook.</p></div>` : ""}${bloqueCliente}${bloqueServicios}${bloquePago}</div>`;
             const modal = document.getElementById("modal-visor");
             if (modal.style.display !== "flex") { modal.style.display = "flex"; document.body.style.overflow = "hidden"; }
             const cb = document.querySelector("#v-cuerpo .chat-area"); if (cb && scrollAlFinal) cb.scrollTop = cb.scrollHeight;
