@@ -438,6 +438,8 @@
         .sino button[data-v="SI"].on { background: #E6F4EA; color: #1E6B3A; }
         .sino button[data-v="NO"].on { background: #FDECEC; color: #9B1C1C; }
         .sino button:focus-visible { outline: 2px solid var(--azul, #0A7CC2); outline-offset: -2px; }
+        .rev-ingresada { color: #1E6B3A; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+        .rev-pill-ok.active { background: #1E8A5A; border-color: #1E8A5A; }
         .rev-persona { font-size: 14px; } .rev-persona small { display: block; color: var(--gris, #64748B); font-size: 12px; margin-top: 2px; }
         .asignacion small.ingreso { display: block; margin-top: 6px; font-size: 12.5px; }
         .dato.error-envio { background: #FEF3F2; border-radius: 8px; padding: 6px 8px; }
@@ -966,6 +968,7 @@
                         <button class="f-pill rev-pill active" data-etapa="ENVIADO" onclick="filtrarBandeja('ENVIADO', this)">Esperando respuesta <span class="badge" id="rev-n-enviado">0</span></button>
                         <button class="f-pill rev-pill" data-etapa="RECIBIDO" onclick="filtrarBandeja('RECIBIDO', this)">Respondieron, sin comprobante <span class="badge" id="rev-n-recibido">0</span></button>
                         <button class="f-pill rev-pill" data-etapa="COMPROBANTE RECIBIDO" onclick="filtrarBandeja('COMPROBANTE RECIBIDO', this)">Con comprobante <span class="badge" id="rev-n-comp">0</span></button>
+                        <button class="f-pill rev-pill rev-pill-ok" data-etapa="COMPLETADO" onclick="filtrarBandeja('COMPLETADO', this)" title="Completadas con orden de servicio en los últimos 30 días">Ya ingresados <span class="badge" id="rev-n-ok">0</span></button>
                     </div>
                 </div>
 
@@ -3526,8 +3529,10 @@
 
             const canal = document.getElementById("rev-canal").value; const ag = document.getElementById("rev-agente").value;
             const q = (document.getElementById("rev-buscar").value || "").toLowerCase().trim();
+            const finDe = (d) => toDate(d.completado_en) || toDate(d.fecha_actualizacion) || toDate(d.ultima_actividad);
+            const hace30 = new Date(ahora - 30 * 864e5);
             const base = window.allDashboardData.filter(d => {
-                if (!["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus)) return false;
+                if (!["ENVIADO", "RECIBIDO", "COMPROBANTE RECIBIDO"].includes(d.estatus) && !(d.estatus === "COMPLETADO" && (finDe(d) || 0) >= hace30)) return false;
                 if (canal !== "TODOS" && canalDe(d) !== canal) return false;
                 if (ag !== "TODOS" && d.agente !== ag && creadorDe(d) !== ag) return false;
                 if (q && ![d.ticket, d.orden_servicio, d.cliente?.contacto, d.cliente?.correo, d.cliente?.nit, d.agente, d.enviado_por, creadorDe(d)].some(v => String(v || "").toLowerCase().includes(q))) return false;
@@ -3535,26 +3540,28 @@
             });
             const horas = (d) => (ahora - fechaActividad(d)) / 36e5;
             const n = (e) => base.filter(d => d.estatus === e).length;
-            document.getElementById("rev-n-enviado").innerText = n("ENVIADO"); document.getElementById("rev-n-recibido").innerText = n("RECIBIDO"); document.getElementById("rev-n-comp").innerText = n("COMPROBANTE RECIBIDO");
+            document.getElementById("rev-n-enviado").innerText = n("ENVIADO"); document.getElementById("rev-n-recibido").innerText = n("RECIBIDO"); document.getElementById("rev-n-comp").innerText = n("COMPROBANTE RECIBIDO"); document.getElementById("rev-n-ok").innerText = n("COMPLETADO");
             document.getElementById("rev-kpi-espera").innerText = n("ENVIADO");
-            document.getElementById("rev-kpi-tarde").innerText = base.filter(d => d.estatus !== "COMPROBANTE RECIBIDO" && horas(d) > sla).length;
+            document.getElementById("rev-kpi-tarde").innerText = base.filter(d => !["COMPROBANTE RECIBIDO", "COMPLETADO"].includes(d.estatus) && horas(d) > sla).length;
             document.getElementById("rev-kpi-comp").innerText = n("COMPROBANTE RECIBIDO");
             const hoy = new Date().toDateString(); let mias = 0;
             window.allDashboardData.forEach(d => (d.historial_respuestas || []).forEach(h => { if (h.revision && h.agente === window.userName && toDate(h.fecha)?.toDateString() === hoy) mias++; }));
             document.getElementById("rev-kpi-mias").innerText = mias;
 
-            const filas = base.filter(d => d.estatus === window.etapaBandeja).sort((a, b) => (enviadoEn(a) || 0) - (enviadoEn(b) || 0));
-            document.getElementById("rev-info").innerText = filas.length ? `${filas.length} ${filas.length === 1 ? "solicitud" : "solicitudes"}, la más antigua primero` : "";
-            const vacio = { ENVIADO: "No hay cobros esperando respuesta.", RECIBIDO: "No hay clientes pendientes de enviar comprobante.", "COMPROBANTE RECIBIDO": "No hay comprobantes por verificar." }[window.etapaBandeja];
+            const listos = window.etapaBandeja === "COMPLETADO";
+            const filas = base.filter(d => d.estatus === window.etapaBandeja).sort((a, b) => listos ? (finDe(b) || 0) - (finDe(a) || 0) : (enviadoEn(a) || 0) - (enviadoEn(b) || 0));
+            document.getElementById("rev-info").innerText = filas.length ? `${filas.length} ${filas.length === 1 ? "solicitud" : "solicitudes"}, ${listos ? "completadas en los últimos 30 días, la más reciente primero" : "la más antigua primero"}` : "";
+            const vacio = { ENVIADO: "No hay cobros esperando respuesta.", RECIBIDO: "No hay clientes pendientes de enviar comprobante.", "COMPROBANTE RECIBIDO": "No hay comprobantes por verificar.", COMPLETADO: "No hay solicitudes ingresadas en los últimos 30 días." }[window.etapaBandeja];
             tb.innerHTML = filas.length === 0 ? `<tr><td colspan="8" class="vacio"><i class="fas fa-inbox"></i>${vacio}</td></tr>` : filas.map(d => {
-                const h = horas(d); const tarde = d.estatus !== "COMPROBANTE RECIBIDO" && h > sla;
+                const h = horas(d); const tarde = !["COMPROBANTE RECIBIDO", "COMPLETADO"].includes(d.estatus) && h > sla;
                 const env = enviadoEn(d); const c = canalDe(d);
                 const ico = c === "WhatsApp" ? '<i class="fab fa-whatsapp" title="Enviado por WhatsApp"></i>' : '<i class="fas fa-envelope" title="Enviado por correo"></i>';
                 const u = ultimaRevision(d);
                 const ultima = u ? `<div class="rev-ultima"><b>${esc(u.revision ? ACCION_REV[u.revision]?.corto || "Nota" : "Nota")}</b> · ${esc(u.agente)}, ${esc(fmtFecha(u.fecha))}<br>${esc(String(u.mensaje || "").split("\n").slice(u.revision && !["NOTA", "ESTATUS"].includes(u.revision) ? 1 : 0).join(" ").slice(0, 90))}</div>` : '<span class="muted">—</span>';
                 const miTurno = enTurnoHoy();
                 const ver = miTurno ? `<button class="btn-rev" title="Abrir en el visor para notas internas y estatus" onclick="abrirVisorRevision(${js(d.id)})"><i class="fas fa-pen-to-square"></i> Revisar</button>` : `<button class="btn-action-sm" title="Ver (solo lectura)" aria-label="Ver solicitud" onclick="abrirVisor(${js(d.id)})"><i class="fas fa-eye"></i></button>`;
-                const botones = !miTurno ? `<span class="muted" style="font-size:12px;">Toma el turno para registrar</span>` : d.estatus === "COMPROBANTE RECIBIDO"
+                const fin = finDe(d);
+                const botones = d.estatus === "COMPLETADO" ? `<span class="rev-ingresada"><i class="fas fa-circle-check"></i> Ingresada${fin ? ` ${esc(fin.toLocaleDateString())}` : ""}</span>` : !miTurno ? `<span class="muted" style="font-size:12px;">Toma el turno para registrar</span>` : d.estatus === "COMPROBANTE RECIBIDO"
                     ? `<button class="btn-rev fin" onclick="registrarRespuesta(${js(d.id)}, 'COMPLETAR')"><i class="fas fa-circle-check"></i> Pago verificado</button>`
                     : `<button class="btn-rev" onclick="registrarRespuesta(${js(d.id)}, 'RESPONDIO')"><i class="fas fa-reply"></i> ${d.estatus === "RECIBIDO" ? "Volvió a escribir" : "Respondió"}</button> <button class="btn-rev comp" onclick="registrarRespuesta(${js(d.id)}, 'COMPROBANTE')"><i class="fas fa-file-invoice-dollar"></i> Comprobante</button>`;
                 return `<tr class="row-card" style="--borde:${tarde ? "var(--rojo)" : (d.estatus === "COMPROBANTE RECIBIDO" ? "var(--ambar)" : "var(--azul)")};"><td>${ordenDe(d) ? `<button class="ticket ticket-copiar" title="Copiar la orden para buscarla en Outlook" onclick="copiarTicket(${js(ordenDe(d))})">${esc(ordenDe(d))}</button>` : talon(d)}${d.tipo_cobro === "RAPIDO" ? '<span class="chip-rapido" style="display:flex; width:max-content;"><i class="fas fa-bolt"></i> Pago rápido</span>' : ""}</td><td class="seg-fecha"><span class="espera ${tarde ? "tarde" : ""}">${tarde ? '<i class="fas fa-clock"></i> ' : ""}hace ${esc(duracion(h))}</span><small>${ico} ${esc(env ? env.toLocaleDateString() : "")}</small></td><td class="rev-persona">${esc(creadorDe(d))}</td><td class="rev-persona">${d.agente && d.agente !== creadorDe(d) ? `<b>${esc(d.agente)}</b><small><i class="fas fa-arrow-right-arrow-left"></i> la tomó</small>` : esc(d.agente || "Sin asignar")}</td><td class="seg-cliente"><b>${esc(d.cliente?.contacto || "Sin nombre")}</b><small>${esc(d.cliente?.correo || d.cliente?.tel || "—")}</small></td><td class="num" style="text-align:right; font-weight:600;">Q ${fmtQ(d.total)}</td><td>${ultima}</td><td>${botones} ${ver}</td></tr>`;
