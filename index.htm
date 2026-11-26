@@ -702,7 +702,7 @@
                 <div class="nav-item" id="nav-2" onclick="showSec('sec-2', this)" tabindex="0"><i class="fas fa-file-invoice-dollar"></i> Nuevo cobro</div>
                 <div class="nav-item" id="nav-3" onclick="showSec('sec-3', this)" tabindex="0"><i class="fas fa-list-check"></i> Seguimientos</div>
                 <div class="nav-item" id="nav-8" onclick="showSec('sec-8', this)" tabindex="0"><i class="fas fa-inbox"></i> Bandeja de revisión</div>
-                <div class="nav-item" id="nav-mp" data-libre="1" onclick="showSec('sec-mp', this)" tabindex="0"><i class="fas fa-file-pen"></i> Mis plantillas</div>
+                <div class="nav-item" id="nav-9" onclick="showSec('sec-9', this)" tabindex="0"><i class="fas fa-file-pen"></i> Mis plantillas</div>
                 <div class="nav-item" id="nav-4" onclick="showSec('sec-4', this)" tabindex="0"><i class="fas fa-chart-simple"></i> Dashboard</div>
                 <div class="nav-item" id="nav-5" onclick="showSec('sec-5', this)" tabindex="0"><i class="fas fa-users-viewfinder"></i> Monitor de agentes</div>
                 <div class="nav-item" id="nav-6" onclick="showSec('sec-6', this)" tabindex="0"><i class="fas fa-comment-dots"></i> Avisos</div>
@@ -1050,7 +1050,7 @@
             </section>
 
             <!-- ================= AVISOS ================= -->
-            <section id="sec-mp" style="display:none" data-titulo="Mis plantillas">
+            <section id="sec-9" style="display:none" data-titulo="Mis plantillas">
                 <div class="card" id="card-mis-plantillas">
                     <h3 class="card-titulo">Mis plantillas para Outlook</h3>
                     <p class="card-sub">Solo las ves tú. Aparecen en "Respuesta para Outlook" junto a las plantillas del equipo. Toca una variable para insertarla donde está el cursor.</p>
@@ -1387,6 +1387,7 @@
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="2"> Nuevo cobro</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="3"> Seguimientos</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="8"> Bandeja de revisión</label>
+                                <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="9"> Mis plantillas</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="4"> Dashboard</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="5"> Monitor</label>
                                 <label class="checkbox-wrapper"><input type="checkbox" class="chk-perm" value="6"> Avisos</label>
@@ -1599,7 +1600,7 @@
             const nav = el || document.getElementById(id.replace("sec-", "nav-")); if (nav) nav.classList.add("active");
             if (id === "sec-4" && window.allDashboardData.length > 0) window.aplicarFiltrosDashboard();
             if (id === "sec-8") window.renderBandejaRevision();
-            if (id === "sec-mp") { window.pintarMisPlantillas(); window.vistaPreviaMiPlantilla(); }
+            if (id === "sec-9") { window.pintarMisPlantillas(); window.vistaPreviaMiPlantilla(); }
             window.scrollTo(0, 0);
         };
         document.querySelectorAll(".nav-item").forEach(n => n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); n.click(); } }));
@@ -1761,7 +1762,7 @@
                 document.getElementById("filtro-vista-equipo").value = "EQUIPO";
             }
             window.permisosUsuario = perms; const permisosArray = perms.split(",");
-            document.querySelectorAll(".nav-item").forEach(item => { const id = item.id.replace("nav-", ""); item.style.display = (item.dataset.libre || perms === "ALL" || permisosArray.includes(id)) ? "flex" : "none"; });
+            document.querySelectorAll(".nav-item").forEach(item => { const id = item.id.replace("nav-", ""); item.style.display = (perms === "ALL" || permisosArray.includes(id)) ? "flex" : "none"; });
             // Oculta el título "Administración" si el rol no tiene ninguna de esas pantallas.
             const hayAdmin = ["nav-7", "nav-1", "nav-0", "nav-0-1"].some(i => document.getElementById(i).style.display === "flex");
             document.getElementById("grupo-admin").style.display = hayAdmin ? "block" : "none";
@@ -3251,7 +3252,7 @@
 
             onSnapshot(doc(db, "Configuracion", "Plantillas"), s => { if (s.exists() && s.data().whatsapp) window.configPlantillas.whatsapp = s.data().whatsapp; set("conf-plantilla-wa", window.configPlantillas.whatsapp); window.actualizarVistaPreviaWA(); }, errorEscucha("las plantillas"));
 
-            const NOMBRES_MODULO = { "0": "Roles", "0-1": "Campañas", "1": "Usuarios", "2": "Nuevo cobro", "3": "Seguimientos", "4": "Dashboard", "5": "Monitor", "6": "Avisos", "7": "Ajustes" };
+            const NOMBRES_MODULO = { "0": "Roles", "0-1": "Campañas", "1": "Usuarios", "2": "Nuevo cobro", "3": "Seguimientos", "8": "Bandeja de revisión", "9": "Mis plantillas", "4": "Dashboard", "5": "Monitor", "6": "Avisos", "7": "Ajustes" };
             onSnapshot(collection(db, "Roles"), s => {
                 const sel = document.getElementById("u-rol"); const tb = document.getElementById("l-roles"); const opts = []; const filas = []; window.adminData.roles = {};
                 s.forEach(d => {
