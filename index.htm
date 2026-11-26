@@ -283,7 +283,9 @@
         .temp-Acelerado { border-color: var(--ambar) !important; background: var(--ambar-suave) !important; }
         .temp-Molesto { border-color: var(--rojo) !important; background: var(--rojo-suave) !important; }
         .temp-Escalado { border-color: var(--ink) !important; background: var(--ink) !important; color: #fff !important; }
-        .servicio-agregar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+        .servicio-agregar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 4px; }
+        #lista-servicios tr.editando td { background: #FFF7E6; }
+        #lista-servicios tr.editando td:first-child { box-shadow: inset 3px 0 0 var(--sol, #F5A623); }
         .tabla-servicios { min-width: 520px; margin-top: 12px; }
         .tabla-servicios td.precio { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
         .metodo-pago { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -776,7 +778,7 @@
                                 <div class="input-group"><label for="gc-modelo" id="lbl-modelo">Modelo</label><input type="text" id="gc-modelo"></div>
                                 <div class="input-group"><label for="gc-precio">Precio (Q) <span class="req">*</span></label><input type="number" id="gc-precio" min="0" step="0.01" class="num" placeholder="0.00" oninput="delete this.dataset.auto"></div>
                             </div>
-                            <div class="servicio-agregar"><button class="btn btn-outline" onclick="agregarServicio()"><i class="fas fa-plus"></i> Agregar servicio</button></div>
+                            <div class="servicio-agregar"><button class="btn btn-ghost" id="btn-cancelar-serv" style="display:none;" onclick="cancelarEdicionServicio()">Cancelar</button><button class="btn btn-outline" id="btn-agregar-serv" onclick="agregarServicio()"><i class="fas fa-plus"></i> Agregar servicio</button></div>
                             <div class="table-responsive"><table class="tabla-servicios"><thead><tr><th>Servicio</th><th>Equipo</th><th>Detalle</th><th style="text-align:right;">Precio</th><th></th></tr></thead><tbody id="lista-servicios"></tbody></table></div>
                         </div>
 
@@ -1860,12 +1862,41 @@
             const serv = { tipo: document.getElementById("gc-tipo").value, detalle: document.getElementById("gc-detalle").value.trim(), precio: parseFloat(document.getElementById("gc-precio").value) || 0, producto: document.getElementById("gc-producto").value.trim(), marca: document.getElementById("gc-marca").value.trim(), modelo: document.getElementById("gc-modelo").value.trim() };
             if (!serv.detalle || serv.precio <= 0) return mostrarToast("Escribe el detalle y un precio mayor a 0.", "warning");
             if (camposObligatorios().equipo && (!serv.producto || !serv.marca || !serv.modelo)) return mostrarToast("Escribe producto, marca y modelo del equipo.", "warning");
-            serviciosTemporales.push(serv); renderServicios();
+            const editando = window.servicioEditando;
+            if (editando !== null && serviciosTemporales[editando]) serviciosTemporales[editando] = serv; else serviciosTemporales.push(serv);
+            window.cancelarEdicionServicio();
+            if (editando !== null) mostrarToast("Servicio actualizado.", "success");
+        };
+        // Editar un servicio ya agregado: se carga en el formulario de arriba y "Agregar" pasa a "Guardar cambios".
+        window.servicioEditando = null;
+        window.editarServicio = (i) => {
+            const sv = serviciosTemporales[i]; if (!sv) return;
+            window.servicioEditando = i;
+            const sel = document.getElementById("gc-tipo");
+            if (![...sel.options].some(o => o.value === sv.tipo)) sel.add(new Option(sv.tipo, sv.tipo));
+            sel.value = sv.tipo; window.cambioTipoServicio();
+            document.getElementById("gc-detalle").value = sv.detalle || ""; document.getElementById("gc-producto").value = sv.producto || "";
+            document.getElementById("gc-marca").value = sv.marca || ""; document.getElementById("gc-modelo").value = sv.modelo || "";
+            const precio = document.getElementById("gc-precio"); if (!precio.readOnly) { precio.value = sv.precio ?? ""; delete precio.dataset.auto; }
+            document.getElementById("btn-agregar-serv").innerHTML = '<i class="fas fa-check"></i> Guardar cambios';
+            document.getElementById("btn-cancelar-serv").style.display = "inline-flex";
+            renderServicios();
+            sel.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => document.getElementById("gc-detalle").focus(), 250);
+        };
+        window.cancelarEdicionServicio = () => {
+            window.servicioEditando = null;
             ["gc-detalle", "gc-producto", "gc-marca", "gc-modelo", "gc-precio"].forEach(id => document.getElementById(id).value = "");
             window.cambioTipoServicio();
+            document.getElementById("btn-agregar-serv").innerHTML = '<i class="fas fa-plus"></i> Agregar servicio';
+            document.getElementById("btn-cancelar-serv").style.display = "none";
+            renderServicios();
         };
         // CORREGIDO: antes el onclick llamaba variables del módulo que no son globales.
-        window.quitarServicio = (i) => { serviciosTemporales.splice(i, 1); renderServicios(); };
+        window.quitarServicio = (i) => {
+            const ed = window.servicioEditando;
+            serviciosTemporales.splice(i, 1);
+            if (ed === i) window.cancelarEdicionServicio(); else { if (ed !== null && ed > i) window.servicioEditando = ed - 1; renderServicios(); }
+        };
         const totalServicios = () => serviciosTemporales.reduce((a, s) => a + (Number(s.precio) || 0), 0);
         // ---- Descuento (igual en Cobro completo y Pago rápido) ----
         window.descTipo = "MONTO";
@@ -1912,7 +1943,7 @@
                 ? `<tr><td colspan="5" class="vacio">Agrega al menos un servicio para calcular el total.</td></tr>`
                 : serviciosTemporales.map((s, i) => {
                     const equipo = `${s.producto || ""} ${s.marca || ""} ${s.modelo || ""}`.trim() || "—";
-                    return `<tr><td><b>${esc(s.tipo)}</b></td><td>${esc(equipo)}</td><td>${esc(s.detalle)}</td><td class="precio">Q ${fmtQ(s.precio)}</td><td class="acciones"><button class="btn-action-sm peligro" title="Quitar servicio" aria-label="Quitar servicio" onclick="quitarServicio(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
+                    return `<tr class="${window.servicioEditando === i ? "editando" : ""}"><td><b>${esc(s.tipo)}</b></td><td>${esc(equipo)}</td><td>${esc(s.detalle)}</td><td class="precio">Q ${fmtQ(s.precio)}</td><td class="acciones"><button class="btn-action-sm" title="Editar servicio" aria-label="Editar servicio" onclick="editarServicio(${i})"><i class="fas fa-pen"></i></button> <button class="btn-action-sm peligro" title="Quitar servicio" aria-label="Quitar servicio" onclick="quitarServicio(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
                 }).join("");
             if (window.modoCobro !== "RAPIDO") window.pintarTotal?.();
             const n = serviciosTemporales.length;
@@ -1922,7 +1953,8 @@
         }
         const fmtQ = (v) => (Number(v) || 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         window.limpiarGestorCobro = () => {
-            serviciosTemporales = []; window.currentTicketEditing = null; renderServicios();
+            serviciosTemporales = []; window.currentTicketEditing = null; window.servicioEditando = null; renderServicios();
+            const bAg = document.getElementById("btn-agregar-serv"); if (bAg) { bAg.innerHTML = '<i class="fas fa-plus"></i> Agregar servicio'; document.getElementById("btn-cancelar-serv").style.display = "none"; }
             document.querySelectorAll('#sec-2 input:not([type="checkbox"]):not([type="radio"]), #sec-2 textarea').forEach(i => { i.value = ""; i.disabled = false; });
             if (window.modoCobro === "RAPIDO") setTimeout(() => window.cambioConceptoRapido(), 0);
             ponerLinksPago({}); ponerDescuento(null); window.mostrarCampoOrden(false); ponerFechaOfrecida(null);
@@ -2266,6 +2298,7 @@
             }
             const total = r2(subtotal - (descuento?.monto || 0));
             const esEnvio = metodo === "WhatsApp" || metodo === "Correo";
+            if (metodo !== "Anular" && window.servicioEditando !== null && window.modoCobro !== "RAPIDO") { document.getElementById("btn-agregar-serv").focus(); return mostrarToast("Guarda o cancela la edición del servicio antes de continuar.", "warning"); }
             if (metodo !== "Anular" && window.fechaOfrecida === "SI" && !document.getElementById("fecha-establecida").value) { document.getElementById("fecha-establecida").focus(); return mostrarToast("Indica la fecha establecida con el cliente.", "warning"); }
             if (esEnvio && !document.getElementById("check-confirmar").checked) return mostrarToast("Debes confirmar los datos.", "warning");
             if (metodo !== "Anular" && serviciosTemporales.length === 0) return mostrarToast("Agrega un servicio.", "warning");
@@ -2378,7 +2411,7 @@
             document.getElementById("fac-nit").value = d.facturacion?.nit || ""; document.getElementById("fac-nombre").value = d.facturacion?.nombre || "";
             document.getElementById("pago-metodo").value = d.pago_metodo || "AMBOS"; window.sincronizarMetodoPago(); window.toggleLinkPago();
             ponerLinksPago(d);
-            serviciosTemporales = [...(d.servicios || [])]; renderServicios();
+            serviciosTemporales = [...(d.servicios || [])]; window.servicioEditando = null; renderServicios();
             if (d.tipo_cobro === "RAPIDO") document.getElementById("rp-monto").readOnly = /diagn/i.test(d.servicios?.[0]?.tipo || "");
             ponerDescuento(d.descuento);
             showSec("sec-2"); mostrarToast("Gestión recuperada.", "info");
