@@ -430,6 +430,7 @@
         .chip-rapido { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #7A4C06; background: var(--ambar-suave); border-radius: 10px; padding: 1px 8px; margin-top: 6px; }
         .orden-editar { display: flex; gap: 6px; align-items: center; }
         .btn-reenviar { margin-top: 6px; }
+        .subtitulo-lista { font-size: 14px; font-weight: 700; color: var(--texto-2, #334155); margin: 0 0 8px; }
         .vista-previa-outlook { background: #fff; border: 1px solid var(--borde, #CBD5E1); border-radius: 10px; padding: 18px 20px; font-family: Calibri, Arial, sans-serif; font-size: 14.5px; line-height: 1.5; color: #1F2937; white-space: pre-wrap; min-height: 300px; }
         .sino { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--borde, #CBD5E1); border-radius: 8px; overflow: hidden; }
         .sino button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; padding: 0 20px; min-height: 38px; cursor: pointer; }
@@ -701,6 +702,7 @@
                 <div class="nav-item" id="nav-2" onclick="showSec('sec-2', this)" tabindex="0"><i class="fas fa-file-invoice-dollar"></i> Nuevo cobro</div>
                 <div class="nav-item" id="nav-3" onclick="showSec('sec-3', this)" tabindex="0"><i class="fas fa-list-check"></i> Seguimientos</div>
                 <div class="nav-item" id="nav-8" onclick="showSec('sec-8', this)" tabindex="0"><i class="fas fa-inbox"></i> Bandeja de revisión</div>
+                <div class="nav-item" id="nav-mp" data-libre="1" onclick="showSec('sec-mp', this)" tabindex="0"><i class="fas fa-file-pen"></i> Mis plantillas</div>
                 <div class="nav-item" id="nav-4" onclick="showSec('sec-4', this)" tabindex="0"><i class="fas fa-chart-simple"></i> Dashboard</div>
                 <div class="nav-item" id="nav-5" onclick="showSec('sec-5', this)" tabindex="0"><i class="fas fa-users-viewfinder"></i> Monitor de agentes</div>
                 <div class="nav-item" id="nav-6" onclick="showSec('sec-6', this)" tabindex="0"><i class="fas fa-comment-dots"></i> Avisos</div>
@@ -1048,6 +1050,29 @@
             </section>
 
             <!-- ================= AVISOS ================= -->
+            <section id="sec-mp" style="display:none" data-titulo="Mis plantillas">
+                <div class="card" id="card-mis-plantillas">
+                    <h3 class="card-titulo">Mis plantillas para Outlook</h3>
+                    <p class="card-sub">Solo las ves tú. Aparecen en "Respuesta para Outlook" junto a las plantillas del equipo. Toca una variable para insertarla donde está el cursor.</p>
+                    <input type="hidden" id="mp-editando" value="">
+                    <div class="input-group"><label for="mp-nombre">Nombre de la plantilla</label><input type="text" id="mp-nombre" maxlength="60" placeholder="Ej: Comprobante recibido (mi versión)"></div>
+                    <div class="variables" id="mp-variables"></div>
+                    <div class="wa-grid">
+                        <div class="input-group" style="margin:0;"><label for="mp-texto">Texto</label><textarea id="mp-texto" rows="16" maxlength="4000" oninput="vistaPreviaMiPlantilla()"></textarea></div>
+                        <div><span class="etiqueta" style="display:block; margin-bottom:6px;">Vista previa con datos de ejemplo</span><div class="vista-previa-outlook" id="mp-preview"></div></div>
+                    </div>
+                    <div style="display:flex; gap:8px; justify-content:flex-end; margin:14px 0 16px;">
+                        <button class="btn btn-ghost" id="mp-cancelar" style="display:none;" onclick="cancelarMiPlantilla()">Cancelar</button>
+                        <button class="btn btn-primary" id="mp-guardar" onclick="guardarMiPlantilla()"><i class="fas fa-plus"></i> Agregar plantilla</button>
+                    </div>
+                    <h4 class="subtitulo-lista">Mis plantillas</h4>
+                    <div class="lista-config" id="lista-mis-plantillas"></div>
+                    <h4 class="subtitulo-lista" style="margin-top:22px;">Plantillas del equipo</h4>
+                    <p class="card-sub" style="margin-top:-4px;">Las define el administrador. Puedes copiar una a tus plantillas para ajustarla a tu manera.</p>
+                    <div class="lista-config" id="lista-plantillas-equipo"></div>
+                </div>
+            </section>
+
             <section id="sec-6" style="display:none" data-titulo="Avisos">
                 <div id="sec-6-grid" class="avisos-grid">
                     <div class="card" id="panel-enviar-aviso" style="margin-bottom:0;">
@@ -1574,6 +1599,7 @@
             const nav = el || document.getElementById(id.replace("sec-", "nav-")); if (nav) nav.classList.add("active");
             if (id === "sec-4" && window.allDashboardData.length > 0) window.aplicarFiltrosDashboard();
             if (id === "sec-8") window.renderBandejaRevision();
+            if (id === "sec-mp") { window.pintarMisPlantillas(); window.vistaPreviaMiPlantilla(); }
             window.scrollTo(0, 0);
         };
         document.querySelectorAll(".nav-item").forEach(n => n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); n.click(); } }));
@@ -1735,7 +1761,7 @@
                 document.getElementById("filtro-vista-equipo").value = "EQUIPO";
             }
             window.permisosUsuario = perms; const permisosArray = perms.split(",");
-            document.querySelectorAll(".nav-item").forEach(item => { const id = item.id.replace("nav-", ""); item.style.display = (perms === "ALL" || permisosArray.includes(id)) ? "flex" : "none"; });
+            document.querySelectorAll(".nav-item").forEach(item => { const id = item.id.replace("nav-", ""); item.style.display = (item.dataset.libre || perms === "ALL" || permisosArray.includes(id)) ? "flex" : "none"; });
             // Oculta el título "Administración" si el rol no tiene ninguna de esas pantallas.
             const hayAdmin = ["nav-7", "nav-1", "nav-0", "nav-0-1"].some(i => document.getElementById(i).style.display === "flex");
             document.getElementById("grupo-admin").style.display = hayAdmin ? "block" : "none";
@@ -2088,6 +2114,58 @@
             try { await setDoc(refCatalogos(), { plantillas_outlook: lista }, { merge: true }); mostrarToast("Plantilla quitada.", "success"); window.cancelarPlantillaOutlook(); } catch (e) { mostrarToast("No se pudo quitar la plantilla.", "error"); }
         };
 
+        // ---- Mis plantillas (cada persona; se guardan en sus preferencias) ----
+        const misPlantillas = () => Array.isArray(window.prefs?.plantillas) ? window.prefs.plantillas : [];
+        window.vistaPreviaMiPlantilla = () => {
+            const vars = document.getElementById("mp-variables");
+            if (vars && !vars.childElementCount) vars.innerHTML = Object.entries(VARIABLES_OUTLOOK).map(([v, t]) => `<code role="button" tabindex="0" title="${esc(t)}" onclick="insertarVariableMia('${v}')" onkeydown="if(event.key==='Enter') insertarVariableMia('${v}')">{{${v}}}</code>`).join("");
+            const p = document.getElementById("mp-preview"); if (!p) return;
+            p.textContent = llenarPlantillaOutlook(document.getElementById("mp-texto").value, { nombre: "ruben reyes", ordenes: ["1236314"], fecha: "2026-11-28", total: 195 });
+        };
+        window.insertarVariableMia = (v) => {
+            const ta = document.getElementById("mp-texto"); const ins = `{{${v}}}`; const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? ta.value.length;
+            ta.value = ta.value.slice(0, a) + ins + ta.value.slice(b); ta.focus(); ta.selectionStart = ta.selectionEnd = a + ins.length; window.vistaPreviaMiPlantilla();
+        };
+        window.pintarMisPlantillas = () => {
+            const fila = (r, acciones, ico) => `<div class="fila"><div class="info" style="align-items:flex-start;"><i class="fas ${ico}" style="color:var(--azul); margin-top:3px;"></i><span style="min-width:0;"><b>${esc(r.nombre)}</b><small style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:560px;">${esc(r.texto.replace(/\n+/g, " "))}</small></span></div><div class="acciones">${acciones}</div></div>`;
+            const lm = document.getElementById("lista-mis-plantillas");
+            if (lm) lm.innerHTML = misPlantillas().map((r, i) => fila(r, `<button class="btn-action-sm" title="Editar" aria-label="Editar plantilla" onclick="cargarMiPlantilla(${i})"><i class="fas fa-pen"></i></button><button class="btn-action-sm" title="Quitar" aria-label="Quitar plantilla" onclick="eliminarMiPlantilla(${i})"><i class="fas fa-trash"></i></button>`, "fa-file-pen")).join("") || '<p class="muted" style="margin:4px 0 0;">Aún no tienes plantillas propias.</p>';
+            const le = document.getElementById("lista-plantillas-equipo");
+            if (le) le.innerHTML = plantillasOutlook().map((r, i) => fila(r, `<button class="btn btn-ghost btn-sm" onclick="copiarPlantillaEquipo(${i})"><i class="fas fa-copy"></i> Copiar a mis plantillas</button>`, "fa-file-lines")).join("");
+        };
+        const guardarMisPlantillas = async (lista, msg) => { window.prefs.plantillas = lista; window.pintarMisPlantillas(); await guardarPreferencias(msg); };
+        window.guardarMiPlantilla = async () => {
+            const nombre = document.getElementById("mp-nombre").value.trim(); const texto = document.getElementById("mp-texto").value.trim();
+            if (!nombre || !texto) return mostrarToast("Escribe el nombre y el texto de la plantilla.", "warning");
+            const lista = misPlantillas().map(x => ({ nombre: x.nombre, texto: x.texto })); const ed = document.getElementById("mp-editando").value;
+            if (lista.some((x, i) => x.nombre.toLowerCase() === nombre.toLowerCase() && String(i) !== ed)) return mostrarToast("Ya tienes una plantilla con ese nombre.", "warning");
+            if (ed === "" && lista.length >= 30) return mostrarToast("Puedes tener hasta 30 plantillas.", "warning");
+            if (ed !== "") lista[Number(ed)] = { nombre, texto }; else lista.push({ nombre, texto });
+            await guardarMisPlantillas(lista, ed !== "" ? "Plantilla actualizada." : "Plantilla agregada."); window.cancelarMiPlantilla();
+        };
+        window.cargarMiPlantilla = (i) => {
+            const r = misPlantillas()[i]; if (!r) return;
+            document.getElementById("mp-nombre").value = r.nombre; document.getElementById("mp-texto").value = r.texto; document.getElementById("mp-editando").value = String(i);
+            document.getElementById("mp-guardar").innerHTML = '<i class="fas fa-check"></i> Guardar cambios'; document.getElementById("mp-cancelar").style.display = "inline-flex";
+            document.getElementById("card-mis-plantillas").classList.add("edit-mode"); window.vistaPreviaMiPlantilla(); document.getElementById("mp-nombre").focus(); window.scrollTo(0, 0);
+        };
+        window.cancelarMiPlantilla = () => {
+            ["mp-nombre", "mp-editando"].forEach(i => document.getElementById(i).value = ""); document.getElementById("mp-texto").value = "";
+            document.getElementById("mp-guardar").innerHTML = '<i class="fas fa-plus"></i> Agregar plantilla'; document.getElementById("mp-cancelar").style.display = "none";
+            document.getElementById("card-mis-plantillas").classList.remove("edit-mode"); window.vistaPreviaMiPlantilla();
+        };
+        window.eliminarMiPlantilla = async (i) => {
+            const lista = misPlantillas().map(x => ({ nombre: x.nombre, texto: x.texto })); const r = lista[i]; if (!r) return;
+            if (!await window.confirmar({ titulo: "Quitar plantilla", texto: `"${r.nombre}" dejará de aparecer en tu "Respuesta para Outlook".`, boton: "Quitar" })) return;
+            lista.splice(i, 1); await guardarMisPlantillas(lista, "Plantilla quitada."); window.cancelarMiPlantilla();
+        };
+        window.copiarPlantillaEquipo = (i) => {
+            const r = plantillasOutlook()[i]; if (!r) return; window.cancelarMiPlantilla();
+            document.getElementById("mp-nombre").value = `${r.nombre} (mi versión)`.slice(0, 60); document.getElementById("mp-texto").value = r.texto;
+            window.vistaPreviaMiPlantilla(); document.getElementById("mp-texto").focus(); window.scrollTo(0, 0);
+            mostrarToast("Ajusta el texto y presiona Agregar plantilla.", "info");
+        };
+
         // ---- Respuesta lista para Outlook ----
         const nombrePropio = (t) => String(t || "").trim().toLowerCase().replace(/(^|\s)([a-záéíóúñü])/g, (m, a, b) => a + b.toUpperCase());
         const saludoHora = () => { const h = new Date().getHours(); return h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches"; };
@@ -2110,7 +2188,7 @@
             const ordenGuardada = d.orden_servicio || ""; const fechaGuardada = d.prioridad?.fecha_ofrecida === "SI" ? (d.prioridad.fecha_establecida || "") : "";
             const ov = document.createElement("div"); ov.className = "modal-overlay modal-motivo"; ov.style.zIndex = "4000";
             ov.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rc-titulo" style="max-width:640px;"><div class="modal-head"><h3 id="rc-titulo">Respuesta para Outlook</h3><button class="btn btn-ghost btn-icon" data-r="0" aria-label="Cerrar"><i class="fas fa-times"></i></button></div><div class="modal-body">
-                <div class="input-group"><label for="rc-plantilla">Plantilla</label><select id="rc-plantilla">${plantillasOutlook().map((x, i) => `<option value="${i}">${esc(x.nombre)}</option>`).join("")}</select></div>
+                <div class="input-group"><label for="rc-plantilla">Plantilla</label><select id="rc-plantilla">${misPlantillas().length ? `<optgroup label="Mis plantillas">${misPlantillas().map((x, i) => `<option value="m:${i}">${esc(x.nombre)}</option>`).join("")}</optgroup>` : ""}<optgroup label="Del equipo">${plantillasOutlook().map((x, i) => `<option value="e:${i}">${esc(x.nombre)}</option>`).join("")}</optgroup></select></div>
                 <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:12px;"><div class="input-group"><label for="rc-orden">Orden(es) de servicio <span class="req" id="rc-orden-req">*</span></label><input type="text" id="rc-orden" value="${esc(ordenGuardada)}" placeholder="Si son varias, sepáralas con coma" autocomplete="off"></div><div class="input-group"><label for="rc-fecha">Fecha programada <span class="req" id="rc-fecha-req">*</span></label><input type="date" id="rc-fecha" value="${esc(fechaGuardada)}"></div></div>
                 ${puedeGuardar ? `<label class="checkbox-wrapper" id="rc-guardar-wrap" style="display:none; margin:-4px 0 12px;"><input type="checkbox" id="rc-guardar" checked> Guardar la orden y la fecha en esta solicitud</label>` : ""}
                 <div class="input-group"><label for="rc-texto">Respuesta <small class="muted">(puedes editarla antes de copiar)</small></label><textarea id="rc-texto" rows="13" style="font-family:inherit; line-height:1.5;"></textarea></div>
@@ -2118,7 +2196,8 @@
             </div><div class="modal-actions"><button class="btn btn-outline" data-r="0">Cancelar</button><button class="btn btn-primary" data-r="1"><i class="fas fa-copy"></i> Copiar respuesta</button></div></div>`;
             document.body.appendChild(ov);
             const $ = (q) => ov.querySelector(q); let editado = false;
-            const plantilla = () => plantillasOutlook()[Number($("#rc-plantilla").value)] || plantillasOutlook()[0];
+            const plantilla = () => { const [t, i] = String($("#rc-plantilla").value).split(":"); return (t === "m" ? misPlantillas() : plantillasOutlook())[Number(i)] || plantillasOutlook()[0]; };
+            try { const ult = localStorage.getItem("cobros_ult_plantilla_" + (window.userId || "")); if (ult && [...$("#rc-plantilla").options].some(o => o.value === ult)) $("#rc-plantilla").value = ult; } catch (e) { /* sin almacenamiento */ }
             const pideOrden = () => usaVar(plantilla().texto, "orden") || usaVar(plantilla().texto, "orden_texto");
             const pideFecha = () => usaVar(plantilla().texto, "fecha");
             const datosRC = () => ({ nombre: d.cliente?.contacto || "", ordenes: normalizarOrdenes($("#rc-orden").value), fecha: $("#rc-fecha").value, total: d.total });
@@ -2129,7 +2208,7 @@
                 const w = $("#rc-guardar-wrap"); if (w) w.style.display = cambia && textoOrdenes($("#rc-orden").value) ? "" : "none";
             };
             $("#rc-orden").addEventListener("input", pintar); $("#rc-fecha").addEventListener("input", pintar);
-            $("#rc-plantilla").addEventListener("change", () => { editado = false; $("#rc-restablecer").style.display = "none"; pintar(); });
+            $("#rc-plantilla").addEventListener("change", () => { editado = false; $("#rc-restablecer").style.display = "none"; pintar(); try { localStorage.setItem("cobros_ult_plantilla_" + (window.userId || ""), $("#rc-plantilla").value); } catch (e) { /* sin almacenamiento */ } });
             $("#rc-texto").addEventListener("input", () => { editado = true; $("#rc-restablecer").style.display = ""; });
             $("#rc-restablecer").addEventListener("click", () => { editado = false; $("#rc-restablecer").style.display = "none"; pintar(); });
             const cerrar = () => { document.removeEventListener("keydown", tecla); ov.remove(); };
@@ -3289,7 +3368,8 @@
         const WIDGETS_BLOQUE = [["g-estatus", "Gráfica: solicitudes por estatus"], ["g-agentes", "Gráfica: monto por agente"], ["g-envios", "Gráfica: cobros enviados por día"], ["productividad", "Tabla: productividad del equipo"], ["make", "Uso de Make (solo administrador)"]];
         const PREF_DEFECTO = {
             dashboard: { periodo: "mes", kpis: ["abiertas", "enviados", "monto", "espera", "completadas"], kpis_orden: WIDGETS_KPI.map(w => w[0]), bloques: ["g-estatus", "g-agentes", "g-envios", "productividad", "make"], bloques_orden: WIDGETS_BLOQUE.map(w => w[0]) },
-            seguimientos: { columnas: ["creada", "cliente", "estatus", "mensaje", "adjuntos"] }
+            seguimientos: { columnas: ["creada", "cliente", "estatus", "mensaje", "adjuntos"] },
+            plantillas: []
         };
         window.prefs = JSON.parse(JSON.stringify(PREF_DEFECTO));
         const LS_PREFS = () => "cobros_prefs_" + (window.userId || "");
@@ -3300,12 +3380,13 @@
             if (p && typeof p === "object") {
                 d.dashboard = { ...d.dashboard, ...(p.dashboard || {}) };
                 d.seguimientos = { ...d.seguimientos, ...(p.seguimientos || {}) };
+                d.plantillas = Array.isArray(p.plantillas) ? p.plantillas.filter(x => x && x.nombre && x.texto).slice(0, 30) : [];
             }
             // Completa el orden con widgets nuevos que no existían cuando se guardó.
             d.dashboard.kpis_orden = [...new Set([...(d.dashboard.kpis_orden || []), ...WIDGETS_KPI.map(w => w[0])])].filter(id => WIDGETS_KPI.some(w => w[0] === id));
             d.dashboard.bloques_orden = [...new Set([...(d.dashboard.bloques_orden || []), ...WIDGETS_BLOQUE.map(w => w[0])])].filter(id => WIDGETS_BLOQUE.some(w => w[0] === id));
             window.prefs = d;
-            aplicarLayoutDashboard(); elegirPeriodo(d.dashboard.periodo || "mes", true); pintarColumnasSeg();
+            aplicarLayoutDashboard(); elegirPeriodo(d.dashboard.periodo || "mes", true); pintarColumnasSeg(); window.pintarMisPlantillas?.();
         }
         async function guardarPreferencias(msg) {
             try { localStorage.setItem(LS_PREFS(), JSON.stringify(window.prefs)); } catch (e) {}
