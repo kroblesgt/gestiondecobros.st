@@ -1851,6 +1851,14 @@
             if (/diagn/i.test(concepto || "")) { input.value = precioDiagnostico(); input.readOnly = true; input.dataset.auto = "1"; input.title = "Precio fijo del diagnóstico (se cambia en Ajustes). Para rebajarlo usa Aplicar descuento."; }
             else { input.readOnly = false; input.title = ""; if (input.dataset.auto === "1") { input.value = ""; delete input.dataset.auto; } }
         };
+        // Si los catálogos o el precio llegan después de abrir el formulario, el Diagnóstico toma su precio fijo.
+        window.refrescarPrecioDiag = () => {
+            if (window.currentTicketEditing || window.servicioEditando !== null) return;
+            const gp = document.getElementById("gc-precio"), t = document.getElementById("gc-tipo")?.value || "";
+            if (gp && /diagn/i.test(t)) aplicarPrecioConcepto(gp, t);
+            const rm = document.getElementById("rp-monto"), c = document.getElementById("rp-concepto")?.value || "";
+            if (rm && /diagn/i.test(c)) { aplicarPrecioConcepto(rm, c); window.actualizarResumenRapido?.(); }
+        };
         window.cambioTipoServicio = () => {
             const t = document.getElementById("gc-tipo").value;
             document.getElementById("lbl-falla").innerHTML = (t === "Diagnóstico") ? 'Falla reportada <span class="req">*</span>' : 'Servicio a realizar <span class="req">*</span>';
@@ -3218,7 +3226,7 @@
                 ["lbl-producto", "lbl-marca", "lbl-modelo"].forEach((id, i) => marcaReq(id, ["Producto", "Marca", "Modelo"][i], req.equipo));
                 const lI = document.getElementById("pago-link");
                 if (lI && cfg.neonet_habilitado === false) { lI.disabled = true; lI.value = ""; lI.placeholder = "Link de Pago deshabilitado"; } else window.toggleLinkPago();
-                if (!window.currentTicketEditing) { const gp = document.getElementById("gc-precio"), rm = document.getElementById("rp-monto"); if (gp && gp.dataset.auto === "1") gp.value = precioDiagnostico(); if (rm && rm.dataset.auto === "1") { rm.value = precioDiagnostico(); window.actualizarResumenRapido?.(); } }
+                window.refrescarPrecioDiag?.();
 
                 // Respuestas y revisión
                 const pRev = document.getElementById("aj-revision");
@@ -3244,7 +3252,7 @@
                 const respuestas = Array.isArray(data.respuestas_rapidas) ? data.respuestas_rapidas : [];
                 window.configCatalogos = { tipos_servicio: tipos, estatus_tickets: estSis, estatus_colores: estCol, categorias_estatus: catsEst, estatus_categorias: estCats, categorias_comportamiento: catComp, motivos, respuestas_rapidas: respuestas };
 
-                const sC = document.getElementById("gc-tipo"); if (sC) { const vA = sC.value; sC.innerHTML = tipos.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join(""); if (tipos.includes(vA)) sC.value = vA; }
+                const sC = document.getElementById("gc-tipo"); if (sC) { const vA = sC.value; sC.innerHTML = tipos.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join(""); if (tipos.includes(vA)) sC.value = vA; window.refrescarPrecioDiag?.(); }
                 const vacia = (txt) => `<div class="vacia">${esc(txt)}</div>`;
                 const btnQuitar = (fn, etiqueta) => `<button class="btn-action-sm peligro" title="${esc(etiqueta)}" aria-label="${esc(etiqueta)}" onclick="${fn}"><i class="fas fa-trash"></i></button>`;
                 const lA = document.getElementById("lista-tipos-servicio");
