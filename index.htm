@@ -598,11 +598,6 @@
             .login-marca { padding: 28px 24px; }
             .login-marca h1 { font-size: 28px; }
             .login-talon { display: none; }
-            #btn-menu-mobile { display: inline-flex; }
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.show { transform: translateX(0); }
-            .sidebar-overlay.show { display: block; }
-            .main { margin-left: 0; }
             header.topbar { padding: 0 12px; }
             .usuario-chip .textos { display: none; }
             .usuario-chip { border-left: 0; padding-left: 0; }
@@ -615,6 +610,62 @@
             #modal-visor .modal-content { height: 100vh; max-height: 100vh; border-radius: 0; }
             .bubble { max-width: 92%; }
             .aviso-global { padding: 10px 12px; }
+        }
+
+        /* =============================================================
+           CELULAR Y TABLET (nov. 2026)
+           ============================================================= */
+        /* iPad vertical y menores: el menú pasa a ser un panel que se abre con ☰ y el contenido usa todo el ancho. */
+        @media (max-width: 1024px) {
+            #btn-menu-mobile { display: inline-flex; }
+            .sidebar { transform: translateX(-100%); box-shadow: 0 0 40px rgba(0,0,0,.35); }
+            .sidebar.show { transform: translateX(0); }
+            .sidebar-overlay.show { display: block; }
+            .main { margin-left: 0; }
+            .tabla-rev { min-width: 1040px; }
+            .rev-aviso { flex-wrap: wrap; }
+            .rev-aviso > div:first-of-type, .rev-aviso > span:first-of-type { flex: 1 1 260px; }
+        }
+        /* Pantallas táctiles: textos de 16 px en campos para que el iPhone no haga zoom al escribir; botones más fáciles de tocar. */
+        @media (hover: none) and (pointer: coarse) {
+            input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px !important; }
+            .btn-action-sm { min-width: 38px; min-height: 38px; }
+        }
+        /* Barra fija con el total en Nuevo cobro (celular y tablet vertical). */
+        .barra-total-movil { display: none; }
+        @media (max-width: 980px) {
+            .barra-total-movil { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; bottom: 0; z-index: 50; margin: 12px -12px -16px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: var(--ink, #0B2C55); color: #fff; box-shadow: 0 -6px 18px rgba(11,44,85,.25); }
+            .barra-total-movil.oculta { display: none; }
+            .barra-total-movil small { display: block; color: #C9DBF0; font-size: 12px; }
+            .barra-total-movil b { font-size: 20px; font-variant-numeric: tabular-nums; }
+            .barra-total-movil .btn { background: var(--sol, #F5A623); color: #3B2600; border: 0; white-space: nowrap; }
+        }
+        @media (max-width: 640px) {
+            .content { padding: 14px 10px; }
+            .card { padding: 14px; }
+            .kpi .value { font-size: 22px; word-break: break-word; }
+            .dash-barra .segmentado { max-width: 100%; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .dash-barra .segmentado .seg-op { white-space: nowrap; flex: 0 0 auto; }
+            .rev-aviso .btn { width: 100%; justify-content: center; }
+            .modal-content { max-height: 100dvh; }
+            .modal-motivo .modal-content { width: 100%; max-width: 100% !important; border-radius: 16px 16px 0 0; align-self: flex-end; }
+            .modal-motivo { align-items: flex-end !important; padding: 0 !important; }
+            .modal-motivo .form-grid { grid-template-columns: minmax(0, 1fr) !important; }
+            /* Tablas de Seguimientos y Bandeja como tarjetas: cada fila se lee completa sin deslizar de lado. */
+            .tabla-movil { min-width: 0 !important; display: block; }
+            .tabla-movil thead { display: none; }
+            .tabla-movil tbody { display: block; }
+            .tabla-movil tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 14px; padding: 14px 14px 14px 16px; border-bottom: 1px solid var(--linea); }
+            .tabla-movil tr.row-card { box-shadow: inset 4px 0 0 var(--borde, var(--linea)); }
+            .tabla-movil td { display: block; padding: 0 !important; border: 0 !important; position: static !important; box-shadow: none !important; background: transparent !important; text-align: left !important; white-space: normal !important; max-width: none !important; min-width: 0; overflow-wrap: anywhere; }
+            .tabla-movil td[data-label]::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 600; color: var(--texto-3, #64748B); margin-bottom: 2px; }
+            .tabla-movil td:first-child::before, .tabla-movil td:last-child::before { display: none; }
+            .tabla-movil td:first-child { grid-column: 1; grid-row: 1; align-self: center; }
+            .tabla-movil td:last-child { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; text-align: right !important; }
+            .tabla-movil td:last-child > * { justify-content: flex-end; }
+            .tabla-movil td.vacio, .tabla-movil td[colspan] { grid-column: 1 / -1 !important; grid-row: auto !important; justify-self: stretch; text-align: center !important; }
+            .tabla-movil .seg-msg, .tabla-movil .seg-equipo { max-width: none !important; }
+            .tabla-card .table-responsive { overflow-x: visible; }
         }
 
         /* =============================================================
@@ -830,6 +881,7 @@
                         </div>
                     </div>
 
+                    <div class="barra-total-movil" id="barra-total-movil" aria-hidden="true"><div><small>Total a cobrar</small><b>Q <span id="total-movil">0.00</span></b></div><button type="button" class="btn btn-sm" onclick="document.querySelector('.cobro-resumen').scrollIntoView({ behavior: 'smooth', block: 'start' })"><i class="fas fa-paper-plane"></i> Revisar y enviar</button></div>
                     <aside class="cobro-resumen">
                         <div class="card resumen-total">
                             <span class="etiqueta">Total a cobrar</span>
@@ -930,7 +982,7 @@
 
                 <div class="card tabla-card">
                     <div class="table-responsive">
-                        <table class="tabla-seg">
+                        <table class="tabla-seg tabla-movil">
                             <thead id="thead-seg"><tr><th style="padding-left:18px;">Orden</th><th>Creada</th><th>Cliente</th><th>Estatus</th><th>Último mensaje</th><th style="text-align:center;">Adjuntos</th><th style="text-align:right;">Acciones</th></tr></thead>
                             <tbody id="lista-seguimientos"></tbody>
                         </table>
@@ -976,7 +1028,7 @@
 
                 <div class="card tabla-card">
                     <div class="table-responsive">
-                        <table class="tabla-rev">
+                        <table class="tabla-rev tabla-movil">
                             <thead><tr><th style="padding-left:18px;">Orden</th><th>Enviada</th><th>Ingresó</th><th>La tiene</th><th>Cliente</th><th style="text-align:right;">Total</th><th>Última anotación</th><th>Registrar</th></tr></thead>
                             <tbody id="lista-revision"></tbody>
                         </table>
@@ -1945,6 +1997,7 @@
         window.pintarTotal = () => {
             const sub = subtotalActual(); const d = descuentoActual(sub);
             document.getElementById("total-cobro").innerText = fmtQ(r2(sub - (d?.monto || 0)));
+            const tm = document.getElementById("total-movil"); if (tm) tm.innerText = fmtQ(r2(sub - (d?.monto || 0)));
             const box = document.getElementById("resumen-desglose");
             if (d) { box.style.display = "block"; box.innerHTML = `<div><span>Subtotal</span><span>Q ${fmtQ(sub)}</span></div><div class="rebaja"><span>Descuento${d.tipo === "PORCENTAJE" ? ` (${d.valor}%)` : ""}</span><span>− Q ${fmtQ(d.monto)}</span></div>`; }
             else box.style.display = "none";
@@ -2164,6 +2217,17 @@
             lista.splice(i, 1);
             try { await setDoc(refCatalogos(), { plantillas_outlook: lista }, { merge: true }); mostrarToast("Plantilla quitada.", "success"); window.cancelarPlantillaOutlook(); } catch (e) { mostrarToast("No se pudo quitar la plantilla.", "error"); }
         };
+
+        // ---- Celular: cada celda lleva el nombre de su columna (se muestra en la vista de tarjetas) ----
+        const etiquetarTabla = (tabla) => {
+            const ths = [...tabla.querySelectorAll("thead th")].map(th => th.innerText.trim());
+            tabla.querySelectorAll("tbody tr").forEach(tr => [...tr.children].forEach((td, i) => { if (ths[i] && !td.hasAttribute("colspan")) td.dataset.label = ths[i]; }));
+        };
+        document.querySelectorAll("table.tabla-movil").forEach(t => { const tb = t.querySelector("tbody"); if (tb) new MutationObserver(() => etiquetarTabla(t)).observe(tb, { childList: true }); });
+        (() => {
+            const resumen = document.querySelector(".cobro-resumen"), barra = document.getElementById("barra-total-movil");
+            if (resumen && barra && "IntersectionObserver" in window) new IntersectionObserver(([e]) => barra.classList.toggle("oculta", e.isIntersecting), { threshold: 0.05 }).observe(resumen);
+        })();
 
         // ---- Mis plantillas (cada persona; se guardan en sus preferencias) ----
         const misPlantillas = () => Array.isArray(window.prefs?.plantillas) ? window.prefs.plantillas : [];
